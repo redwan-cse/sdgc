@@ -1,0 +1,17 @@
+legacy_url,target_route,type,status,notes
+https://saugatuckdouglasgardenclub.com/,/,page,preserved,Homepage with mission and activity highlights
+https://saugatuckdouglasgardenclub.com/aboutourclub/,/aboutourclub,page,preserved,About Our Club
+https://saugatuckdouglasgardenclub.com/garden-walk/,/garden-walk,page,preserved,Garden Walk annual fundraiser page
+https://saugatuckdouglasgardenclub.com/gallery/,/gallery,page,preserved,Public photo gallery
+https://saugatuckdouglasgardenclub.com/events/,/events,page,preserved,Events list view
+https://saugatuckdouglasgardenclub.com/events/month/,/events/month,page,preserved,Events month calendar view
+https://saugatuckdouglasgardenclub.com/events/day/,/events/day,page,preserved,Events day view
+https://saugatuckdouglasgardenclub.com/event/2026-garden-walk-fundraiser/,/event/2026-garden-walk-fundraiser,page,preserved,Example specific event page
+https://saugatuckdouglasgardenclub.com/becomeamember/,/becomeamember,page,preserved,Registration page
+https://saugatuckdouglasgardenclub.com/membership/,/membership,page,preserved,Membership and dues status/payment
+https://saugatuckdouglasgardenclub.com/login/,/login,page,preserved,Member login page
+https://saugatuckdouglasgardenclub.com/forgot-password/,/forgot-password,page,preserved,Password recovery
+https://saugatuckdouglasgardenclub.com/wp-login.php,/login,redirect,redirect_308,Redirect legacy WP login to new auth route
+https://saugatuckdouglasgardenclub.com/wp-admin/,/admin,redirect,redirect_308,Redirect legacy WP admin to new admin panel
+https://saugatuckdouglasgardenclub.com/contact/,/contact,page,preserved,Contact form (also accessible via homepage #contact)
+https://saugatuckdouglasgardenclub.com/profile/,/profile,page,preserved,Member profile management
