@@ -1,0 +1,14 @@
+node_modules
+.next
+next-env.d.ts
+package-lock.json
+coverage
+playwright-report
+test-results
+artifacts
+temp
+supabase/.temp
+supabase/.branches
+src/types/database.ts
+docs/reference/theme/original.css
+docs/reference/theme/original-layout.tsx

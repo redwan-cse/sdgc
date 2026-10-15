@@ -1,0 +1,3 @@
+-- Intentionally no application data at bootstrap.
+-- Phase 3 adds deterministic synthetic content and membership terms.
+-- Provision Auth users and Storage objects through local APIs, not internal-table inserts.

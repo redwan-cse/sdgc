@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: browser-failure-evidence
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Detect application migrations
+        id: schema
+        shell: bash
+        run: |
+          if find supabase/migrations -maxdepth 1 -name '*.sql' -print -quit | grep -q .; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No application migrations yet. Database gates activate in Phase 3."
+          fi
+      - run: npm run db:start
+        if: steps.schema.outputs.present == 'true'
+      - run: npm run db:reset
+        if: steps.schema.outputs.present == 'true'
+      - run: npm run db:lint
+        if: steps.schema.outputs.present == 'true'
+      - run: npm run db:test
+        if: steps.schema.outputs.present == 'true'
+      - run: npm run db:types
+        if: steps.schema.outputs.present == 'true'
+      - name: Verify committed database types
+        if: steps.schema.outputs.present == 'true'
+        run: |
+          git ls-files --error-unmatch src/types/database.ts
+          git diff --exit-code -- src/types/database.ts
+      - name: Stop this CI stack
+        if: always() && steps.schema.outputs.present == 'true'
+        run: npm run db:stop

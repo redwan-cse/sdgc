@@ -1,0 +1,25 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!!**/node_modules",
+      "!!**/.next",
+      "!!**/temp",
+      "!!**/docs",
+      "!!**/supabase",
+      "!!**/playwright-report",
+      "!!**/test-results",
+      "!!**/artifacts",
+      "!src/types/database.ts"
+    ]
+  },
+  "formatter": { "enabled": false },
+  "assist": { "enabled": false },
+  "linter": {
+    "enabled": true,
+    "domains": { "next": "recommended", "react": "recommended" },
+    "rules": { "preset": "recommended" }
+  },
+  "css": { "parser": { "tailwindDirectives": true } }
+}

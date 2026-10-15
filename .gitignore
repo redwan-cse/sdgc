@@ -1,0 +1,38 @@
+# Dependencies and framework output
+/node_modules/
+/.next/
+/out/
+/coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Local configuration and credentials
+.env*
+!.env.example
+*.pem
+*.key
+.vercel/
+
+# Supabase local state (migrations and config stay tracked)
+supabase/.temp/
+supabase/.branches/
+supabase/.env*
+
+# Browser reports and private migration inputs
+/playwright-report/
+/test-results/
+/tests/.auth/
+/playwright/.auth/
+/artifacts/
+/imports/private/
+/temp/
+/.bootstrap/
+
+# Tool and OS noise
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
