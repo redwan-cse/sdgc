@@ -3,6 +3,7 @@
 ## Overview
 
 The owner confirmed on 2026-10-15:
+
 - The legacy WordPress website includes a **member login panel** and a **WordPress administrator panel**.
 - **Role-Based Access Control (RBAC)**, member profile management, and separate member and admin areas are **mandatory product deliverables**.
 
@@ -16,6 +17,7 @@ The owner confirmed on 2026-10-15:
 ## Modeled Architecture and Strategy
 
 To ensure zero blocker to local implementation:
+
 1. **RBAC Matrix:** Built into the architecture specification (`docs/ARCHITECTURE.md`) with explicit roles: `admin`, `editor`, `treasurer`, plus `active_member`, `registered/pending`, `expired`, and `suspended`.
 2. **Member Profile Fields:** All fields observed on the public registration page (`becomeamember`) are modeled in full:
    - Username (unique, normalized)

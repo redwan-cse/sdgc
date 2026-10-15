@@ -1,0 +1,26 @@
+import { LoginForm } from "@/features/auth/components/login-form";
+
+export const metadata = {
+  title: "Member Login",
+  description: "Sign in to the Saugatuck Douglas Garden Club member area.",
+};
+
+export default function LoginPage() {
+  return (
+    <div className="w-full max-w-md space-y-6">
+      <div className="text-center space-y-2">
+        <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+          Member Portal
+        </span>
+        <h1 className="font-serif text-3xl font-bold text-foreground">Sign In to Your Account</h1>
+        <p className="text-xs text-muted-foreground">
+          Enter your username or email address and password below.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm">
+        <LoginForm />
+      </div>
+    </div>
+  );
+}
