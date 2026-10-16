@@ -1,14 +1,42 @@
 import type { Route } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import type { AdminMetrics } from "../types";
 
-export function AdminOverview() {
+interface AdminOverviewProps {
+  metrics?: AdminMetrics;
+}
+
+export function AdminOverview({ metrics }: AdminOverviewProps) {
   const stats = [
-    { label: "Active Members (2026)", value: "48", href: "/admin/members" },
-    { label: "Pending Approvals", value: "3", alert: true, href: "/admin/members" },
-    { label: "Unreconciled Dues", value: "2", alert: true, href: "/admin/dues" },
-    { label: "Upcoming Events", value: "4", href: "/admin/events" },
-    { label: "Unread Messages", value: "1", alert: true, href: "/admin/messages" },
+    {
+      label: "Active Members (2026)",
+      value: metrics ? String(metrics.totalMembers) : "48",
+      href: "/admin/members",
+    },
+    {
+      label: "Pending Approvals",
+      value: metrics ? String(metrics.pendingApprovals) : "3",
+      alert: metrics ? metrics.pendingApprovals > 0 : true,
+      href: "/admin/members",
+    },
+    {
+      label: "Unreconciled Dues",
+      value: metrics ? String(metrics.unreconciledPayments) : "2",
+      alert: metrics ? metrics.unreconciledPayments > 0 : true,
+      href: "/admin/dues",
+    },
+    {
+      label: "Upcoming Events",
+      value: metrics ? String(metrics.upcomingEvents) : "4",
+      href: "/admin/events",
+    },
+    {
+      label: "Unread Messages",
+      value: metrics ? String(metrics.unreadMessages) : "1",
+      alert: metrics ? metrics.unreadMessages > 0 : true,
+      href: "/admin/messages",
+    },
   ];
 
   return (

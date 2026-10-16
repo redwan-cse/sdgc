@@ -1,5 +1,12 @@
 import type { ApplicationStatus, PaymentStatus } from "@/features/membership/types";
 
+export interface ActionResult<T = unknown> {
+  success: boolean;
+  error?: string;
+  message?: string;
+  data?: T;
+}
+
 export interface AdminMetrics {
   totalMembers: number;
   pendingApprovals: number;
@@ -9,7 +16,7 @@ export interface AdminMetrics {
 }
 
 export interface AdminMemberRecord {
-  id: string;
+  id: string; // membership id
   userId: string;
   username: string;
   name: string;
@@ -19,9 +26,57 @@ export interface AdminMemberRecord {
   paymentStatus: PaymentStatus;
   paymentMethod?: string;
   isApproved: boolean;
-  isSuspended: boolean;
+  isMasterGardener: boolean;
+  version: number;
   roles: string[];
   appliedAt: string;
+}
+
+export interface AdminDuesRecord {
+  id: string; // payment id
+  membershipId: string;
+  memberName: string;
+  memberUsername: string;
+  year: number;
+  amountCents: number;
+  paymentMethod: "credit_card" | "check" | "cash";
+  status: "pending" | "confirmed" | "failed" | "refunded";
+  notes?: string;
+  reconciledAt?: string;
+  reconciledBy?: string;
+  createdAt: string;
+}
+
+export interface AdminEventRecord {
+  id: string;
+  title: string;
+  slug: string;
+  startsAt: string;
+  endsAt?: string;
+  category?: string;
+  status: "published" | "draft";
+  venueName?: string;
+  venueId?: string;
+  description?: string;
+}
+
+export interface AdminPageRecord {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle?: string;
+  status: "published" | "draft";
+  updatedAt: string;
+}
+
+export interface AdminMessageRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  message: string;
+  status: "unread" | "read" | "archived";
+  createdAt: string;
 }
 
 export interface AdminAuditEntry {

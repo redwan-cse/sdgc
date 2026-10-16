@@ -3,49 +3,60 @@
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { AdminDuesRecord } from "../types";
+import { reconcilePaymentAction } from "../actions";
 
-interface DuesRecord {
-  id: string;
-  member: string;
-  year: number;
-  amount: number;
-  method: "credit_card" | "check";
-  status: "confirmed" | "pending_reconciliation";
-  checkNumber?: string;
-  date: string;
+interface AdminDuesProps {
+  initialRecords: AdminDuesRecord[];
 }
 
-const INITIAL_DUES: DuesRecord[] = [
-  {
-    id: "pay-1",
-    member: "Daisy Miller (@daisy_miller)",
-    year: 2026,
-    amount: 50.0,
-    method: "credit_card",
-    status: "confirmed",
-    date: "2026-02-10",
-  },
-  {
-    id: "pay-2",
-    member: "Eleanor Rigby (@eleanor_rigby)",
-    year: 2026,
-    amount: 50.0,
-    method: "check",
-    status: "pending_reconciliation",
-    checkNumber: "1042",
-    date: "2026-02-14",
-  },
-];
-
-export function AdminDues() {
-  const [records, setRecords] = React.useState<DuesRecord[]>(INITIAL_DUES);
+export function AdminDues({ initialRecords }: AdminDuesProps) {
+  const [records, setRecords] = React.useState<AdminDuesRecord[]>(initialRecords);
   const [notice, setNotice] = React.useState<string | null>(null);
+  const [isError, setIsError] = React.useState(false);
+  const [reconcilingId, setReconcilingId] = React.useState<string | null>(null);
+  const [reconcileNotes, setReconcileNotes] = React.useState<string>("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const handleReconcile = (id: string, member: string) => {
-    setRecords((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "confirmed" as const } : r)),
-    );
-    setNotice(`Check payment for ${member} has been reconciled and marked CONFIRMED.`);
+  React.useEffect(() => {
+    setRecords(initialRecords);
+  }, [initialRecords]);
+
+  const handleReconcile = async (id: string, member: string) => {
+    setIsSubmitting(true);
+    setIsError(false);
+    try {
+      const res = await reconcilePaymentAction({
+        paymentId: id,
+        notes: reconcileNotes.trim() || undefined,
+      });
+
+      if (res.success) {
+        setRecords((prev) =>
+          prev.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  status: "confirmed",
+                  reconciledAt: new Date().toISOString(),
+                  notes: reconcileNotes || r.notes,
+                }
+              : r,
+          ),
+        );
+        setNotice(`Check payment for ${member} has been reconciled and marked CONFIRMED.`);
+        setReconcilingId(null);
+        setReconcileNotes("");
+      } else {
+        setIsError(true);
+        setNotice(`Could not reconcile payment: ${res.error}`);
+      }
+    } catch (err: unknown) {
+      setIsError(true);
+      setNotice(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -55,14 +66,18 @@ export function AdminDues() {
           Dues Reconciliation & Financials
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Reconcile incoming paper checks and review electronic card dues records for calendar year
-          2026.
+          Reconcile incoming paper checks, audit electronic card payments, and track annual
+          membership dues.
         </p>
       </div>
 
       {notice && (
         <div
-          className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-600/30 p-3 text-xs text-emerald-800 dark:text-emerald-300"
+          className={`rounded-lg p-3 text-xs border ${
+            isError
+              ? "bg-rose-50 dark:bg-rose-950/30 border-rose-600/30 text-rose-800 dark:text-rose-300"
+              : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-600/30 text-emerald-800 dark:text-emerald-300"
+          }`}
           role="status"
         >
           {notice}
@@ -86,7 +101,12 @@ export function AdminDues() {
 
       {/* Transactions Table */}
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-border font-semibold text-sm">Dues Payment Journal</div>
+        <div className="p-4 border-b border-border font-semibold text-sm flex justify-between items-center">
+          <span>Dues Payment Journal ({records.length} records)</span>
+          <span className="text-xs text-muted-foreground">
+            Pending: {records.filter((r) => r.status === "pending").length}
+          </span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -100,41 +120,87 @@ export function AdminDues() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {records.map((r) => (
-                <tr key={r.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="p-4 font-medium text-foreground">{r.member}</td>
-                  <td className="p-4 text-muted-foreground">{r.year}</td>
-                  <td className="p-4 font-semibold text-foreground">${r.amount.toFixed(2)}</td>
-                  <td className="p-4">
-                    <span className="capitalize">{r.method.replace("_", " ")}</span>
-                    {r.checkNumber && (
-                      <span className="block text-xs text-muted-foreground font-mono">
-                        Check #{r.checkNumber}
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    {r.status === "confirmed" ? (
-                      <Badge variant="success">Confirmed</Badge>
-                    ) : (
-                      <Badge variant="warning">Awaiting Staff Check Clearance</Badge>
-                    )}
-                  </td>
-                  <td className="p-4 text-right">
-                    {r.status === "pending_reconciliation" ? (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => handleReconcile(r.id, r.member)}
-                      >
-                        Reconcile & Clear Check
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Reconciled</span>
-                    )}
+              {records.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">
+                    No payment records found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                records.map((r) => (
+                  <tr key={r.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="p-4">
+                      <span className="font-semibold text-foreground block">{r.memberName}</span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        @{r.memberUsername}
+                      </span>
+                      {r.notes && (
+                        <span className="block text-[11px] text-muted-foreground/80 italic mt-0.5">
+                          Note: {r.notes}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-muted-foreground">{r.year}</td>
+                    <td className="p-4 font-semibold text-foreground">
+                      ${(r.amountCents / 100).toFixed(2)}
+                    </td>
+                    <td className="p-4">
+                      <span className="capitalize">{r.paymentMethod.replace("_", " ")}</span>
+                    </td>
+                    <td className="p-4">
+                      {r.status === "confirmed" ? (
+                        <Badge variant="success">Confirmed</Badge>
+                      ) : (
+                        <Badge variant="warning">Awaiting Clearance</Badge>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      {r.status === "pending" ? (
+                        reconcilingId === r.id ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <input
+                              type="text"
+                              placeholder="Check # or note..."
+                              value={reconcileNotes}
+                              onChange={(e) => setReconcileNotes(e.target.value)}
+                              className="rounded border border-input bg-background px-2 py-1 text-xs text-foreground w-36"
+                            />
+                            <Button
+                              size="sm"
+                              disabled={isSubmitting}
+                              onClick={() => handleReconcile(r.id, r.memberName)}
+                            >
+                              Confirm
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setReconcilingId(null);
+                                setReconcileNotes("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setReconcilingId(r.id)}
+                          >
+                            Reconcile Payment
+                          </Button>
+                        )
+                      ) : (
+                        <span className="text-xs text-muted-foreground font-medium">
+                          Reconciled
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

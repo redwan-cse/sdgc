@@ -56,3 +56,19 @@ export interface MembershipSummary {
   approvedBy?: string;
   isActive: boolean;
 }
+
+export interface DirectoryMember {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  phone?: string;
+  secondaryPhone?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  isMasterGardener: boolean;
+  interestsExperience?: string;
+  projectInterests: string[];
+}

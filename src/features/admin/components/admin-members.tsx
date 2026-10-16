@@ -4,63 +4,103 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { AdminMemberRecord } from "../types";
+import { approveMembershipAction, setUserRolesAction } from "../actions";
 
-interface MemberItem {
-  id: string;
-  username: string;
-  name: string;
-  email: string;
-  year: number;
-  paymentStatus: "confirmed" | "pending";
-  isApproved: boolean;
-  masterGardener: boolean;
-  roles: string[];
+interface AdminMembersProps {
+  initialMembers: AdminMemberRecord[];
 }
 
-const INITIAL_MEMBERS: MemberItem[] = [
-  {
-    id: "mem-1",
-    username: "daisy_miller",
-    name: "Daisy Miller",
-    email: "daisy.miller@example.com",
-    year: 2026,
-    paymentStatus: "confirmed",
-    isApproved: false,
-    masterGardener: true,
-    roles: ["member"],
-  },
-  {
-    id: "mem-2",
-    username: "george_harrison",
-    name: "George Harrison",
-    email: "george.h@example.com",
-    year: 2026,
-    paymentStatus: "confirmed",
-    isApproved: true,
-    masterGardener: false,
-    roles: ["member", "editor"],
-  },
-  {
-    id: "mem-3",
-    username: "eleanor_rigby",
-    name: "Eleanor Rigby",
-    email: "eleanor.r@example.com",
-    year: 2026,
-    paymentStatus: "pending",
-    isApproved: false,
-    masterGardener: true,
-    roles: ["member"],
-  },
-];
-
-export function AdminMembers() {
-  const [members, setMembers] = React.useState<MemberItem[]>(INITIAL_MEMBERS);
+export function AdminMembers({ initialMembers }: AdminMembersProps) {
+  const [members, setMembers] = React.useState<AdminMemberRecord[]>(initialMembers);
   const [filter, setFilter] = React.useState<string>("");
   const [actionNotice, setActionNotice] = React.useState<string | null>(null);
+  const [isError, setIsError] = React.useState<boolean>(false);
+  const [selectedUserForRoles, setSelectedUserForRoles] = React.useState<AdminMemberRecord | null>(
+    null,
+  );
+  const [assignedRoles, setAssignedRoles] = React.useState<("admin" | "editor" | "treasurer")[]>(
+    [],
+  );
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const handleApprove = (id: string, name: string) => {
-    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, isApproved: true } : m)));
-    setActionNotice(`Membership approved for ${name}. Notification recorded in audit log.`);
+  // Sync if initialMembers changes
+  React.useEffect(() => {
+    setMembers(initialMembers);
+  }, [initialMembers]);
+
+  const handleApprove = async (id: string, name: string, version: number) => {
+    setIsSubmitting(true);
+    setIsError(false);
+    try {
+      const res = await approveMembershipAction({
+        membershipId: id,
+        expectedVersion: version,
+      });
+
+      if (res.success) {
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.id === id
+              ? { ...m, isApproved: true, applicationStatus: "approved", version: version + 1 }
+              : m,
+          ),
+        );
+        setActionNotice(`Membership approved for ${name}. Audit record created.`);
+      } else {
+        setIsError(true);
+        setActionNotice(`Could not approve ${name}: ${res.error}`);
+      }
+    } catch (err: unknown) {
+      setIsError(true);
+      setActionNotice(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenRoleModal = (member: AdminMemberRecord) => {
+    setSelectedUserForRoles(member);
+    const privilegedRoles = member.roles.filter(
+      (r): r is "admin" | "editor" | "treasurer" =>
+        r === "admin" || r === "editor" || r === "treasurer",
+    );
+    setAssignedRoles(privilegedRoles);
+  };
+
+  const handleSaveRoles = async () => {
+    if (!selectedUserForRoles) return;
+    setIsSubmitting(true);
+    setIsError(false);
+    try {
+      const res = await setUserRolesAction({
+        userId: selectedUserForRoles.userId,
+        roles: assignedRoles,
+      });
+
+      if (res.success) {
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.userId === selectedUserForRoles.userId
+              ? {
+                  ...m,
+                  roles: ["member", ...assignedRoles],
+                }
+              : m,
+          ),
+        );
+        setActionNotice(`Updated roles for ${selectedUserForRoles.name}.`);
+        setSelectedUserForRoles(null);
+      } else {
+        setIsError(true);
+        setActionNotice(`Role update rejected: ${res.error}`);
+      }
+    } catch (err: unknown) {
+      setIsError(true);
+      setActionNotice(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const filteredMembers = members.filter(
@@ -78,7 +118,8 @@ export function AdminMembers() {
             Member Management & Approvals
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Review member registrations, verify payment state, and issue manual annual approvals.
+            Review member registrations, verify payment state, manage RBAC roles, and issue manual
+            annual approvals.
           </p>
         </div>
 
@@ -93,7 +134,11 @@ export function AdminMembers() {
 
       {actionNotice && (
         <div
-          className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-600/30 p-3 text-xs text-emerald-800 dark:text-emerald-300"
+          className={`rounded-lg p-3 text-xs border ${
+            isError
+              ? "bg-rose-50 dark:bg-rose-950/30 border-rose-600/30 text-rose-800 dark:text-rose-300"
+              : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-600/30 text-emerald-800 dark:text-emerald-300"
+          }`}
           role="status"
         >
           {actionNotice}
@@ -118,7 +163,7 @@ export function AdminMembers() {
                 <tr key={member.id} className="hover:bg-muted/30 transition-colors">
                   <td className="p-4">
                     <span className="font-semibold text-foreground block">{member.name}</span>
-                    {member.masterGardener && (
+                    {member.isMasterGardener && (
                       <span className="text-[11px] text-primary font-medium">Master Gardener</span>
                     )}
                   </td>
@@ -143,7 +188,7 @@ export function AdminMembers() {
                     )}
                   </td>
                   <td className="p-4">
-                    <div className="flex gap-1 flex-wrap">
+                    <div className="flex gap-1 flex-wrap items-center">
                       {member.roles.map((r) => (
                         <span
                           key={r}
@@ -152,15 +197,26 @@ export function AdminMembers() {
                           {r}
                         </span>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenRoleModal(member)}
+                        className="text-[10px] text-primary hover:underline ml-1 cursor-pointer font-medium"
+                      >
+                        Edit
+                      </button>
                     </div>
                   </td>
-                  <td className="p-4 text-right">
+                  <td className="p-4 text-right space-x-2">
                     {!member.isApproved ? (
-                      <Button size="sm" onClick={() => handleApprove(member.id, member.name)}>
+                      <Button
+                        size="sm"
+                        disabled={isSubmitting}
+                        onClick={() => handleApprove(member.id, member.name, member.version)}
+                      >
                         Approve Membership
                       </Button>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Approved</span>
+                      <span className="text-xs text-muted-foreground font-medium">Approved</span>
                     )}
                   </td>
                 </tr>
@@ -169,6 +225,70 @@ export function AdminMembers() {
           </table>
         </div>
       </div>
+
+      {/* Role Management Modal */}
+      {selectedUserForRoles && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4">
+            <h2 className="font-serif text-xl font-bold text-foreground">
+              Manage Roles: {selectedUserForRoles.name}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Assign administrative capabilities. Base member access is automatically granted.
+            </p>
+
+            <div className="space-y-3 pt-2">
+              {(["admin", "editor", "treasurer"] as const).map((role) => {
+                const checked = assignedRoles.includes(role);
+                return (
+                  <label
+                    key={role}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background cursor-pointer hover:bg-muted/30"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setAssignedRoles([...assignedRoles, role]);
+                        } else {
+                          setAssignedRoles(assignedRoles.filter((r) => r !== role));
+                        }
+                      }}
+                      className="rounded border-input text-primary h-4 w-4"
+                    />
+                    <div>
+                      <span className="text-sm font-semibold text-foreground uppercase tracking-wider block">
+                        {role}
+                      </span>
+                      <span className="text-xs text-muted-foreground block">
+                        {role === "admin" && "Full administrative capabilities across all systems"}
+                        {role === "editor" && "Manage site content, events, and photo galleries"}
+                        {role === "treasurer" &&
+                          "Reconcile paper checks and view financial records"}
+                      </span>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedUserForRoles(null)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveRoles} disabled={isSubmitting}>
+                Save Roles
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

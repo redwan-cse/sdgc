@@ -6,9 +6,17 @@ import { FIXTURE_MEDIA, FIXTURE_ALBUMS } from "../../../../tests/fixtures/public
 import type { MediaItem, AlbumSummary } from "@/features/media/types";
 import { Button } from "@/components/ui/button";
 
-export function AdminMedia() {
-  const [mediaList] = React.useState<MediaItem[]>(FIXTURE_MEDIA);
-  const [albums] = React.useState<AlbumSummary[]>(FIXTURE_ALBUMS);
+interface AdminMediaProps {
+  initialMedia?: MediaItem[];
+  initialAlbums?: AlbumSummary[];
+}
+
+export function AdminMedia({
+  initialMedia = FIXTURE_MEDIA,
+  initialAlbums = FIXTURE_ALBUMS,
+}: AdminMediaProps) {
+  const [mediaList] = React.useState<MediaItem[]>(initialMedia);
+  const [albums] = React.useState<AlbumSummary[]>(initialAlbums);
   const [notice, setNotice] = React.useState<string | null>(null);
 
   return (
@@ -27,7 +35,7 @@ export function AdminMedia() {
         <Button
           onClick={() =>
             setNotice(
-              "Photo upload dialog: In Phase 3/5 this handles uploads directly to Supabase Storage media bucket.",
+              "Photo upload dialog: Media items can be uploaded directly to Supabase Storage media bucket by editors.",
             )
           }
         >
@@ -98,13 +106,13 @@ export function AdminMedia() {
                     )}
                   </td>
                   <td className="p-4 text-xs text-muted-foreground">{item.year || "2026"}</td>
-                  <td className="p-4 text-right space-x-2">
+                  <td className="p-4 text-right">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setNotice(`Editing alt text for: ${item.id}`)}
+                      onClick={() => setNotice(`Editing alt text for: ${item.alt}`)}
                     >
-                      Edit Alt/Caption
+                      Edit Alt Text
                     </Button>
                   </td>
                 </tr>

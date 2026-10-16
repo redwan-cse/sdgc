@@ -58,6 +58,25 @@ export async function requireCapability(
   return user;
 }
 
+export async function hasCapability(capability: Capability, userId?: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: hasCap, error } = await supabase.rpc("has_capability", {
+    capability_name: capability,
+    check_user_id: userId,
+  });
+
+  return !error && !!hasCap;
+}
+
+export async function checkIsActiveMember(userId?: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("is_active_member", {
+    check_user_id: userId,
+  });
+
+  return !error && !!data;
+}
+
 export async function requireRole(role: AppRole, returnTo?: string): Promise<AuthenticatedUser> {
   const user = await requireUser(returnTo);
   const supabase = await createClient();

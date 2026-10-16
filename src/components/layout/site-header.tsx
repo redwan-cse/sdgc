@@ -20,6 +20,7 @@ const NAV_LINKS = [
 
 const AUTH_LINKS = [
   { href: "/login", label: "Member Login" },
+  { href: "/directory", label: "Directory" },
   { href: "/membership", label: "Annual Dues" },
   { href: "/profile", label: "My Profile" },
   { href: "/admin", label: "Admin Panel" },

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { FIXTURE_PAGES, FIXTURE_MEDIA } from "../../../../tests/fixtures/public-content";
+import { FIXTURE_PAGES } from "../../../../tests/fixtures/public-content";
 
 export const metadata = {
   title: "Annual Garden Walk",
@@ -8,9 +8,59 @@ export const metadata = {
     "Explore the 2026 Saugatuck Douglas Garden Walk: tour exquisite private gardens and support local community beautification and scholarships.",
 };
 
+const FEATURED_GARDEN_WALK_PHOTOS = [
+  {
+    id: "gw-1",
+    src: "/images/gallery/garden-walk/2O8A8017-scaled.jpeg",
+    alt: "Lush shade garden with mature hostas and Japanese maples",
+    caption: "Verdant shade sanctuary featuring woodland perennials and Japanese maples.",
+  },
+  {
+    id: "gw-2",
+    src: "/images/gallery/garden-walk/2O8A8020-scaled.jpeg",
+    alt: "Sunlit perennial borders in peak July bloom",
+    caption: "Coneflowers, black-eyed Susans, and ornamental grasses in full sun.",
+  },
+  {
+    id: "gw-3",
+    src: "/images/gallery/garden-walk/2O8A8022-scaled.jpeg",
+    alt: "Stone garden pathway and blooming cottage borders",
+    caption: "Handcrafted stone walkway winding through colorful pollinator beds.",
+  },
+  {
+    id: "gw-4",
+    src: "/images/gallery/garden-walk/2O8A8025-scaled.jpeg",
+    alt: "Architectural garden design with outdoor living spaces",
+    caption: "Bespoke garden sitting area integrating native Michigan plantings.",
+  },
+  {
+    id: "gw-5",
+    src: "/images/gallery/garden-walk/2O8A8032-scaled.jpeg",
+    alt: "Woodland garden path beneath mature oaks",
+    caption: "Tranquil woodland stroll garden in Saugatuck.",
+  },
+  {
+    id: "gw-6",
+    src: "/images/gallery/garden-walk/2O8A8037-scaled.jpeg",
+    alt: "Cottage perennial border bursting with vibrant color",
+    caption: "Delphiniums, daylilies, and phlox in an English-style cottage garden.",
+  },
+  {
+    id: "gw-7",
+    src: "/images/gallery/garden-walk/2O8A8041-scaled.jpeg",
+    alt: "Natural garden water feature and reflection pool",
+    caption: "Custom water garden providing a haven for wildlife and pollinators.",
+  },
+  {
+    id: "gw-8",
+    src: "/images/gallery/garden-walk/2O8A8043-scaled.jpeg",
+    alt: "Lakeshore hydrangea borders and sculptured shrubs",
+    caption: "Magnificent Annabelle and panicle hydrangeas framing private grounds.",
+  },
+];
+
 export default function GardenWalkPage() {
   const walk = FIXTURE_PAGES.gardenWalk;
-  const gardenPhotos = FIXTURE_MEDIA.slice(0, 3);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-12">
@@ -70,19 +120,24 @@ export default function GardenWalkPage() {
       {/* Highlights Gallery Preview */}
       <section className="space-y-6">
         <div className="flex justify-between items-baseline">
-          <h2 className="font-serif text-2xl font-bold text-foreground">
-            Moments from Past Garden Walks
-          </h2>
+          <div>
+            <h2 className="font-serif text-2xl font-bold text-foreground">
+              Photographs from Past Garden Walks
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Scenes captured from private garden retreats featured on past annual club tours.
+            </p>
+          </div>
           <Link href="/gallery" className="text-sm font-semibold text-primary hover:underline">
             View Complete Gallery &rarr;
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {gardenPhotos.map((photo) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {FEATURED_GARDEN_WALK_PHOTOS.map((photo) => (
             <div
               key={photo.id}
-              className="overflow-hidden rounded-xl border border-border bg-card shadow-xs group"
+              className="overflow-hidden rounded-xl border border-border bg-card shadow-xs group flex flex-col"
             >
               <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
                 <Image
@@ -93,7 +148,7 @@ export default function GardenWalkPage() {
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
-              <p className="p-3 text-xs text-muted-foreground">{photo.caption}</p>
+              <p className="p-3 text-xs text-muted-foreground flex-1">{photo.caption}</p>
             </div>
           ))}
         </div>

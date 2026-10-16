@@ -136,14 +136,14 @@ isOneToOne: false
                   ]
                 },"memberships": {
                   Row: {
-                    "approved_at": string | null,"approved_by": string | null,"created_at": string,"id": string,"notes": string | null,"status": string,"term_id": string,"updated_at": string,"user_id": string
+                    "approved_at": string | null,"approved_by": string | null,"created_at": string,"id": string,"notes": string | null,"status": string,"term_id": string,"updated_at": string,"user_id": string,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "approved_at"?: string | null,"approved_by"?: string | null,"created_at"?: string,"id"?: string,"notes"?: string | null,"status"?: string,"term_id": string,"updated_at"?: string,"user_id": string
+                    "approved_at"?: string | null,"approved_by"?: string | null,"created_at"?: string,"id"?: string,"notes"?: string | null,"status"?: string,"term_id": string,"updated_at"?: string,"user_id": string,"version"?: number
                   }
                   Update: {
-                    "approved_at"?: string | null,"approved_by"?: string | null,"created_at"?: string,"id"?: string,"notes"?: string | null,"status"?: string,"term_id"?: string,"updated_at"?: string,"user_id"?: string
+                    "approved_at"?: string | null,"approved_by"?: string | null,"created_at"?: string,"id"?: string,"notes"?: string | null,"status"?: string,"term_id"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -234,14 +234,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "address_line1": string | null,"address_line2": string | null,"birth_day": number | null,"birth_month": number | null,"city": string | null,"created_at": string,"first_name": string,"id": string,"interests_experience": string | null,"is_master_gardener": boolean,"last_name": string,"phone": string | null,"postal_code": string | null,"secondary_phone": string | null,"spouse_name": string | null,"state": string | null,"updated_at": string,"username": string
+                    "address_line1": string | null,"address_line2": string | null,"birth_day": number | null,"birth_month": number | null,"city": string | null,"created_at": string,"directory_opt_out": boolean,"first_name": string,"id": string,"interests_experience": string | null,"is_master_gardener": boolean,"last_name": string,"phone": string | null,"postal_code": string | null,"secondary_phone": string | null,"spouse_name": string | null,"state": string | null,"updated_at": string,"username": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "address_line1"?: string | null,"address_line2"?: string | null,"birth_day"?: number | null,"birth_month"?: number | null,"city"?: string | null,"created_at"?: string,"first_name": string,"id": string,"interests_experience"?: string | null,"is_master_gardener"?: boolean,"last_name": string,"phone"?: string | null,"postal_code"?: string | null,"secondary_phone"?: string | null,"spouse_name"?: string | null,"state"?: string | null,"updated_at"?: string,"username": string
+                    "address_line1"?: string | null,"address_line2"?: string | null,"birth_day"?: number | null,"birth_month"?: number | null,"city"?: string | null,"created_at"?: string,"directory_opt_out"?: boolean,"first_name": string,"id": string,"interests_experience"?: string | null,"is_master_gardener"?: boolean,"last_name": string,"phone"?: string | null,"postal_code"?: string | null,"secondary_phone"?: string | null,"spouse_name"?: string | null,"state"?: string | null,"updated_at"?: string,"username": string
                   }
                   Update: {
-                    "address_line1"?: string | null,"address_line2"?: string | null,"birth_day"?: number | null,"birth_month"?: number | null,"city"?: string | null,"created_at"?: string,"first_name"?: string,"id"?: string,"interests_experience"?: string | null,"is_master_gardener"?: boolean,"last_name"?: string,"phone"?: string | null,"postal_code"?: string | null,"secondary_phone"?: string | null,"spouse_name"?: string | null,"state"?: string | null,"updated_at"?: string,"username"?: string
+                    "address_line1"?: string | null,"address_line2"?: string | null,"birth_day"?: number | null,"birth_month"?: number | null,"city"?: string | null,"created_at"?: string,"directory_opt_out"?: boolean,"first_name"?: string,"id"?: string,"interests_experience"?: string | null,"is_master_gardener"?: boolean,"last_name"?: string,"phone"?: string | null,"postal_code"?: string | null,"secondary_phone"?: string | null,"spouse_name"?: string | null,"state"?: string | null,"updated_at"?: string,"username"?: string
                   }
                   Relationships: [
 
@@ -308,7 +308,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "has_capability":
+            "approve_membership":
+{ Args: { "p_expected_version"?: number,"p_membership_id": string }; Returns: Json
+                           },
+"has_capability":
 { Args: { "capability_name": string,"check_user_id"?: string }; Returns: boolean
                            },
 "has_role":
@@ -316,6 +319,9 @@ isOneToOne: false
                            },
 "is_active_member":
 { Args: { "check_user_id"?: string }; Returns: boolean
+                           },
+"reconcile_payment":
+{ Args: { "p_notes"?: string,"p_payment_id": string }; Returns: Json
                            }
           }
           Enums: {

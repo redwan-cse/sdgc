@@ -1,38 +1,38 @@
 "use client";
 
 import * as React from "react";
-import type { ContactMessageRecord } from "@/features/contact/types";
+import type { AdminMessageRecord } from "../types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { updateMessageStatusAction } from "../actions";
 
-const INITIAL_MESSAGES: ContactMessageRecord[] = [
-  {
-    id: "msg-101",
-    name: "Thomas Bailey",
-    email: "tbailey@example.com",
-    phone: "(269) 555-8821",
-    message:
-      "Hello! We recently purchased a home in Douglas with historic perennial gardens. Does SDGC offer garden consultations or have advice on restoring heirloom roses?",
-    createdAt: "2026-10-14T15:30:00Z",
-    status: "unread",
-  },
-  {
-    id: "msg-102",
-    name: "Sarah Jenkins",
-    email: "sjenkins@example.com",
-    phone: "",
-    message:
-      "I am interested in buying advance tickets for a group of 8 for the 2026 Garden Walk. Can tickets be mailed or held at will call?",
-    createdAt: "2026-10-12T11:15:00Z",
-    status: "read",
-  },
-];
+interface AdminMessagesProps {
+  initialMessages: AdminMessageRecord[];
+}
 
-export function AdminMessages() {
-  const [messages, setMessages] = React.useState<ContactMessageRecord[]>(INITIAL_MESSAGES);
-  const [activeMessage, setActiveMessage] = React.useState<ContactMessageRecord | null>(null);
+export function AdminMessages({ initialMessages }: AdminMessagesProps) {
+  const [messages, setMessages] = React.useState<AdminMessageRecord[]>(initialMessages);
+  const [activeMessage, setActiveMessage] = React.useState<AdminMessageRecord | null>(
+    initialMessages[0] || null,
+  );
+  const [notice, setNotice] = React.useState<string | null>(null);
 
-  const handleMarkRead = (id: string) => {
-    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status: "read" as const } : m)));
+  React.useEffect(() => {
+    setMessages(initialMessages);
+    if (!activeMessage && initialMessages.length > 0) {
+      setActiveMessage(initialMessages[0] ?? null);
+    }
+  }, [initialMessages, activeMessage]);
+
+  const handleStatusChange = async (id: string, newStatus: "unread" | "read" | "archived") => {
+    const res = await updateMessageStatusAction(id, newStatus);
+    if (res.success) {
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status: newStatus } : m)));
+      if (activeMessage?.id === id) {
+        setActiveMessage((prev) => (prev ? { ...prev, status: newStatus } : null));
+      }
+      setNotice(`Message marked as ${newStatus}.`);
+    }
   };
 
   return (
@@ -45,41 +45,60 @@ export function AdminMessages() {
         </p>
       </div>
 
+      {notice && (
+        <div
+          className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-600/30 p-3 text-xs text-emerald-800 dark:text-emerald-300"
+          role="status"
+        >
+          {notice}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Messages List */}
         <div className="md:col-span-1 rounded-xl border border-border bg-card shadow-xs overflow-hidden divide-y divide-border">
           <div className="p-3 bg-muted/40 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
             Inquiries ({messages.length})
           </div>
-          {messages.map((m) => {
-            const isSelected = activeMessage?.id === m.id;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => {
-                  setActiveMessage(m);
-                  if (m.status === "unread") handleMarkRead(m.id);
-                }}
-                className={`w-full text-left p-4 transition-colors hover:bg-muted/30 cursor-pointer ${
-                  isSelected ? "bg-primary/10 border-l-4 border-primary" : ""
-                }`}
-              >
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-semibold text-sm text-foreground">{m.name}</span>
-                  {m.status === "unread" ? (
-                    <Badge variant="warning">New</Badge>
-                  ) : (
-                    <Badge variant="outline">Read</Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-2">{m.message}</p>
-                <span className="text-[10px] text-muted-foreground block mt-2">
-                  {new Date(m.createdAt).toLocaleDateString()}
-                </span>
-              </button>
-            );
-          })}
+          {messages.length === 0 ? (
+            <div className="p-6 text-center text-xs text-muted-foreground">
+              No inquiries received yet.
+            </div>
+          ) : (
+            messages.map((m) => {
+              const isSelected = activeMessage?.id === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveMessage(m);
+                    if (m.status === "unread") {
+                      handleStatusChange(m.id, "read");
+                    }
+                  }}
+                  className={`w-full text-left p-4 transition-colors hover:bg-muted/30 cursor-pointer ${
+                    isSelected ? "bg-primary/10 border-l-4 border-primary" : ""
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-semibold text-sm text-foreground">{m.name}</span>
+                    {m.status === "unread" ? (
+                      <Badge variant="warning">New</Badge>
+                    ) : m.status === "archived" ? (
+                      <Badge variant="outline">Archived</Badge>
+                    ) : (
+                      <Badge variant="secondary">Read</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{m.message}</p>
+                  <span className="text-[10px] text-muted-foreground block mt-2">
+                    {new Date(m.createdAt).toLocaleDateString()}
+                  </span>
+                </button>
+              );
+            })
+          )}
         </div>
 
         {/* Message Detail Pane */}
@@ -104,22 +123,47 @@ export function AdminMessages() {
                     <p className="text-xs text-muted-foreground">Phone: {activeMessage.phone}</p>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(activeMessage.createdAt).toLocaleString()}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(activeMessage.createdAt).toLocaleString()}
+                  </span>
+                  <Badge variant={activeMessage.status === "unread" ? "warning" : "outline"}>
+                    {activeMessage.status}
+                  </Badge>
+                </div>
               </div>
 
               <div className="prose prose-sm max-w-none text-foreground py-2 leading-relaxed">
                 <p className="whitespace-pre-wrap">{activeMessage.message}</p>
               </div>
 
-              <div className="pt-4 border-t border-border flex gap-3">
+              <div className="pt-4 border-t border-border flex items-center justify-between gap-3">
                 <a
                   href={`mailto:${activeMessage.email}?subject=RE: Saugatuck Douglas Garden Club Inquiry`}
                   className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                 >
-                  Reply via Email
+                  Reply via Email &rarr;
                 </a>
+
+                <div className="space-x-2">
+                  {activeMessage.status !== "archived" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleStatusChange(activeMessage.id, "archived")}
+                    >
+                      Archive Message
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleStatusChange(activeMessage.id, "read")}
+                    >
+                      Move to Inbox
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           ) : (

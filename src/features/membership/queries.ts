@@ -2,6 +2,7 @@ import "server-only";
 
 import { requireUser } from "@/features/auth/authorization";
 import type {
+  DirectoryMember,
   MemberProfile,
   MembershipSummary,
   ProjectInterestCode,
@@ -127,4 +128,56 @@ export async function getOwnMembershipSummary(): Promise<MembershipSummary | nul
     approvedBy: membership.approved_by ?? undefined,
     isActive,
   };
+}
+
+export async function getMemberDirectory(): Promise<DirectoryMember[]> {
+  const supabase = await createClient();
+
+  const { data: profiles, error } = await supabase
+    .from("profiles")
+    .select(
+      `
+      id,
+      username,
+      first_name,
+      last_name,
+      phone,
+      secondary_phone,
+      city,
+      state,
+      postal_code,
+      is_master_gardener,
+      interests_experience,
+      profile_interests (
+        project_code
+      )
+    `,
+    )
+    .order("last_name", { ascending: true });
+
+  if (error || !profiles) {
+    return [];
+  }
+
+  return profiles.map((p) => {
+    const interests = Array.isArray(p.profile_interests)
+      ? p.profile_interests.map((pi) => pi.project_code)
+      : [];
+
+    return {
+      id: p.id,
+      username: p.username,
+      firstName: p.first_name,
+      lastName: p.last_name,
+      fullName: `${p.first_name} ${p.last_name}`.trim(),
+      phone: p.phone ?? undefined,
+      secondaryPhone: p.secondary_phone ?? undefined,
+      city: p.city ?? undefined,
+      state: p.state ?? undefined,
+      postalCode: p.postal_code ?? undefined,
+      isMasterGardener: p.is_master_gardener,
+      interestsExperience: p.interests_experience ?? undefined,
+      projectInterests: interests,
+    };
+  });
 }
