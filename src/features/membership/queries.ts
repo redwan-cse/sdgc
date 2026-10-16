@@ -49,6 +49,7 @@ export async function getOwnProfile(): Promise<MemberProfile | null> {
     birthDay: profile.birth_day ?? undefined,
     spouseFirstName: profile.spouse_name ?? undefined,
     masterGardener: profile.is_master_gardener,
+    directoryOptOut: profile.directory_opt_out ?? false,
     interestsExperience: profile.interests_experience ?? undefined,
     projectInterests,
     createdAt: profile.created_at,
@@ -133,49 +134,31 @@ export async function getOwnMembershipSummary(): Promise<MembershipSummary | nul
 export async function getMemberDirectory(): Promise<DirectoryMember[]> {
   const supabase = await createClient();
 
-  const { data: profiles, error } = await supabase
-    .from("profiles")
-    .select(
-      `
-      id,
-      username,
-      first_name,
-      last_name,
-      phone,
-      secondary_phone,
-      city,
-      state,
-      postal_code,
-      is_master_gardener,
-      interests_experience,
-      profile_interests (
-        project_code
-      )
-    `,
-    )
+  const { data: members, error } = await supabase
+    .from("member_directory")
+    .select("*")
     .order("last_name", { ascending: true });
 
-  if (error || !profiles) {
+  if (error || !members) {
     return [];
   }
 
-  return profiles.map((p) => {
-    const interests = Array.isArray(p.profile_interests)
-      ? p.profile_interests.map((pi) => pi.project_code)
+  return members.map((p) => {
+    const interests = Array.isArray(p.project_interests)
+      ? (p.project_interests as unknown as string[])
       : [];
 
     return {
-      id: p.id,
-      username: p.username,
-      firstName: p.first_name,
-      lastName: p.last_name,
-      fullName: `${p.first_name} ${p.last_name}`.trim(),
+      id: p.id ?? "",
+      username: p.username ?? "",
+      firstName: p.first_name ?? "",
+      lastName: p.last_name ?? "",
+      fullName: `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim(),
       phone: p.phone ?? undefined,
       secondaryPhone: p.secondary_phone ?? undefined,
       city: p.city ?? undefined,
       state: p.state ?? undefined,
-      postalCode: p.postal_code ?? undefined,
-      isMasterGardener: p.is_master_gardener,
+      isMasterGardener: Boolean(p.is_master_gardener),
       interestsExperience: p.interests_experience ?? undefined,
       projectInterests: interests,
     };

@@ -29,8 +29,21 @@ if (fs.existsSync(".env.local")) {
   }
 }
 
-if (!supabaseUrl.includes("127.0.0.1") && !supabaseUrl.includes("localhost")) {
-  throw new Error("Integration tests only permitted against local loopback Supabase stack");
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY && serviceRoleKey) {
+  process.env.SUPABASE_SERVICE_ROLE_KEY = serviceRoleKey;
+}
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL && supabaseUrl) {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = supabaseUrl;
+}
+if (!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY && publishableKey) {
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = publishableKey;
+}
+
+const parsedUrl = new URL(supabaseUrl);
+if (parsedUrl.hostname !== "127.0.0.1" && parsedUrl.hostname !== "localhost") {
+  throw new Error(
+    `Integration tests only permitted against local loopback Supabase stack. Target hostname was: ${parsedUrl.hostname}`,
+  );
 }
 
 export function createAnonClient(): SupabaseClient<Database> {

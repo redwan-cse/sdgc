@@ -41,6 +41,7 @@ export async function updateOwnProfileAction(
       birth_month: data.birthMonth || null,
       birth_day: data.birthDay || null,
       is_master_gardener: data.masterGardener,
+      directory_opt_out: data.directoryOptOut ?? false,
       interests_experience: data.interestsExperience || null,
     })
     .eq("id", user.id);

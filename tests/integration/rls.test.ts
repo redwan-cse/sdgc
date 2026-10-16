@@ -151,21 +151,32 @@ describe("Real-Client RLS Access and Denial Tests", () => {
     it("denies regular member from forging payment confirmation", async () => {
       const { client, userId } = await createAuthClient("member@sdgc.local");
 
+      // Fetch valid membership id for this member
+      const { data: mem } = await client
+        .from("memberships")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
       const { error } = await client
         .from("payments")
         .insert({
           user_id: userId,
-          membership_id: "00000000-0000-0000-0000-000000000001",
+          membership_id: mem?.id || crypto.randomUUID(),
           term_id: fixtures.termId,
           amount_cents: 5000,
           currency: "USD",
-          status: "succeeded",
+          status: "confirmed",
           payment_method: "credit_card",
         })
         .select();
 
-      // RLS policy denies regular authenticated users from inserting succeeded payments directly
+      // RLS policy denies regular authenticated users from inserting confirmed payments directly
       expect(error).not.toBeNull();
+      expect(
+        error?.code === "42501" ||
+          /violates row-level security|permission denied/i.test(error?.message || ""),
+      ).toBe(true);
     });
   });
 

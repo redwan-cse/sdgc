@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { createAnonClient, createServiceClient, createAuthClient } from "./setup";
+import { submitContactAction } from "@/features/contact/actions";
 
 describe("Payments & Dues Workflows (Integration)", () => {
   let memberClient: Awaited<ReturnType<typeof createAuthClient>>;
@@ -23,16 +24,32 @@ describe("Payments & Dues Workflows (Integration)", () => {
   });
 
   it("denies anonymous users from inserting payments", async () => {
+    // 1. Fetch valid term and membership
+    const { data: term } = await serviceClient
+      .from("membership_terms")
+      .select("id")
+      .eq("year", 2026)
+      .single();
+    const { data: mem } = await serviceClient
+      .from("memberships")
+      .select("id, user_id")
+      .limit(1)
+      .single();
+
     const { error } = await anonClient.from("payments").insert({
-      user_id: memberClient.userId,
-      membership_id: crypto.randomUUID(),
-      term_id: crypto.randomUUID(),
+      user_id: mem?.user_id || memberClient.userId,
+      membership_id: mem?.id || crypto.randomUUID(),
+      term_id: term?.id || crypto.randomUUID(),
       amount_cents: 5000,
       currency: "USD",
       payment_method: "credit_card",
       status: "confirmed",
     });
     expect(error).not.toBeNull();
+    expect(
+      error?.code === "42501" ||
+        /violates row-level security|permission denied/i.test(error?.message || ""),
+    ).toBe(true);
   });
 
   it("allows member to view only their own payment records", async () => {
@@ -181,23 +198,32 @@ describe("Payments & Dues Workflows (Integration)", () => {
     expect(verifiedMembership?.status).toBe("pending");
   });
 
-  it("verifies contact form insertion is public but contact inbox reading is denied to non-staff", async () => {
-    // 1. Anon can insert contact message
+  it("verifies direct contact insertion is denied but server action succeeds, and contact inbox reading is denied to non-staff", async () => {
+    // 1. Direct table insert is denied to anon (Work Package R1.3)
     const { error: insertError } = await anonClient.from("contact_messages").insert({
       name: "Public Inquirer",
       email: "visitor@example.com",
       message: "Can you provide more information about the 2026 Garden Walk tour schedule?",
     });
-    expect(insertError).toBeNull();
+    expect(insertError).not.toBeNull();
+    expect(insertError?.code).toBe("42501");
 
-    // 2. Anon cannot read contact inbox (table grant denied)
+    // 2. Server action submission succeeds
+    const actionResult = await submitContactAction({
+      name: "Public Inquirer",
+      email: "visitor@example.com",
+      message: "Can you provide more information about the 2026 Garden Walk tour schedule?",
+    });
+    expect(actionResult.success).toBe(true);
+
+    // 3. Anon cannot read contact inbox (table grant denied)
     const { data: anonMessages, error: selectError } = await anonClient
       .from("contact_messages")
       .select("*");
     expect(selectError).not.toBeNull();
     expect(anonMessages).toBeNull();
 
-    // 3. Member cannot read contact inbox (RLS policy filters out all rows)
+    // 4. Member cannot read contact inbox (RLS policy filters out all rows)
     const { data: memberMessages } = await memberClient.client.from("contact_messages").select("*");
     expect(memberMessages?.length ?? 0).toBe(0);
   });

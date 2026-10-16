@@ -125,18 +125,61 @@ export function parseArgs(argv = process.argv.slice(2)) {
       dryRun = false;
     } else if (arg === "--dry-run") {
       dryRun = true;
-    } else if (arg === "--input" && argv[i + 1]) {
+    } else if ((arg === "--input" || arg === "--input-dir") && argv[i + 1]) {
       inputDir = path.resolve(process.cwd(), argv[++i]);
     } else if (arg.startsWith("--input=")) {
+      inputDir = path.resolve(process.cwd(), arg.split("=")[1]);
+    } else if (arg.startsWith("--input-dir=")) {
       inputDir = path.resolve(process.cwd(), arg.split("=")[1]);
     } else if (arg === "--supabase-url" && argv[i + 1]) {
       supabaseUrl = argv[++i];
     } else if (arg.startsWith("--supabase-url=")) {
       supabaseUrl = arg.split("=")[1];
+    } else {
+      throw new Error(`Unrecognized argument: "${arg}". Use --input-dir, --apply, or --dry-run.`);
     }
   }
 
   return { dryRun, inputDir, supabaseUrl };
+}
+
+/**
+ * Reconciles imported user identity against existing database accounts.
+ * Prevents account takeover when usernames match but emails differ.
+ * @param {object} params
+ * @param {object|null} params.existingProfile
+ * @param {object|null} params.existingAuthUser
+ * @param {object} params.importedUser
+ * @returns {{ status: 'match' | 'conflict' | 'new', targetUserId?: string, reason?: string }}
+ */
+export function reconcileLegacyUserIdentity({ existingProfile, existingAuthUser, importedUser }) {
+  const importedEmail = importedUser.email?.trim().toLowerCase();
+
+  if (existingProfile && existingAuthUser) {
+    const existingEmail = existingAuthUser.email?.trim().toLowerCase();
+    if (existingEmail && existingEmail !== importedEmail) {
+      return {
+        status: "conflict",
+        reason: `Identity conflict for username "${importedUser.username}": existing account has email "${existingEmail}", but import specifies "${importedEmail}". Transfer rejected to prevent account takeover.`,
+      };
+    }
+  }
+
+  if (existingAuthUser && existingProfile) {
+    if (existingProfile.username !== importedUser.username) {
+      return {
+        status: "conflict",
+        reason: `Identity conflict for email "${importedUser.email}": existing profile has username "${existingProfile.username}", but import specifies "${importedUser.username}". Transfer rejected.`,
+      };
+    }
+  }
+
+  const targetUserId = existingProfile?.id || existingAuthUser?.id;
+  if (targetUserId) {
+    return { status: "match", targetUserId };
+  }
+
+  return { status: "new" };
 }
 
 /**
@@ -469,41 +512,54 @@ export async function runImport({
       // Find existing auth user or profile
       const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, username")
         .eq("username", user.username)
         .maybeSingle();
 
-      let targetUserId = existingProfile?.id;
+      let existingAuthUser = null;
+      if (existingProfile) {
+        const { data: authData } = await supabase.auth.admin.getUserById(existingProfile.id);
+        existingAuthUser = authData?.user || null;
+      } else {
+        const { data: authLookup } = await supabase.auth.admin.listUsers();
+        existingAuthUser =
+          authLookup?.users?.find((u) => u.email?.toLowerCase() === user.email.toLowerCase()) ||
+          null;
+      }
+
+      const reconciliation = reconcileLegacyUserIdentity({
+        existingProfile,
+        existingAuthUser,
+        importedUser: user,
+      });
+
+      if (reconciliation.status === "conflict") {
+        report.counts.users.rejected++;
+        report.warnings.push(reconciliation.reason);
+        continue;
+      }
+
+      let targetUserId = reconciliation.targetUserId;
 
       if (!targetUserId) {
-        // If not in profiles, lookup in auth.users by email
-        const { data: authLookup } = await supabase.auth.admin.listUsers();
-        const existingAuth = authLookup?.users?.find(
-          (u) => u.email?.toLowerCase() === user.email.toLowerCase(),
-        );
+        // Provision with secure random invitation password; never copy WP hash!
+        const secureTempPassword = `SDGC_ResetRequired_${crypto.randomBytes(16).toString("hex")}`;
+        const { data: createdAuth, error: authErr } = await supabase.auth.admin.createUser({
+          email: user.email,
+          password: secureTempPassword,
+          email_confirm: true,
+          user_metadata: {
+            must_reset_password: true,
+            legacy_wp_id: user.legacy_id,
+          },
+        });
 
-        if (existingAuth) {
-          targetUserId = existingAuth.id;
-        } else {
-          // Provision with secure random invitation password; never copy WP hash!
-          const secureTempPassword = `SDGC_ResetRequired_${crypto.randomBytes(16).toString("hex")}`;
-          const { data: createdAuth, error: authErr } = await supabase.auth.admin.createUser({
-            email: user.email,
-            password: secureTempPassword,
-            email_confirm: true,
-            user_metadata: {
-              must_reset_password: true,
-              legacy_wp_id: user.legacy_id,
-            },
-          });
-
-          if (authErr || !createdAuth.user) {
-            report.counts.users.rejected++;
-            report.errors.push(`Auth creation failed for user: ${authErr?.message}`);
-            continue;
-          }
-          targetUserId = createdAuth.user.id;
+        if (authErr || !createdAuth.user) {
+          report.counts.users.rejected++;
+          report.errors.push(`Auth creation failed for user: ${authErr?.message}`);
+          continue;
         }
+        targetUserId = createdAuth.user.id;
       }
 
       // Upsert profile

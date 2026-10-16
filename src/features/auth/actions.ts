@@ -8,15 +8,7 @@ import { loginSchema, registerSchema } from "@/features/auth/validation";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
-
-function sanitizeReturnTo(returnTo?: string | null): string {
-  if (!returnTo) return "/profile";
-  // Prevent open redirect: must start with / and not //
-  if (returnTo.startsWith("/") && !returnTo.startsWith("//")) {
-    return returnTo;
-  }
-  return "/profile";
-}
+import { sanitizeReturnTo } from "./redirects";
 
 async function resolveIdentifierToEmail(identifier: string): Promise<string> {
   const trimmed = identifier.trim();

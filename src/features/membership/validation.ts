@@ -43,6 +43,7 @@ export const memberProfileSchema = z
     birthDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
     spouseFirstName: z.string().trim().optional().or(z.literal("")),
     masterGardener: z.boolean().default(false),
+    directoryOptOut: z.boolean().default(false),
     interestsExperience: z.string().trim().optional().or(z.literal("")),
     projectInterests: z.array(z.enum(projectCodes)).default([]),
   })

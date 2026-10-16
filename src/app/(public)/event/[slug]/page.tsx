@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getEventBySlug, listEvents } from "@/features/events/queries";
 import { EventDetailCard } from "@/features/events/components/event-detail-card";
+import { serializeJsonLd } from "@/lib/jsonld";
 
 interface EventDetailPageProps {
   params: Promise<{
@@ -84,7 +85,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
       <script
         type="application/ld+json"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data is safely serialized
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <EventDetailCard event={event} prevEvent={prevEvent} nextEvent={nextEvent} />
     </div>

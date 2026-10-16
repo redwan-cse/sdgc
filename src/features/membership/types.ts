@@ -27,6 +27,7 @@ export interface MemberProfileInput {
   birthDay?: number; // 1-31
   spouseFirstName?: string;
   masterGardener: boolean;
+  directoryOptOut?: boolean;
   interestsExperience?: string;
   projectInterests: ProjectInterestCode[];
 }

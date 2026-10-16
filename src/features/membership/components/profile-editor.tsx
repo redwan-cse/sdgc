@@ -37,6 +37,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     birthDay: initialProfile.birthDay,
     spouseFirstName: initialProfile.spouseFirstName || "",
     masterGardener: initialProfile.masterGardener,
+    directoryOptOut: initialProfile.directoryOptOut ?? false,
     interestsExperience: initialProfile.interestsExperience || "",
     projectInterests: initialProfile.projectInterests,
   });
@@ -203,6 +204,15 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           />
         </div>
 
+        <div>
+          <Label htmlFor="prof-address2">Address Line 2 (Apt, Suite, Unit)</Label>
+          <Input
+            id="prof-address2"
+            value={formData.addressLine2 || ""}
+            onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+          />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="prof-city">City</Label>
@@ -312,12 +322,19 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           </div>
         </div>
 
-        <div className="pt-2">
+        <div className="pt-2 space-y-3">
           <Checkbox
             id="prof-master-gardener"
             label="I am a certified Master Gardener"
             checked={formData.masterGardener}
             onChange={(e) => setFormData({ ...formData, masterGardener: e.target.checked })}
+          />
+
+          <Checkbox
+            id="prof-directory-opt-out"
+            label="Directory Privacy: Do not display my profile in the member directory"
+            checked={Boolean(formData.directoryOptOut)}
+            onChange={(e) => setFormData({ ...formData, directoryOptOut: e.target.checked })}
           />
         </div>
 

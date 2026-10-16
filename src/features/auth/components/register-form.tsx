@@ -33,6 +33,7 @@ export function RegisterForm() {
     birthDay: undefined,
     spouseFirstName: "",
     masterGardener: false,
+    directoryOptOut: false,
     interestsExperience: "",
     projectInterests: [],
     password: "",

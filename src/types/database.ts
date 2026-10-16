@@ -156,6 +156,12 @@ isOneToOne: false
       foreignKeyName: "memberships_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
+      referencedRelation: "member_directory"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "memberships_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
@@ -202,6 +208,12 @@ isOneToOne: false
       foreignKeyName: "payments_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
+      referencedRelation: "member_directory"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "payments_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
@@ -224,6 +236,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "project_interests"
       referencedColumns: ["code"]
+    },{
+      foreignKeyName: "profile_interests_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "member_directory"
+      referencedColumns: ["id"]
     },{
       foreignKeyName: "profile_interests_user_id_fkey"
       columns: ["user_id"]
@@ -305,7 +323,21 @@ isOneToOne: false
                 }
           }
           Views: {
-            [_ in never]: never
+            "member_directory": {
+                  Row: {
+                    "city": string | null,"first_name": string | null,"id": string | null,"interests_experience": string | null,"is_master_gardener": boolean | null,"last_name": string | null,"phone": string | null,"project_interests": Json | null,"secondary_phone": string | null,"state": string | null,"username": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "city"?: string | null,"first_name"?: string | null,"id"?: string | null,"interests_experience"?: string | null,"is_master_gardener"?: boolean | null,"last_name"?: string | null,"phone"?: string | null,"project_interests"?: never,"secondary_phone"?: string | null,"state"?: string | null,"username"?: string | null
+                         }
+                        Update: {
+                           "city"?: string | null,"first_name"?: string | null,"id"?: string | null,"interests_experience"?: string | null,"is_master_gardener"?: boolean | null,"last_name"?: string | null,"phone"?: string | null,"project_interests"?: never,"secondary_phone"?: string | null,"state"?: string | null,"username"?: string | null
+                         }
+                        Relationships: [
+
+                  ]
+                }
           }
           Functions: {
             "approve_membership":
@@ -319,6 +351,9 @@ isOneToOne: false
                            },
 "is_active_member":
 { Args: { "check_user_id"?: string }; Returns: boolean
+                           },
+"log_audit_event":
+{ Args: { "p_action": string,"p_details"?: Json,"p_entity_id"?: string,"p_entity_type": string }; Returns: string
                            },
 "reconcile_payment":
 { Args: { "p_notes"?: string,"p_payment_id": string }; Returns: Json
