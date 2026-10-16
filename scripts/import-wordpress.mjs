@@ -45,10 +45,14 @@ export function sanitizeHtml(html) {
   if (!html || typeof html !== "string") return "";
 
   return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
-    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
-    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi, "")
+    .replace(/<script\b[^>]*\/>/gi, "")
+    .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe[^>]*>/gi, "")
+    .replace(/<iframe\b[^>]*\/>/gi, "")
+    .replace(/<object\b[^>]*>[\s\S]*?<\/object[^>]*>/gi, "")
+    .replace(/<object\b[^>]*\/>/gi, "")
+    .replace(/<embed\b[^>]*>[\s\S]*?<\/embed[^>]*>/gi, "")
+    .replace(/<embed\b[^>]*\/>/gi, "")
     .replace(/\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
     .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
     .replace(/src\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'src=""')

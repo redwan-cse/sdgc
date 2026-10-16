@@ -43,7 +43,7 @@ const personas = [
     username: "super_admin",
     first_name: "Sarah",
     last_name: "Admin",
-    role: "admin",
+    roles: ["admin"],
   },
   {
     email: "editor@sdgc.local",
@@ -51,7 +51,7 @@ const personas = [
     username: "content_editor",
     first_name: "Edward",
     last_name: "Editor",
-    role: "editor",
+    roles: ["editor"],
   },
   {
     email: "treasurer@sdgc.local",
@@ -59,7 +59,15 @@ const personas = [
     username: "dues_treasurer",
     first_name: "Theresa",
     last_name: "Treasurer",
-    role: "treasurer",
+    roles: ["treasurer"],
+  },
+  {
+    email: "editor_treasurer@sdgc.local",
+    password: "Password123!",
+    username: "combined_staff",
+    first_name: "Cory",
+    last_name: "Combined",
+    roles: ["editor", "treasurer"],
   },
   {
     email: "member@sdgc.local",
@@ -67,6 +75,14 @@ const personas = [
     username: "active_member",
     first_name: "Mary",
     last_name: "Member",
+    membership: "approved",
+  },
+  {
+    email: "member_b@sdgc.local",
+    password: "Password123!",
+    username: "member_beta",
+    first_name: "Betty",
+    last_name: "Beta",
     membership: "approved",
   },
   {
@@ -78,12 +94,20 @@ const personas = [
     membership: "pending",
   },
   {
-    email: "member_b@sdgc.local",
+    email: "expired@sdgc.local",
     password: "Password123!",
-    username: "member_beta",
-    first_name: "Betty",
-    last_name: "Beta",
-    membership: "approved",
+    username: "expired_member",
+    first_name: "Evan",
+    last_name: "Expired",
+    membership: "expired",
+  },
+  {
+    email: "suspended@sdgc.local",
+    password: "Password123!",
+    username: "suspended_member",
+    first_name: "Sam",
+    last_name: "Suspended",
+    membership: "suspended",
   },
 ];
 
@@ -123,11 +147,13 @@ async function provision() {
       user = createData.user;
     }
 
+    const roles = p.roles || (p.role ? [p.role] : []);
     fixtureMap[p.email] = {
       id: user.id,
       email: p.email,
       username: p.username,
-      role: p.role || null,
+      role: roles[0] || null,
+      roles,
       membership: p.membership || null,
     };
 
@@ -150,17 +176,17 @@ async function provision() {
       console.error(`Failed upserting profile for ${p.username}:`, profileError);
     }
 
-    // Assign role if specified
-    if (p.role) {
+    // Assign roles if specified
+    for (const role of roles) {
       const { error: roleError } = await adminClient.from("user_roles").upsert(
         {
           user_id: user.id,
-          role: p.role,
+          role,
         },
         { onConflict: "user_id,role" },
       );
       if (roleError) {
-        console.error(`Failed assigning role ${p.role} to ${p.username}:`, roleError);
+        console.error(`Failed assigning role ${role} to ${p.username}:`, roleError);
       }
     }
 

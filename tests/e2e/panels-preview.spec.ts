@@ -49,7 +49,11 @@ test.describe("Auth & Panels Surfaces Preview", () => {
   });
 
   test("admin dashboard and navigation tabs render cleanly", async ({ page }) => {
-    await page.goto("/admin");
+    await page.goto("/login?returnTo=/admin");
+    await page.getByLabel("Username or Email Address").fill("admin@sdgc.local");
+    await page.getByLabel("Password").fill("Password123!");
+    await page.getByRole("button", { name: "Sign In to Member Area" }).click();
+    await expect(page).toHaveURL(/\/admin$/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Administrative Dashboard");
     await expect(page.getByText("Active Members (2026)")).toBeVisible();
 

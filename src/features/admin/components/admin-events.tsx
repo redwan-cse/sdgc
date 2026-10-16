@@ -44,14 +44,18 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newSlug.trim()) return;
+    const sanitizedSlug = newSlug
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/(^-|-$)+/g, "");
+    if (!newTitle.trim() || !sanitizedSlug) return;
 
     setIsSubmitting(true);
     setIsError(false);
     try {
       const res = await createEventAction({
         title: newTitle.trim(),
-        slug: newSlug.trim(),
+        slug: sanitizedSlug,
         startsAt: new Date(newStartsAt).toISOString(),
         endsAt: newEndsAt ? new Date(newEndsAt).toISOString() : undefined,
         category: newCategory,
@@ -66,7 +70,7 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
           {
             id: createdId,
             title: newTitle.trim(),
-            slug: newSlug.trim(),
+            slug: sanitizedSlug,
             startsAt: new Date(newStartsAt).toISOString(),
             endsAt: newEndsAt ? new Date(newEndsAt).toISOString() : undefined,
             category: newCategory,
@@ -165,7 +169,10 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
                 events.map((e) => (
                   <tr key={e.id} className="hover:bg-muted/30 transition-colors">
                     <td className="p-4 font-semibold text-foreground">
-                      <Link href={`/event/${e.slug}`} className="hover:underline">
+                      <Link
+                        href={`/event/${encodeURIComponent(e.slug.replace(/[^a-zA-Z0-9_-]/g, ""))}`}
+                        className="hover:underline"
+                      >
                         {e.title}
                       </Link>
                     </td>
@@ -241,7 +248,9 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
                   required
                   placeholder="summer-garden-tour-workbee"
                   value={newSlug}
-                  onChange={(e) => setNewSlug(e.target.value)}
+                  onChange={(e) =>
+                    setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                  }
                 />
               </div>
 
