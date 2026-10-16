@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Route } from "next";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface NavLinkItem {
   href: Route | string;
@@ -105,26 +106,29 @@ export function MobileNavigation({
     >
       <div className="flex items-center justify-between pb-6 border-b border-border">
         <span className="font-serif text-xl font-bold text-primary">SDGC Navigation</span>
-        <button
-          type="button"
-          onClick={() => {
-            onClose();
-            toggleRef.current?.focus();
-          }}
-          className="rounded-md p-2 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Close navigation menu"
-        >
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
-            aria-hidden="true"
+        <div className="flex items-center space-x-2">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              toggleRef.current?.focus();
+            }}
+            className="rounded-md p-2 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Close navigation menu"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <nav className="flex flex-col space-y-4 pt-6" aria-label="Mobile Main Navigation">

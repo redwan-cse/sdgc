@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Route } from "next";
 import { MobileNavigation } from "./mobile-navigation";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -84,6 +85,7 @@ export function SiteHeader() {
 
         {/* Desktop Member / Admin quick actions */}
         <div className="hidden lg:flex items-center space-x-2 border-l border-border pl-4">
+          <ThemeToggle />
           <Link
             href="/login"
             className="rounded-md px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted border border-border"
@@ -98,8 +100,9 @@ export function SiteHeader() {
           </Link>
         </div>
 
-        {/* Mobile menu button */}
-        <div className="flex md:hidden">
+        {/* Mobile menu button and theme toggle */}
+        <div className="flex md:hidden items-center space-x-2">
+          <ThemeToggle />
           <button
             ref={toggleRef}
             type="button"
