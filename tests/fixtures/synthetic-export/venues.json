@@ -1,0 +1,20 @@
+[
+  {
+    "legacy_id": "wp-venue-10",
+    "name": "Saugatuck Woman's Club",
+    "address": "303 Butler St",
+    "city": "Saugatuck",
+    "state": "MI",
+    "postal_code": "49453",
+    "url": "https://saugatuckwomansclub.example.com"
+  },
+  {
+    "legacy_id": "wp-venue-20",
+    "name": "Douglas Old School House",
+    "address": "130 Center St",
+    "city": "Douglas",
+    "state": "MI",
+    "postal_code": "49406",
+    "url": "https://douglashistory.example.com"
+  }
+]

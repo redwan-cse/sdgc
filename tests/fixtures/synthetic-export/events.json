@@ -1,0 +1,32 @@
+[
+  {
+    "legacy_id": "wp-event-501",
+    "slug": "spring-general-meeting-2026",
+    "title": "Spring General Meeting",
+    "excerpt": "Welcome back members for the 2026 season kickoff.",
+    "description": "Our kickoff meeting for the 2026 gardening season. Guest speaker will present on native pollinators and drought-resistant soil preparation.",
+    "starts_at": "2026-04-18T14:00:00-04:00",
+    "ends_at": "2026-04-18T16:00:00-04:00",
+    "timezone": "America/Detroit",
+    "all_day": false,
+    "venue_legacy_id": "wp-venue-10",
+    "status": "published",
+    "ticket_url": null,
+    "featured_image": "gallery/spring-meeting.jpg"
+  },
+  {
+    "legacy_id": "wp-event-502",
+    "slug": "2026-garden-walk-fundraiser",
+    "title": "Annual Garden Walk Fundraiser",
+    "excerpt": "Tour private coastal gardens in Saugatuck and Douglas.",
+    "description": "The premier annual fundraising event for SDGC, showcasing exceptional private and public gardens across Saugatuck and Douglas.",
+    "starts_at": "2026-07-11T10:00:00-04:00",
+    "ends_at": "2026-07-11T16:00:00-04:00",
+    "timezone": "America/Detroit",
+    "all_day": false,
+    "venue_legacy_id": "wp-venue-10",
+    "status": "published",
+    "ticket_url": "https://example.com/tickets/gw2026",
+    "featured_image": "gallery/garden-walk-2026.jpg"
+  }
+]

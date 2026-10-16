@@ -4,9 +4,37 @@ import "@fontsource-variable/lora";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://saugatuckdouglasgardenclub.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: siteConfig.name, template: `%s | ${siteConfig.shortName}` },
   description: siteConfig.description,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: siteConfig.name,
+    description: siteConfig.description,
+    url: siteUrl,
+    siteName: siteConfig.name,
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/images/brand/sdgc-logo.jpg",
+        width: 800,
+        height: 600,
+        alt: siteConfig.name,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: ["/images/brand/sdgc-logo.jpg"],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

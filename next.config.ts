@@ -25,7 +25,17 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: "/aboutourclub/",
+        destination: "/about",
+        permanent: true,
+      },
+      {
         source: "/becomeamember",
+        destination: "/join",
+        permanent: true,
+      },
+      {
+        source: "/becomeamember/",
         destination: "/join",
         permanent: true,
       },
@@ -35,8 +45,38 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: "/wp-admin",
+        destination: "/admin",
+        permanent: true,
+      },
+      {
+        source: "/wp-admin/",
+        destination: "/admin",
+        permanent: true,
+      },
+      {
         source: "/wp-admin/:path*",
         destination: "/admin",
+        permanent: true,
+      },
+      {
+        source: "/feed",
+        destination: "/events",
+        permanent: true,
+      },
+      {
+        source: "/feed/",
+        destination: "/events",
+        permanent: true,
+      },
+      {
+        source: "/events/feed",
+        destination: "/events",
+        permanent: true,
+      },
+      {
+        source: "/events/feed/",
+        destination: "/events",
         permanent: true,
       },
     ];

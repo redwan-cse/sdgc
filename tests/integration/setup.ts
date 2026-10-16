@@ -4,12 +4,12 @@ import { type SupabaseClient, createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
 // Read environment from .env.local
-let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
-let anonKey =
+export let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
+export let anonKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "";
-let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+export let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 if (fs.existsSync(".env.local")) {
   const envContent = fs.readFileSync(".env.local", "utf8");

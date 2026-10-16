@@ -1,0 +1,56 @@
+[
+  {
+    "legacy_id": "wp-user-101",
+    "username": "synth_jane_gardener",
+    "email": "synth.jane.gardener@example.test",
+    "first_name": "Jane",
+    "last_name": "Gardener",
+    "wp_password_hash": "$P$B999999999999999999999999999999",
+    "phone": "269-555-0111",
+    "secondary_phone": "269-555-0112",
+    "address_line1": "123 Blue Star Hwy",
+    "address_line2": "Apt 2B",
+    "city": "Douglas",
+    "state": "MI",
+    "postal_code": "49406",
+    "birth_month": 6,
+    "birth_day": 15,
+    "spouse_name": "John Gardener",
+    "is_master_gardener": true,
+    "interests_experience": "20 years growing heirloom perennials and hostas.",
+    "roles": ["subscriber"],
+    "interests": ["beautification", "garden_walk"],
+    "membership": {
+      "year": 2026,
+      "status": "approved",
+      "notes": "Annual dues verified via check"
+    }
+  },
+  {
+    "legacy_id": "wp-user-102",
+    "username": "synth_bob_planter",
+    "email": "synth.bob.planter@example.test",
+    "first_name": "Bob",
+    "last_name": "Planter",
+    "wp_password_hash": "$P$B888888888888888888888888888888",
+    "phone": null,
+    "secondary_phone": null,
+    "address_line1": null,
+    "address_line2": null,
+    "city": "Saugatuck",
+    "state": "MI",
+    "postal_code": "49453",
+    "birth_month": null,
+    "birth_day": null,
+    "spouse_name": null,
+    "is_master_gardener": false,
+    "interests_experience": null,
+    "roles": ["subscriber"],
+    "interests": ["reception"],
+    "membership": {
+      "year": 2026,
+      "status": "pending",
+      "notes": "Application pending annual review"
+    }
+  }
+]

@@ -1,0 +1,39 @@
+[
+  {
+    "legacy_id": "wp-media-801",
+    "source_url": "https://saugatuckdouglasgardenclub.com/wp-content/uploads/2026/04/spring-meeting.jpg",
+    "storage_path": "gallery/spring-meeting.jpg",
+    "mime_type": "image/jpeg",
+    "size_bytes": 450200,
+    "width": 1200,
+    "height": 800,
+    "alt_text": "Members at spring general meeting",
+    "caption": "Spring 2026 season kickoff",
+    "is_public": true
+  },
+  {
+    "legacy_id": "wp-media-802",
+    "source_url": "https://saugatuckdouglasgardenclub.com/wp-content/uploads/2026/07/garden-walk-2026.jpg",
+    "storage_path": "gallery/garden-walk-2026.jpg",
+    "mime_type": "image/jpeg",
+    "size_bytes": 620100,
+    "width": 1600,
+    "height": 1067,
+    "alt_text": "Private perennial garden on the 2026 Garden Walk",
+    "caption": "Garden Walk private tour feature",
+    "is_public": true
+  },
+  {
+    "legacy_id": "wp-media-803",
+    "source_url": "https://saugatuckdouglasgardenclub.com/wp-content/uploads/2020/01/non-existent-archive.jpg",
+    "storage_path": "gallery/non-existent-archive.jpg",
+    "mime_type": "image/jpeg",
+    "size_bytes": 0,
+    "width": null,
+    "height": null,
+    "alt_text": "Missing media asset demonstration",
+    "caption": "Archival photo with missing source file",
+    "is_public": true,
+    "is_missing": true
+  }
+]
