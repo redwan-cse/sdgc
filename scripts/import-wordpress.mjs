@@ -44,19 +44,26 @@ if (fs.existsSync(".env.local")) {
 export function sanitizeHtml(html) {
   if (!html || typeof html !== "string") return "";
 
-  return html
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi, "")
-    .replace(/<script\b[^>]*\/>/gi, "")
-    .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe[^>]*>/gi, "")
-    .replace(/<iframe\b[^>]*\/>/gi, "")
-    .replace(/<object\b[^>]*>[\s\S]*?<\/object[^>]*>/gi, "")
-    .replace(/<object\b[^>]*\/>/gi, "")
-    .replace(/<embed\b[^>]*>[\s\S]*?<\/embed[^>]*>/gi, "")
-    .replace(/<embed\b[^>]*\/>/gi, "")
-    .replace(/\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
-    .replace(/src\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'src=""')
-    .trim();
+  let clean = html;
+  let prev = "";
+
+  do {
+    prev = clean;
+    clean = clean
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi, "")
+      .replace(/<script\b[^>]*\/>/gi, "")
+      .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe[^>]*>/gi, "")
+      .replace(/<iframe\b[^>]*\/>/gi, "")
+      .replace(/<object\b[^>]*>[\s\S]*?<\/object[^>]*>/gi, "")
+      .replace(/<object\b[^>]*\/>/gi, "")
+      .replace(/<embed\b[^>]*>[\s\S]*?<\/embed[^>]*>/gi, "")
+      .replace(/<embed\b[^>]*\/>/gi, "")
+      .replace(/\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+      .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
+      .replace(/src\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'src=""');
+  } while (clean !== prev);
+
+  return clean.trim();
 }
 
 /**

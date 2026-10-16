@@ -75,6 +75,12 @@ All test personas use synthetic local emails (`@sdgc.local`) and passwords provi
 - **Issue:** HTML tag stripping regex matched exact `</script>` closing tags, but browsers also parse closing tags with whitespace or invalid attributes (e.g., `</script >` or `</script attr>`).
 - **Fix:** Refactored sanitization patterns to `/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi`, `/<script\b[^>]*\/>/gi` (and equivalents for `iframe`, `object`, and `embed`). Tested against XSS test vectors in `tests/integration/migration.test.ts`.
 
+### CodeQL Alert 3 (`js/incomplete-multi-character-sanitization`)
+
+- **File:** `scripts/import-wordpress.mjs`
+- **Issue:** Multi-character tag and attribute stripping regexes could theoretically be bypassed by nested injection payloads (e.g., `<scr<script>ipt>`) if run only once.
+- **Fix:** Implemented iterative fixed-point loop sanitization (`do { ... } while (clean !== prev)`) so replacements run continuously until the string reaches a stable state, completely neutralizing nested evasive patterns according to GitHub CodeQL security best practices.
+
 ### Dependency Vulnerabilities
 
 - `npm audit` returned **0 vulnerabilities** across all 154 production and development dependencies.
