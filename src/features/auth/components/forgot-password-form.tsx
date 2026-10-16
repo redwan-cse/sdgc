@@ -9,12 +9,35 @@ import { forgotPasswordAction } from "@/features/auth/actions";
 import { type ForgotPasswordFormData, forgotPasswordSchema } from "../validation";
 
 export function ForgotPasswordForm() {
+  const [mounted, setMounted] = React.useState(false);
   const [formData, setFormData] = React.useState<ForgotPasswordFormData>({
     email: "",
   });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6" aria-busy="true">
+        <div className="space-y-2">
+          <div className="h-4 w-40 bg-muted/40 rounded" />
+          <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+        </div>
+        <div className="h-10 w-full rounded-md bg-primary/20" />
+        <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
+          Remember your password?{" "}
+          <Link href="/login" className="font-semibold text-primary hover:underline">
+            Return to Member Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

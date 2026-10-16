@@ -82,4 +82,76 @@ test.describe("Browser Hydration and Script Tag Verification", () => {
     const emailInput = page.locator("#contact-email");
     await expect(emailInput).toBeVisible();
   });
+
+  test("login page loads cleanly without hydration errors even with returnTo param", async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    page.on("pageerror", (err) => {
+      pageErrors.push(err.message);
+    });
+
+    await page.goto("/login?returnTo=%2Fadmin");
+    await page.waitForLoadState("networkidle");
+
+    const hydrationErrors = [...consoleErrors, ...pageErrors].filter(
+      (e) => e.includes("Hydration failed") || e.includes("hydration-mismatch"),
+    );
+    expect(hydrationErrors).toHaveLength(0);
+
+    const identifierInput = page.locator("#login-identifier");
+    await expect(identifierInput).toBeVisible();
+    await identifierInput.fill("admin_tester");
+
+    const passwordInput = page.locator("#login-password");
+    await expect(passwordInput).toBeVisible();
+    await passwordInput.fill("secretPassword123");
+
+    expect(await identifierInput.inputValue()).toBe("admin_tester");
+    expect(await passwordInput.inputValue()).toBe("secretPassword123");
+  });
+
+  test("join page and forgot-password page load cleanly without hydration errors", async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    page.on("pageerror", (err) => {
+      pageErrors.push(err.message);
+    });
+
+    // Check /join
+    await page.goto("/join");
+    await page.waitForLoadState("networkidle");
+
+    const usernameInput = page.locator("#reg-username");
+    await expect(usernameInput).toBeVisible();
+
+    // Check /forgot-password
+    await page.goto("/forgot-password");
+    await page.waitForLoadState("networkidle");
+
+    const forgotEmailInput = page.locator("#forgot-email");
+    await expect(forgotEmailInput).toBeVisible();
+
+    const hydrationErrors = [...consoleErrors, ...pageErrors].filter(
+      (e) => e.includes("Hydration failed") || e.includes("hydration-mismatch"),
+    );
+    expect(hydrationErrors).toHaveLength(0);
+  });
 });

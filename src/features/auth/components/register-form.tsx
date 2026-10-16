@@ -16,6 +16,7 @@ import { Select } from "@/components/ui/select";
 export function RegisterForm() {
   const router = useRouter();
 
+  const [mounted, setMounted] = React.useState(false);
   const [formData, setFormData] = React.useState<RegisterFormData>({
     username: "",
     firstName: "",
@@ -42,6 +43,48 @@ export function RegisterForm() {
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-8" aria-busy="true">
+        <section className="space-y-4">
+          <div className="h-6 w-56 bg-muted/40 rounded border-b border-border pb-2" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="h-4 w-32 bg-muted/40 rounded" />
+              <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-32 bg-muted/40 rounded" />
+              <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="h-4 w-28 bg-muted/40 rounded" />
+              <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-32 bg-muted/40 rounded" />
+              <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+            </div>
+          </div>
+        </section>
+        <section className="space-y-4">
+          <div className="h-6 w-64 bg-muted/40 rounded border-b border-border pb-2" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+            <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+          </div>
+        </section>
+        <div className="h-12 w-48 rounded-md bg-primary/20" />
+      </div>
+    );
+  }
 
   const handleProjectToggle = (code: ProjectInterestCode) => {
     setFormData((prev) => {

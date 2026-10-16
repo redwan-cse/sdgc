@@ -9,6 +9,7 @@ import { resetPasswordAction } from "@/features/auth/actions";
 import { type ResetPasswordFormData, resetPasswordSchema } from "../validation";
 
 export function ResetPasswordForm() {
+  const [mounted, setMounted] = React.useState(false);
   const [formData, setFormData] = React.useState<ResetPasswordFormData>({
     password: "",
     passwordConfirmation: "",
@@ -17,6 +18,31 @@ export function ResetPasswordForm() {
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6" aria-busy="true">
+        <div className="space-y-2">
+          <div className="h-4 w-32 bg-muted/40 rounded" />
+          <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 w-36 bg-muted/40 rounded" />
+          <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+        </div>
+        <div className="h-10 w-full rounded-md bg-primary/20" />
+        <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
+          <Link href="/login" className="font-semibold text-primary hover:underline">
+            Return to Member Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

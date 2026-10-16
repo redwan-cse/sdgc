@@ -14,6 +14,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
 
+  const [mounted, setMounted] = React.useState(false);
   const [formData, setFormData] = React.useState<LoginFormData>({
     identifier: "",
     password: "",
@@ -21,6 +22,35 @@ export function LoginForm() {
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6" aria-busy="true">
+        <div className="space-y-2">
+          <div className="h-4 w-44 bg-muted/40 rounded" />
+          <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-20 bg-muted/40 rounded" />
+            <div className="h-4 w-24 bg-muted/40 rounded" />
+          </div>
+          <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+        </div>
+        <div className="h-10 w-full rounded-md bg-primary/20" />
+        <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
+          Not a member yet?{" "}
+          <Link href="/join" className="font-semibold text-primary hover:underline">
+            Create New Member Profile &rarr;
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +100,7 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6" suppressHydrationWarning>
       {errorMessage && (
         <div
           className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive"
@@ -80,7 +110,7 @@ export function LoginForm() {
         </div>
       )}
 
-      <div>
+      <div suppressHydrationWarning>
         <Label htmlFor="login-identifier" required>
           Username or Email Address
         </Label>
@@ -100,7 +130,7 @@ export function LoginForm() {
         )}
       </div>
 
-      <div>
+      <div suppressHydrationWarning>
         <div className="flex items-center justify-between">
           <Label htmlFor="login-password" required>
             Password
