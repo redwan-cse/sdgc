@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,6 @@ import { loginAction } from "@/features/auth/actions";
 import { type LoginFormData, loginSchema } from "../validation";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
 
@@ -89,8 +88,7 @@ export function LoginForm() {
           setErrors(mapped);
         }
       } else {
-        router.push(res.data.returnTo as Parameters<typeof router.push>[0]);
-        router.refresh();
+        window.location.href = res.data.returnTo;
       }
     } catch {
       setErrorMessage("An unexpected network error occurred. Please try again.");

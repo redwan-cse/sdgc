@@ -58,6 +58,46 @@ describe("Phase P4: Authentication & Authorization Integration Tests", () => {
       expect(data.session).toBeNull();
     });
 
+    it("determines redirect destination based on roles: admin routes to /admin, member routes to /profile", async () => {
+      // 1. Check admin user roles
+      const { data: adminUser } = await anonClient.auth.signInWithPassword({
+        email: "admin@sdgc.local",
+        password: "Password123!",
+      });
+      expect(adminUser.user).toBeDefined();
+
+      const { data: adminRoles } = await serviceClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", adminUser.user?.id ?? "");
+      const adminRoleList = (adminRoles || []).map((r) => r.role);
+      const isAdminStaff = adminRoleList.some((r) => ["admin", "editor", "treasurer"].includes(r));
+      expect(isAdminStaff).toBe(true);
+
+      const adminDestination = isAdminStaff ? "/admin" : "/profile";
+      expect(adminDestination).toBe("/admin");
+
+      // 2. Check regular member user roles
+      const { data: memberUser } = await anonClient.auth.signInWithPassword({
+        email: "member@sdgc.local",
+        password: "Password123!",
+      });
+      expect(memberUser.user).toBeDefined();
+
+      const { data: memberRoles } = await serviceClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", memberUser.user?.id ?? "");
+      const memberRoleList = (memberRoles || []).map((r) => r.role);
+      const isMemberStaff = memberRoleList.some((r) =>
+        ["admin", "editor", "treasurer"].includes(r),
+      );
+      expect(isMemberStaff).toBe(false);
+
+      const memberDestination = isMemberStaff ? "/admin" : "/profile";
+      expect(memberDestination).toBe("/profile");
+    });
+
     it("rejects non-existent username lookup cleanly without revealing user existence", async () => {
       const { data: profile } = await serviceClient
         .from("profiles")

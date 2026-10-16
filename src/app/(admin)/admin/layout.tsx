@@ -36,7 +36,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <SiteHeader />
+      <SiteHeader initialUser={{ email: user.email, isStaff: true }} />
       <AdminShell activeRole={primaryRole}>{children}</AdminShell>
       <SiteFooter />
     </div>

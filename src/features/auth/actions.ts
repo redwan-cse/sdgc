@@ -64,7 +64,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult<{ re
   const targetEmail = await resolveIdentifierToEmail(identifier);
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: authData, error } = await supabase.auth.signInWithPassword({
     email: targetEmail,
     password,
   });
@@ -78,7 +78,27 @@ export async function loginAction(formData: FormData): Promise<ActionResult<{ re
   }
 
   revalidatePath("/", "layout");
-  const destination = sanitizeReturnTo(rawReturnTo as string | null);
+
+  // If a specific, legitimate returnTo is requested (and not just default '/profile'), respect it.
+  // Otherwise, route staff/admins to '/admin' and members to '/profile'.
+  let destination = sanitizeReturnTo(rawReturnTo as string | null, "");
+  if (!destination || destination === "/profile") {
+    const userId = authData.user?.id;
+    if (userId) {
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+
+      const roles = (userRoles || []).map((r) => r.role);
+      const isStaffOrAdmin = roles.some((r) => ["admin", "editor", "treasurer"].includes(r));
+
+      destination = isStaffOrAdmin ? "/admin" : "/profile";
+    } else {
+      destination = "/profile";
+    }
+  }
+
   return {
     success: true,
     data: { returnTo: destination },

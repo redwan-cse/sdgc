@@ -8,6 +8,9 @@ import type { Route } from "next";
 import { MobileNavigation } from "./mobile-navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
+import { createClient } from "@/lib/supabase/client";
+import { logoutAction } from "@/features/auth/actions";
+
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About Our Club" },
@@ -18,23 +21,72 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact Us" },
 ];
 
-const AUTH_LINKS = [
-  { href: "/login", label: "Member Login" },
-  { href: "/directory", label: "Directory" },
-  { href: "/membership", label: "Annual Dues" },
-  { href: "/profile", label: "My Profile" },
-  { href: "/admin", label: "Admin Panel" },
-];
+export interface SiteHeaderProps {
+  initialUser?: {
+    email: string;
+    isStaff: boolean;
+  } | null;
+}
 
-export function SiteHeader() {
+export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
+  const [currentUser, setCurrentUser] = React.useState<{
+    email: string;
+    isStaff: boolean;
+  } | null>(initialUser ?? null);
   const toggleRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => {
     setIsMounted(true);
+    const supabase = createClient();
+
+    // Check client session
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        const { data: userRoles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+        const roles = (userRoles || []).map((r) => r.role);
+        setCurrentUser({
+          email: user.email || "",
+          isStaff: roles.some((r) => ["admin", "editor", "treasurer"].includes(r)),
+        });
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
   }, []);
+
+  const authLinks = currentUser
+    ? currentUser.isStaff
+      ? [
+          { href: "/admin", label: "Admin Dashboard" },
+          { href: "/profile", label: "My Profile" },
+          { href: "/directory", label: "Directory" },
+          { href: "/membership", label: "Annual Dues" },
+        ]
+      : [
+          { href: "/profile", label: "My Profile" },
+          { href: "/directory", label: "Directory" },
+          { href: "/membership", label: "Annual Dues" },
+        ]
+    : [
+        { href: "/login", label: "Member Login" },
+        { href: "/join", label: "Become A Member" },
+      ];
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur-sm">
@@ -87,18 +139,47 @@ export function SiteHeader() {
         {/* Desktop Member / Admin quick actions */}
         <div className="hidden lg:flex items-center space-x-2 border-l border-border pl-4">
           <ThemeToggle />
-          <Link
-            href="/login"
-            className="rounded-md px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted border border-border"
-          >
-            Login
-          </Link>
-          <Link
-            href="/join"
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-2xs"
-          >
-            Join
-          </Link>
+          {currentUser ? (
+            <div className="flex items-center space-x-2">
+              {currentUser.isStaff && (
+                <Link
+                  href="/admin"
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors"
+                >
+                  Admin Dashboard
+                </Link>
+              )}
+              <Link
+                href="/profile"
+                className="rounded-md px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors"
+              >
+                My Profile
+              </Link>
+              <form action={logoutAction}>
+                <button
+                  type="submit"
+                  className="rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <Link
+                href="/login"
+                className="rounded-md px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors"
+              >
+                Login
+              </Link>
+              <Link
+                href="/join"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors"
+              >
+                Join
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Mobile menu button and theme toggle */}
@@ -145,7 +226,7 @@ export function SiteHeader() {
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         links={NAV_LINKS}
-        authLinks={AUTH_LINKS}
+        authLinks={authLinks}
         toggleRef={toggleRef}
       />
     </header>
