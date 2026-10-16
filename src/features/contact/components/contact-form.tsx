@@ -97,9 +97,9 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6" suppressHydrationWarning>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+        <div suppressHydrationWarning>
           <Label htmlFor="contact-name" required>
             Your Name
           </Label>
@@ -118,7 +118,7 @@ export function ContactForm() {
           )}
         </div>
 
-        <div>
+        <div suppressHydrationWarning>
           <Label htmlFor="contact-email" required>
             Email Address
           </Label>
@@ -139,7 +139,7 @@ export function ContactForm() {
         </div>
       </div>
 
-      <div>
+      <div suppressHydrationWarning>
         <Label htmlFor="contact-phone">
           Phone Number <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
         </Label>
@@ -152,7 +152,7 @@ export function ContactForm() {
         />
       </div>
 
-      <div>
+      <div suppressHydrationWarning>
         <Label htmlFor="contact-message" required>
           Message
         </Label>

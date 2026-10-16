@@ -41,17 +41,20 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script>
-          {`try {
-            var stored = localStorage.getItem('theme');
-            var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
-            if (stored === 'dark' || (!stored && supportDarkMode)) {
-              document.documentElement.classList.add('dark');
-            } else {
-              document.documentElement.classList.remove('dark');
-            }
-          } catch (e) {}`}
-        </script>
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: Theme initialization script must run before render to prevent flash of wrong theme
+          dangerouslySetInnerHTML={{
+            __html: `try {
+              var stored = localStorage.getItem('theme');
+              var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+              if (stored === 'dark' || (!stored && supportDarkMode)) {
+                document.documentElement.classList.add('dark');
+              } else {
+                document.documentElement.classList.remove('dark');
+              }
+            } catch (e) {}`,
+          }}
+        />
       </head>
       <body className="font-sans antialiased bg-background text-foreground transition-colors duration-150">
         <a
