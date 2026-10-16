@@ -5,10 +5,8 @@ import type { Database } from "@/types/database";
 
 // Read environment from .env.local
 export let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
-export let anonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "";
+export let publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
+export let anonKey = publishableKey;
 export let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 if (fs.existsSync(".env.local")) {
@@ -21,10 +19,8 @@ if (fs.existsSync(".env.local")) {
         const key = trimmed.slice(0, idx).trim();
         const val = trimmed.slice(idx + 1).trim();
         if (key === "NEXT_PUBLIC_SUPABASE_URL") supabaseUrl = val;
-        if (
-          key === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ||
-          key === "NEXT_PUBLIC_SUPABASE_ANON_KEY"
-        ) {
+        if (key === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") {
+          publishableKey = val;
           anonKey = val;
         }
         if (key === "SUPABASE_SERVICE_ROLE_KEY") serviceRoleKey = val;
