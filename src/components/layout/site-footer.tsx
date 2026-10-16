@@ -53,7 +53,7 @@ export function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/aboutourclub" className="hover:text-foreground">
+                <Link href="/about" className="hover:text-foreground">
                   About Our Club
                 </Link>
               </li>
@@ -81,7 +81,7 @@ export function SiteFooter() {
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/becomeamember" className="hover:text-foreground">
+                <Link href="/join" className="hover:text-foreground">
                   Become A Member
                 </Link>
               </li>

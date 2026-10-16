@@ -11,5 +11,7 @@ export interface PageContent {
       label: string;
       href: string;
     };
+    image?: string;
+    imageAlt?: string;
   }[];
 }

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { FIXTURE_EVENTS } from "../../../../../tests/fixtures/public-content";
+import { getEventBySlug, listEvents } from "@/features/events/queries";
 import { EventDetailCard } from "@/features/events/components/event-detail-card";
 
 interface EventDetailPageProps {
@@ -10,7 +10,7 @@ interface EventDetailPageProps {
 
 export async function generateMetadata({ params }: EventDetailPageProps) {
   const { slug } = await params;
-  const event = FIXTURE_EVENTS.find((e) => e.slug === slug);
+  const event = await getEventBySlug(slug);
   if (!event) return { title: "Event Not Found" };
   return {
     title: event.title,
@@ -20,14 +20,17 @@ export async function generateMetadata({ params }: EventDetailPageProps) {
 
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { slug } = await params;
-  const eventIndex = FIXTURE_EVENTS.findIndex((e) => e.slug === slug);
-  const event = FIXTURE_EVENTS[eventIndex];
+  const event = await getEventBySlug(slug);
   if (!event) {
     notFound();
   }
-  const prevEvent = eventIndex > 0 ? FIXTURE_EVENTS[eventIndex - 1] : undefined;
+
+  // Get adjacent events for previous/next navigation
+  const { events: allEvents } = await listEvents();
+  const eventIndex = allEvents.findIndex((e) => e.slug === slug);
+  const prevEvent = eventIndex > 0 ? allEvents[eventIndex - 1] : undefined;
   const nextEvent =
-    eventIndex < FIXTURE_EVENTS.length - 1 ? FIXTURE_EVENTS[eventIndex + 1] : undefined;
+    eventIndex >= 0 && eventIndex < allEvents.length - 1 ? allEvents[eventIndex + 1] : undefined;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">

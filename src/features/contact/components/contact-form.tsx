@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { submitContactAction } from "../actions";
 import { contactSchema, type ContactFormData } from "../validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,12 +37,24 @@ export function ContactForm() {
     }
 
     setIsSubmitting(true);
-    // Preview interaction (P5 integrates real server action & database persistence)
     try {
-      await new Promise((res) => setTimeout(res, 300));
-      const ref = `SDGC-MSG-${Math.floor(100000 + Math.random() * 900000)}`;
-      setSubmittedReference(ref);
-      setFormData({ name: "", email: "", phone: "", message: "", honeypot: "" });
+      const res = await submitContactAction(formData);
+      if (res.success) {
+        setSubmittedReference(res.data.reference);
+        setFormData({ name: "", email: "", phone: "", message: "", honeypot: "" });
+      } else {
+        if (res.fieldErrors) {
+          const mapped: Record<string, string> = {};
+          for (const [k, v] of Object.entries(res.fieldErrors)) {
+            if (v?.[0]) mapped[k] = v[0];
+          }
+          setErrors(mapped);
+        } else {
+          setErrors({ form: res.error });
+        }
+      }
+    } catch {
+      setErrors({ form: "An unexpected network error occurred. Please try again." });
     } finally {
       setIsSubmitting(false);
     }

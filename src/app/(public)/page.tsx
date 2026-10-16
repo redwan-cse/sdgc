@@ -44,7 +44,7 @@ export default function HomePage() {
               </p>
               <div className="pt-2 flex flex-wrap justify-center md:justify-start gap-4">
                 <Link
-                  href="/becomeamember"
+                  href="/join"
                   className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
                 >
                   Become A Member &rarr;

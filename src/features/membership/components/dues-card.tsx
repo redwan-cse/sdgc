@@ -1,34 +1,59 @@
 "use client";
 
 import * as React from "react";
-import type { MembershipSummary } from "../types";
+import Link from "next/link";
+import type { MembershipSummary, PaymentStatus } from "../types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { initiateDuesPaymentAction } from "@/features/payments/actions";
 
 interface DuesCardProps {
   membership: MembershipSummary;
+  isLoggedIn?: boolean;
 }
 
-export function DuesCard({ membership }: DuesCardProps) {
+export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
   const [selectedMethod, setSelectedMethod] = React.useState<"credit_card" | "check">(
     "credit_card",
   );
   const [paymentActionMessage, setPaymentActionMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const [currentPaymentStatus, setCurrentPaymentStatus] = React.useState<PaymentStatus>(
+    membership.paymentStatus,
+  );
+
+  const isConfirmed = currentPaymentStatus === "confirmed";
 
   const handlePay = async () => {
+    setErrorMessage(null);
+
+    // If anonymous/unauthenticated, prompt to sign in or register
+    if (!isLoggedIn && !membership.userId) {
+      setPaymentActionMessage(
+        "Please sign in to your member account or register as a new member to submit your annual dues.",
+      );
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      await new Promise((res) => setTimeout(res, 400));
-      if (selectedMethod === "credit_card") {
-        setPaymentActionMessage(
-          "Payment Simulation: Card payment of $50.00 recorded as CONFIRMED. As required by club bylaws, your membership is now PENDING manual approval by the treasurer/admin.",
-        );
-      } else {
-        setPaymentActionMessage(
-          "Check Instructions: Please mail your $50.00 check payable to 'SDGC' to P.O. Box 1011, Douglas, MI 49406. Staff will reconcile your check upon receipt and activate your membership.",
-        );
+      const res = await initiateDuesPaymentAction({
+        method: selectedMethod,
+        termYear: membership.year,
+      });
+
+      if (!res.success) {
+        setErrorMessage(res.error);
+        return;
       }
+
+      setPaymentActionMessage(res.data.message);
+      setCurrentPaymentStatus(res.data.status);
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "An error occurred while processing dues payment.",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -56,7 +81,7 @@ export function DuesCard({ membership }: DuesCardProps) {
               <Badge variant="success">Active Member</Badge>
             ) : membership.isApproved ? (
               <Badge variant="default">Approved</Badge>
-            ) : membership.paymentStatus === "confirmed" ? (
+            ) : isConfirmed ? (
               <Badge variant="warning">Payment Confirmed &bull; Pending Staff Approval</Badge>
             ) : (
               <Badge variant="outline">Payment Pending</Badge>
@@ -75,7 +100,7 @@ export function DuesCard({ membership }: DuesCardProps) {
           <div className="rounded-lg bg-muted/40 p-3 border border-border">
             <span className="text-xs text-muted-foreground block">Payment Status</span>
             <span className="text-lg font-bold capitalize text-foreground">
-              {membership.paymentStatus}
+              {currentPaymentStatus}
             </span>
           </div>
 
@@ -90,11 +115,37 @@ export function DuesCard({ membership }: DuesCardProps) {
 
       {paymentActionMessage && (
         <div
-          className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm text-foreground space-y-1"
+          className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm text-foreground space-y-2"
           role="status"
         >
           <p className="font-semibold text-primary">Transaction Notice</p>
           <p className="text-xs text-muted-foreground leading-relaxed">{paymentActionMessage}</p>
+          {!isLoggedIn && !membership.userId && (
+            <div className="flex gap-3 pt-2">
+              <Link
+                href="/login?returnTo=/membership"
+                className="text-xs font-semibold text-primary underline hover:text-primary/80"
+              >
+                Sign In &rarr;
+              </Link>
+              <Link
+                href="/join"
+                className="text-xs font-semibold text-primary underline hover:text-primary/80"
+              >
+                Register as Member &rarr;
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+
+      {errorMessage && (
+        <div
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive space-y-1"
+          role="alert"
+        >
+          <p className="font-semibold">Unable to Process Payment</p>
+          <p className="text-xs leading-relaxed">{errorMessage}</p>
         </div>
       )}
 
@@ -112,11 +163,12 @@ export function DuesCard({ membership }: DuesCardProps) {
           <button
             type="button"
             onClick={() => setSelectedMethod("credit_card")}
+            disabled={isConfirmed}
             className={`rounded-xl border p-4 text-left transition-colors cursor-pointer ${
               selectedMethod === "credit_card"
                 ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                 : "border-border hover:bg-muted/40"
-            }`}
+            } ${isConfirmed ? "opacity-60 cursor-not-allowed" : ""}`}
           >
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-foreground text-sm">
@@ -133,11 +185,12 @@ export function DuesCard({ membership }: DuesCardProps) {
           <button
             type="button"
             onClick={() => setSelectedMethod("check")}
+            disabled={isConfirmed}
             className={`rounded-xl border p-4 text-left transition-colors cursor-pointer ${
               selectedMethod === "check"
                 ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                 : "border-border hover:bg-muted/40"
-            }`}
+            } ${isConfirmed ? "opacity-60 cursor-not-allowed" : ""}`}
           >
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-foreground text-sm">Mail-In Paper Check</span>
@@ -178,15 +231,17 @@ export function DuesCard({ membership }: DuesCardProps) {
         <Button
           type="button"
           onClick={handlePay}
-          disabled={isProcessing}
+          disabled={isProcessing || isConfirmed}
           size="lg"
           className="w-full sm:w-auto"
         >
           {isProcessing
             ? "Processing..."
-            : selectedMethod === "credit_card"
-              ? "Pay $50.00 Dues Online"
-              : "Confirm Check Mailing Plan"}
+            : isConfirmed
+              ? "2026 Dues Paid & Confirmed"
+              : selectedMethod === "credit_card"
+                ? "Pay $50.00 Dues Online"
+                : "Confirm Check Mailing Plan"}
         </Button>
       </div>
     </div>

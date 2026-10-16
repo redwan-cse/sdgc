@@ -39,7 +39,7 @@ test.describe("Capture Phase 4 Authentication & Member Profile Screenshots", () 
     const isMobile = testInfo.project.name === "mobile";
     const suffix = isMobile ? "-mobile" : "";
 
-    await page.goto("/becomeamember");
+    await page.goto("/join");
     await page.waitForTimeout(300);
 
     // Select project checkboxes

@@ -1,4 +1,4 @@
-import { FIXTURE_EVENTS } from "../../../../../tests/fixtures/public-content";
+import { listEvents } from "@/features/events/queries";
 import { EventViewSelector } from "@/features/events/components/event-view-selector";
 import { EventDayView } from "@/features/events/components/event-day-view";
 
@@ -7,7 +7,9 @@ export const metadata = {
   description: "Daily schedule view of Saugatuck Douglas Garden Club activities and programs.",
 };
 
-export default function EventsDayPage() {
+export default async function EventsDayPage() {
+  const { events } = await listEvents({ view: "day" });
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-8">
       <div>
@@ -24,7 +26,7 @@ export default function EventsDayPage() {
 
       <EventViewSelector currentView="day" />
 
-      <EventDayView events={FIXTURE_EVENTS} initialDate="2026-07-11" />
+      <EventDayView events={events} initialDate="2026-07-11" />
     </div>
   );
 }

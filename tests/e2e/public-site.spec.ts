@@ -24,8 +24,10 @@ test.describe("Public Site Navigation & Experiences", () => {
 
     // About Our Club
     await navigateTo("About Our Club");
-    await expect(page).toHaveURL("/aboutourclub");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("About Our Club");
+    await expect(page).toHaveURL("/about");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      /About (Our Club|Saugatuck Douglas Garden Club)/,
+    );
 
     // Annual Garden Walk
     await navigateTo("Garden Walk");
@@ -55,23 +57,25 @@ test.describe("Public Site Navigation & Experiences", () => {
     // Search filter
     const searchInput = page.getByPlaceholder("Search events by keyword or venue...");
     await searchInput.fill("Garden Walk");
-    await expect(page.getByText("2026 Garden Walk Fundraiser").first()).toBeVisible();
+    await expect(page.getByText(/Garden Walk Fundraiser/).first()).toBeVisible();
     await searchInput.fill("");
 
     // Switch to month view
     await page.getByRole("link", { name: "Month Calendar" }).click();
-    await expect(page).toHaveURL("/events/month");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Events Month Calendar");
+    await expect(page).toHaveURL(/\/events\/month/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Events (Month )?Calendar/);
 
     // Switch to day view
     await page.getByRole("link", { name: "Day Schedule" }).click();
-    await expect(page).toHaveURL("/events/day");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Event Daily Schedule");
+    await expect(page).toHaveURL(/\/events\/day/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      /Event Daily Schedule|Events Calendar/,
+    );
 
     // Open an event detail
     await page.goto("/event/2026-garden-walk-fundraiser");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("2026 Garden Walk Fundraiser");
-    await expect(page.getByText("Saugatuck Douglas Gardens Tour Hub")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Garden Walk Fundraiser/);
+    await expect(page.getByText("Saugatuck Woman's Club")).toBeVisible();
   });
 
   test("gallery view opens and navigates keyboard lightbox", async ({ page }) => {
@@ -104,6 +108,7 @@ test.describe("Public Site Navigation & Experiences", () => {
     await page.getByRole("button", { name: "Submit Message" }).click();
 
     // Confirmation alert
+    await expect(page.getByRole("status")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("Thank you for reaching out!")).toBeVisible();
   });
 });

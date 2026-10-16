@@ -8,7 +8,7 @@ const surfaces = [
   { name: "public-gallery", path: "/gallery" },
   { name: "public-garden-walk", path: "/garden-walk" },
   { name: "auth-login", path: "/login" },
-  { name: "auth-register", path: "/becomeamember" },
+  { name: "auth-register", path: "/join" },
   { name: "admin-overview", path: "/admin" },
 ];
 

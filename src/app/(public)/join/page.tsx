@@ -6,7 +6,7 @@ export const metadata = {
     "Join the Saugatuck Douglas Garden Club. Register your member profile, select volunteer project interests, and connect with fellow gardeners.",
 };
 
-export default function BecomeAMemberPage() {
+export default function JoinPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8 space-y-8">
       <div className="text-center space-y-3">

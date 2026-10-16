@@ -18,7 +18,7 @@ test.describe("Auth & Panels Surfaces Preview", () => {
   test("become a member form renders all civic project interest checkboxes and dues card", async ({
     page,
   }) => {
-    await page.goto("/becomeamember");
+    await page.goto("/join");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Become A Member");
 
     // Check dues amount

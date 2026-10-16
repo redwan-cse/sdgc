@@ -1,4 +1,4 @@
-import { FIXTURE_EVENTS } from "../../../../tests/fixtures/public-content";
+import { listEvents } from "@/features/events/queries";
 import { EventViewSelector } from "@/features/events/components/event-view-selector";
 import { EventListView } from "@/features/events/components/event-list-view";
 
@@ -8,7 +8,9 @@ export const metadata = {
     "Upcoming gardening workshops, monthly membership meetings, civic planting days, and Garden Walk events in Saugatuck and Douglas, MI.",
 };
 
-export default function EventsListPage() {
+export default async function EventsListPage() {
+  const { events } = await listEvents({ view: "list" });
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-8">
       <div>
@@ -26,7 +28,7 @@ export default function EventsListPage() {
 
       <EventViewSelector currentView="list" />
 
-      <EventListView events={FIXTURE_EVENTS} />
+      <EventListView events={events} />
     </div>
   );
 }

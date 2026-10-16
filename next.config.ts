@@ -17,6 +17,30 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/aboutourclub",
+        destination: "/about",
+        permanent: true,
+      },
+      {
+        source: "/becomeamember",
+        destination: "/join",
+        permanent: true,
+      },
+      {
+        source: "/wp-login.php",
+        destination: "/login",
+        permanent: true,
+      },
+      {
+        source: "/wp-admin/:path*",
+        destination: "/admin",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

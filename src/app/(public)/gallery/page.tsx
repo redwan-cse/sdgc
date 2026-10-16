@@ -1,4 +1,4 @@
-import { FIXTURE_ALBUMS, FIXTURE_MEDIA } from "../../../../tests/fixtures/public-content";
+import { listGalleryMedia, listMediaAlbums } from "@/features/media/queries";
 import { GalleryView } from "@/features/media/components/gallery-view";
 
 export const metadata = {
@@ -7,7 +7,10 @@ export const metadata = {
     "Explore photo albums of Saugatuck Douglas Garden Club community beautification projects, civic plantings, and annual Garden Walks.",
 };
 
-export default function GalleryPage() {
+export default async function GalleryPage() {
+  const albums = await listMediaAlbums();
+  const media = await listGalleryMedia();
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 space-y-8">
       <div className="space-y-3">
@@ -23,7 +26,7 @@ export default function GalleryPage() {
         </p>
       </div>
 
-      <GalleryView albums={FIXTURE_ALBUMS} media={FIXTURE_MEDIA} />
+      <GalleryView albums={albums} media={media} />
     </div>
   );
 }

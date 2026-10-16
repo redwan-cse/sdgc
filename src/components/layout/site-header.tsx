@@ -9,11 +9,11 @@ import { MobileNavigation } from "./mobile-navigation";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/aboutourclub", label: "About Our Club" },
+  { href: "/about", label: "About Our Club" },
   { href: "/garden-walk", label: "Garden Walk" },
   { href: "/events", label: "Events" },
   { href: "/gallery", label: "Gallery" },
-  { href: "/becomeamember", label: "Become A Member" },
+  { href: "/join", label: "Become A Member" },
   { href: "/contact", label: "Contact Us" },
 ];
 
@@ -91,7 +91,7 @@ export function SiteHeader() {
             Login
           </Link>
           <Link
-            href="/becomeamember"
+            href="/join"
             className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-2xs"
           >
             Join

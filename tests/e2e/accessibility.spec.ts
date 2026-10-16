@@ -4,12 +4,12 @@ import AxeBuilder from "@axe-core/playwright";
 test.describe("Accessibility (WCAG 2.1 AA Audits)", () => {
   const routes = [
     { name: "Home", path: "/" },
-    { name: "About Our Club", path: "/aboutourclub" },
+    { name: "About Our Club", path: "/about" },
     { name: "Garden Walk", path: "/garden-walk" },
     { name: "Gallery", path: "/gallery" },
     { name: "Events Calendar", path: "/events" },
     { name: "Contact", path: "/contact" },
-    { name: "Membership Registration", path: "/becomeamember" },
+    { name: "Membership Registration", path: "/join" },
     { name: "Login", path: "/login" },
   ];
 

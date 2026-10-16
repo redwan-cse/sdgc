@@ -17,9 +17,9 @@ interface PageRow {
 const PAGES: PageRow[] = [
   { slug: "home", title: "Homepage", url: "/", lastUpdated: "2026-10-15", status: "published" },
   {
-    slug: "aboutourclub",
+    slug: "about",
     title: "About Our Club",
-    url: "/aboutourclub",
+    url: "/about",
     lastUpdated: "2026-10-15",
     status: "published",
   },

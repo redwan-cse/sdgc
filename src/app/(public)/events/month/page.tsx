@@ -1,4 +1,4 @@
-import { FIXTURE_EVENTS } from "../../../../../tests/fixtures/public-content";
+import { listEvents } from "@/features/events/queries";
 import { EventViewSelector } from "@/features/events/components/event-view-selector";
 import { EventMonthView } from "@/features/events/components/event-month-view";
 
@@ -8,7 +8,9 @@ export const metadata = {
     "Monthly calendar view of Saugatuck Douglas Garden Club workshops, civic plantings, and tour dates.",
 };
 
-export default function EventsMonthPage() {
+export default async function EventsMonthPage() {
+  const { events } = await listEvents({ view: "month" });
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-8">
       <div>
@@ -25,7 +27,7 @@ export default function EventsMonthPage() {
 
       <EventViewSelector currentView="month" />
 
-      <EventMonthView events={FIXTURE_EVENTS} initialYear={2026} initialMonth={7} />
+      <EventMonthView events={events} initialYear={2026} initialMonth={7} />
     </div>
   );
 }

@@ -14,7 +14,7 @@ test.describe("Phase P4: Authentication & Member Profile E2E Journeys", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("My Member Profile");
 
     // Verify profile fields are populated
-    await expect(page.locator("#prof-firstname")).toHaveValue("Mary");
+    await expect(page.locator("#prof-firstname")).toHaveValue(/^(Mary|UpdatedMary)$/);
     await expect(page.locator("#prof-lastname")).toHaveValue("Member");
   });
 

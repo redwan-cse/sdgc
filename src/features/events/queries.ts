@@ -1,0 +1,181 @@
+import { createClient } from "@/lib/supabase/server";
+import { CLUB_TIMEZONE } from "./calendar";
+import type { EventCalendarView, EventPage, EventSummary } from "./types";
+
+export interface EventFilterOptions {
+  query?: string;
+  from?: string;
+  to?: string;
+  view?: EventCalendarView;
+  date?: string;
+}
+
+interface EventRowWithVenue {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  all_day: boolean;
+  status: string;
+  ticket_url: string | null;
+  venues: {
+    name: string;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    postal_code: string | null;
+  } | null;
+}
+
+export async function listEvents(filters: EventFilterOptions = {}): Promise<EventPage> {
+  const supabase = await createClient();
+  const currentView: EventCalendarView = filters.view || "list";
+  const selectedDate: string =
+    filters.date || new Date().toISOString().split("T")[0] || "2026-06-01";
+
+  let query = supabase
+    .from("events")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      description,
+      starts_at,
+      ends_at,
+      timezone,
+      all_day,
+      status,
+      ticket_url,
+      venues (
+        name,
+        address,
+        city,
+        state,
+        postal_code
+      )
+    `,
+    )
+    .eq("status", "published")
+    .order("starts_at", { ascending: true });
+
+  if (filters.query) {
+    query = query.ilike("title", `%${filters.query}%`);
+  }
+
+  if (filters.from) {
+    query = query.gte("starts_at", filters.from);
+  }
+
+  if (filters.to) {
+    query = query.lte("starts_at", filters.to);
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data) {
+    console.error("Error fetching events:", error);
+    return {
+      events: [],
+      total: 0,
+      currentView,
+      selectedDate,
+    };
+  }
+
+  const now = new Date();
+  const rawEvents = data as unknown as EventRowWithVenue[];
+
+  const events: EventSummary[] = rawEvents.map((item) => {
+    const venue = item.venues;
+    const fullAddress = venue
+      ? [venue.address, venue.city, venue.state, venue.postal_code].filter(Boolean).join(", ")
+      : undefined;
+
+    const startsDate = new Date(item.starts_at);
+
+    return {
+      id: item.id,
+      slug: item.slug,
+      title: item.title,
+      description: item.description || "",
+      startsAt: item.starts_at,
+      endsAt: item.ends_at,
+      timezone: item.timezone || CLUB_TIMEZONE,
+      allDay: Boolean(item.all_day),
+      venueName: venue?.name || "TBD Saugatuck / Douglas",
+      venueAddress: fullAddress,
+      ticketUrl: item.ticket_url || undefined,
+      isPast: startsDate < now,
+    };
+  });
+
+  return {
+    events,
+    total: events.length,
+    currentView,
+    selectedDate,
+  };
+}
+
+export async function getEventBySlug(slug: string): Promise<EventSummary | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      description,
+      starts_at,
+      ends_at,
+      timezone,
+      all_day,
+      status,
+      ticket_url,
+      venues (
+        name,
+        address,
+        city,
+        state,
+        postal_code
+      )
+    `,
+    )
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const item = data as unknown as EventRowWithVenue;
+  const venue = item.venues;
+
+  const fullAddress = venue
+    ? [venue.address, venue.city, venue.state, venue.postal_code].filter(Boolean).join(", ")
+    : undefined;
+
+  const startsDate = new Date(item.starts_at);
+  const now = new Date();
+
+  return {
+    id: item.id,
+    slug: item.slug,
+    title: item.title,
+    description: item.description || "",
+    startsAt: item.starts_at,
+    endsAt: item.ends_at,
+    timezone: item.timezone || CLUB_TIMEZONE,
+    allDay: Boolean(item.all_day),
+    venueName: venue?.name || "TBD Saugatuck / Douglas",
+    venueAddress: fullAddress,
+    ticketUrl: item.ticket_url || undefined,
+    isPast: startsDate < now,
+  };
+}

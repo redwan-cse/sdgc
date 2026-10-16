@@ -81,14 +81,15 @@ export async function getOwnMembershipSummary(): Promise<MembershipSummary | nul
     return null;
   }
 
-  // Find most recent payment for this membership
-  const { data: payment } = await supabase
+  // Find payments for this membership (prioritize confirmed over pending)
+  const { data: payments } = await supabase
     .from("payments")
     .select("status, payment_method, amount_cents")
     .eq("membership_id", membership.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
+
+  const payment =
+    payments?.find((p) => p.status === "confirmed" || p.status === "succeeded") ?? payments?.[0];
 
   const isApproved = membership.status === "approved";
   const isSuspended = false; // DB check constraint: status is pending, approved, or expired
@@ -114,7 +115,7 @@ export async function getOwnMembershipSummary(): Promise<MembershipSummary | nul
           ? "rejected"
           : "pending",
     paymentStatus:
-      payment?.status === "succeeded"
+      payment?.status === "confirmed" || payment?.status === "succeeded"
         ? "confirmed"
         : payment?.status === "failed"
           ? "failed"

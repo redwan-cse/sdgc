@@ -132,7 +132,7 @@ export function LoginForm() {
 
       <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
         Not a member yet?{" "}
-        <Link href="/becomeamember" className="font-semibold text-primary hover:underline">
+        <Link href="/join" className="font-semibold text-primary hover:underline">
           Create New Member Profile &rarr;
         </Link>
       </div>
