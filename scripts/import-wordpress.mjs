@@ -509,11 +509,13 @@ export async function runImport({
     }
 
     if (!dryRun && supabase) {
+      const normalizedUsername = user.username.trim().toLowerCase();
+
       // Find existing auth user or profile
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id, username")
-        .eq("username", user.username)
+        .eq("username", normalizedUsername)
         .maybeSingle();
 
       let existingAuthUser = null;
@@ -530,7 +532,7 @@ export async function runImport({
       const reconciliation = reconcileLegacyUserIdentity({
         existingProfile,
         existingAuthUser,
-        importedUser: user,
+        importedUser: { ...user, username: normalizedUsername },
       });
 
       if (reconciliation.status === "conflict") {
@@ -565,7 +567,7 @@ export async function runImport({
       // Upsert profile
       const profilePayload = {
         id: targetUserId,
-        username: user.username,
+        username: normalizedUsername,
         first_name: user.first_name || "Member",
         last_name: user.last_name || "Friend",
         phone: user.phone || null,
@@ -579,7 +581,10 @@ export async function runImport({
         birth_day: user.birth_day || null,
         spouse_name: user.spouse_name || null,
         is_master_gardener: Boolean(user.is_master_gardener),
-        interests_experience: user.interests_experience || null,
+        directory_opt_out: Boolean(user.directory_opt_out),
+        gardening_interests: user.gardening_interests || user.interests_experience || null,
+        volunteer_experience: user.volunteer_experience || null,
+        interests_experience: user.interests_experience || user.gardening_interests || null,
         updated_at: new Date().toISOString(),
       };
 

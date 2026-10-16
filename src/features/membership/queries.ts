@@ -50,6 +50,8 @@ export async function getOwnProfile(): Promise<MemberProfile | null> {
     spouseFirstName: profile.spouse_name ?? undefined,
     masterGardener: profile.is_master_gardener,
     directoryOptOut: profile.directory_opt_out ?? false,
+    gardeningInterests: profile.gardening_interests ?? undefined,
+    volunteerExperience: profile.volunteer_experience ?? undefined,
     interestsExperience: profile.interests_experience ?? undefined,
     projectInterests,
     createdAt: profile.created_at,
@@ -159,6 +161,8 @@ export async function getMemberDirectory(): Promise<DirectoryMember[]> {
       city: p.city ?? undefined,
       state: p.state ?? undefined,
       isMasterGardener: Boolean(p.is_master_gardener),
+      gardeningInterests: p.gardening_interests ?? undefined,
+      volunteerExperience: p.volunteer_experience ?? undefined,
       interestsExperience: p.interests_experience ?? undefined,
       projectInterests: interests,
     };

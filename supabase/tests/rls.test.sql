@@ -11,7 +11,11 @@ insert into auth.users (id, email) values
 insert into public.profiles (id, username, first_name, last_name) values
   ('aaaa1111-0000-0000-0000-000000000001', 'usera_rls', 'Alice', 'Member'),
   ('bbbb2222-0000-0000-0000-000000000002', 'userb_rls', 'Bob', 'Member'),
-  ('dddd4444-0000-0000-0000-000000000004', 'admin_rls', 'Admin', 'Staff');
+  ('dddd4444-0000-0000-0000-000000000004', 'admin_rls', 'Admin', 'Staff')
+on conflict (id) do update set
+  username = excluded.username,
+  first_name = excluded.first_name,
+  last_name = excluded.last_name;
 
 insert into public.membership_terms (id, year, dues_cents, currency, opens_at, closes_at) values
   ('b0000000-0000-0000-0000-000000002098', 2098, 5000, 'USD', now() - interval '1 day', now() + interval '300 days');
@@ -105,9 +109,9 @@ select lives_ok(
 );
 
 -- 10. User A CANNOT self-approve their membership (blocked by RLS check)
-update public.memberships set status = 'approved' where user_id = 'aaaa1111-0000-0000-0000-000000000001';
+update public.memberships set status = 'approved' where user_id = 'aaaa1111-0000-0000-0000-000000000001' and term_id = 'b0000000-0000-0000-0000-000000002098';
 select is(
-  (select status from public.memberships where user_id = 'aaaa1111-0000-0000-0000-000000000001'),
+  (select status from public.memberships where user_id = 'aaaa1111-0000-0000-0000-000000000001' and term_id = 'b0000000-0000-0000-0000-000000002098'),
   'pending',
   'User A cannot approve their own membership'
 );

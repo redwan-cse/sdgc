@@ -57,6 +57,7 @@ Work Package R1 addresses the seven critical security, privacy, and integrity bo
 ## 2. Verification Commands & Results
 
 ### TypeScript Verification (`npm run typecheck`)
+
 ```bash
 > sdgc@0.1.0 typecheck
 > next typegen && tsc --noEmit
@@ -66,6 +67,7 @@ Generating route types...
 ```
 
 ### Full Codebase Check (`npm run check`)
+
 ```bash
 > sdgc@0.1.0 check
 > npm run format:check && npm run lint && npm run typecheck && npm test
@@ -100,6 +102,7 @@ Generating route types...
 ```
 
 ### Supabase Integration Tests (`npm run test:integration`)
+
 ```bash
 > sdgc@0.1.0 test:integration
 > vitest run --config vitest.integration.config.ts
@@ -117,6 +120,7 @@ Generating route types...
 ```
 
 ### Database Schema Linting (`npm run db:lint`)
+
 ```bash
 > sdgc@0.1.0 db:lint
 > supabase db lint --local --level warning --fail-on warning
@@ -130,6 +134,7 @@ No schema errors found
 ```
 
 ### pgTAP Database Tests (`npm run db:test`)
+
 ```bash
 > sdgc@0.1.0 db:test
 > supabase test db
@@ -148,13 +153,13 @@ Result: PASS
 
 ## 3. Boundary Verification Matrix
 
-| Ref | Boundary Description | Target | Verification Method | Result |
-|---|---|---|---|---|
-| R1.1 | Event JSON-LD HTML tag escaping (`\u003c`) | Next.js Page & Helper | Unit Test (`src/lib/jsonld.test.ts`) | **PASS** |
-| R1.2 | Direct `profiles` SELECT isolation & sensitive column hiding | Postgres RLS & Views | Integration Test (`remediation-r1.test.ts`) | **PASS** |
-| R1.2 | `member_directory` security barrier & opt-out filtering | Postgres View | Integration Test (`remediation-r1.test.ts`) | **PASS** |
-| R1.3 | Revoke direct contact message insert | Postgres Grants & Constraints | Integration Test (`remediation-r1.test.ts`) | **PASS** |
-| R1.4 | Revoke direct audit event insert & require RPC | Postgres Grants & RPC | Integration Test (`remediation-r1.test.ts`) | **PASS** |
-| R1.5 | Sanitization of `returnTo` against open redirects | Next.js Auth Actions | Unit Test (`src/features/auth/redirects.test.ts`) | **PASS** |
-| R1.6 | Payment simulation fails closed on remote / production | Payments Provider | Unit Test (`src/features/payments/simulation.test.ts`) | **PASS** |
-| R1.7 | Import CLI args (`--input-dir`/`--input`) and takeover prevention | Migration CLI | Unit Test (`tests/unit/import-binding.test.ts`) | **PASS** |
+| Ref  | Boundary Description                                              | Target                        | Verification Method                                    | Result   |
+| ---- | ----------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------ | -------- |
+| R1.1 | Event JSON-LD HTML tag escaping (`\u003c`)                        | Next.js Page & Helper         | Unit Test (`src/lib/jsonld.test.ts`)                   | **PASS** |
+| R1.2 | Direct `profiles` SELECT isolation & sensitive column hiding      | Postgres RLS & Views          | Integration Test (`remediation-r1.test.ts`)            | **PASS** |
+| R1.2 | `member_directory` security barrier & opt-out filtering           | Postgres View                 | Integration Test (`remediation-r1.test.ts`)            | **PASS** |
+| R1.3 | Revoke direct contact message insert                              | Postgres Grants & Constraints | Integration Test (`remediation-r1.test.ts`)            | **PASS** |
+| R1.4 | Revoke direct audit event insert & require RPC                    | Postgres Grants & RPC         | Integration Test (`remediation-r1.test.ts`)            | **PASS** |
+| R1.5 | Sanitization of `returnTo` against open redirects                 | Next.js Auth Actions          | Unit Test (`src/features/auth/redirects.test.ts`)      | **PASS** |
+| R1.6 | Payment simulation fails closed on remote / production            | Payments Provider             | Unit Test (`src/features/payments/simulation.test.ts`) | **PASS** |
+| R1.7 | Import CLI args (`--input-dir`/`--input`) and takeover prevention | Migration CLI                 | Unit Test (`tests/unit/import-binding.test.ts`)        | **PASS** |

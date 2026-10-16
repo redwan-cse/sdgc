@@ -14,8 +14,7 @@
  *    - url.pathname does not start with '//'
  * 7. Returns only `${url.pathname}${url.search}${url.hash}`.
  */
-export function sanitizeReturnTo(returnTo?: string | null): string {
-  const fallback = "/profile";
+export function sanitizeReturnTo(returnTo?: string | null, fallback = "/profile"): string {
   if (!returnTo || typeof returnTo !== "string") {
     return fallback;
   }

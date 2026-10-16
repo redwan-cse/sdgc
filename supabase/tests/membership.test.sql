@@ -9,7 +9,11 @@ insert into auth.users (id, email) values
 
 insert into public.profiles (id, username, first_name, last_name) values
   ('11111111-0000-0000-0000-000000000001', 'alice_tap', 'Alice', 'Smith'),
-  ('11111111-0000-0000-0000-000000000002', 'bob_tap', 'Bob', 'Jones');
+  ('11111111-0000-0000-0000-000000000002', 'bob_tap', 'Bob', 'Jones')
+on conflict (id) do update set
+  username = excluded.username,
+  first_name = excluded.first_name,
+  last_name = excluded.last_name;
 
 insert into public.membership_terms (id, year, dues_cents, currency, opens_at, closes_at) values
   ('a0000000-0000-0000-0000-000000002099', 2099, 5000, 'USD', now() - interval '10 days', now() + interval '300 days');

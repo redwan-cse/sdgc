@@ -100,6 +100,23 @@ describe("registerSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts separate gardeningInterests and volunteerExperience fields", () => {
+    const result = registerSchema.safeParse({
+      ...validBase,
+      addressLine2: "Suite 400",
+      gardeningInterests: "Dahlias, hostas, and shade perennials",
+      volunteerExperience: "Past chairperson for annual plant sales",
+      directoryOptOut: true,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.gardeningInterests).toBe("Dahlias, hostas, and shade perennials");
+      expect(result.data.volunteerExperience).toBe("Past chairperson for annual plant sales");
+      expect(result.data.addressLine2).toBe("Suite 400");
+      expect(result.data.directoryOptOut).toBe(true);
+    }
+  });
+
   it("rejects invalid project interest codes", () => {
     const result = registerSchema.safeParse({
       ...validBase,

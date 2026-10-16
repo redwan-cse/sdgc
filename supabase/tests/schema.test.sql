@@ -39,8 +39,9 @@ select throws_ok(
 insert into auth.users (id, email) values ('00000000-0000-0000-0000-000000000001', 'synth1@sdgc.local');
 
 select throws_ok(
-  $$ insert into public.profiles (id, username, first_name, last_name, birth_month, birth_day)
-     values ('00000000-0000-0000-0000-000000000001', 'tester1', 'Test', 'User', 2, 30) $$,
+  $$ update public.profiles
+     set birth_month = 2, birth_day = 30
+     where id = '00000000-0000-0000-0000-000000000001' $$,
   '23514', -- check_violation
   null,
   'February 30 is rejected by birthday check constraint'
@@ -48,8 +49,9 @@ select throws_ok(
 
 -- 5. Verify February 29 IS valid (without requiring birth year)
 select lives_ok(
-  $$ insert into public.profiles (id, username, first_name, last_name, birth_month, birth_day)
-     values ('00000000-0000-0000-0000-000000000001', 'tester1', 'Test', 'User', 2, 29) $$,
+  $$ update public.profiles
+     set birth_month = 2, birth_day = 29
+     where id = '00000000-0000-0000-0000-000000000001' $$,
   'February 29 validates successfully for leap year birthdays'
 );
 

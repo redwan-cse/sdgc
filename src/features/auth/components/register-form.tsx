@@ -34,6 +34,8 @@ export function RegisterForm() {
     spouseFirstName: "",
     masterGardener: false,
     directoryOptOut: false,
+    gardeningInterests: "",
+    volunteerExperience: "",
     interestsExperience: "",
     projectInterests: [],
     password: "",
@@ -135,6 +137,11 @@ export function RegisterForm() {
       if (formData.birthDay) formPayload.append("birthDay", String(formData.birthDay));
       if (formData.spouseFirstName) formPayload.append("spouseFirstName", formData.spouseFirstName);
       if (formData.masterGardener) formPayload.append("masterGardener", "true");
+      if (formData.directoryOptOut) formPayload.append("directoryOptOut", "true");
+      if (formData.gardeningInterests)
+        formPayload.append("gardeningInterests", formData.gardeningInterests);
+      if (formData.volunteerExperience)
+        formPayload.append("volunteerExperience", formData.volunteerExperience);
       if (formData.interestsExperience)
         formPayload.append("interestsExperience", formData.interestsExperience);
       for (const code of formData.projectInterests) {
@@ -365,6 +372,16 @@ export function RegisterForm() {
           />
         </div>
 
+        <div>
+          <Label htmlFor="reg-address2">Address Line 2 (Apt, Suite, Unit)</Label>
+          <Input
+            id="reg-address2"
+            value={formData.addressLine2 || ""}
+            onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+            placeholder="Apt 4B"
+          />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="reg-city">City</Label>
@@ -484,18 +501,34 @@ export function RegisterForm() {
         </div>
 
         <div>
-          <Label htmlFor="reg-experience">Gardening Interests & Experience</Label>
+          <Label htmlFor="reg-gardening-interests">Gardening Interests</Label>
           <Textarea
-            id="reg-experience"
-            rows={3}
-            value={formData.interestsExperience || ""}
+            id="reg-gardening-interests"
+            rows={2}
+            value={formData.gardeningInterests || ""}
             onChange={(e) =>
               setFormData({
                 ...formData,
-                interestsExperience: e.target.value,
+                gardeningInterests: e.target.value,
               })
             }
-            placeholder="Tell us what you enjoy growing, past gardening experience, or skills you'd love to share!"
+            placeholder="Tell us what you enjoy growing, favorite plants, or personal gardening hobbies."
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="reg-volunteer-experience">Work & Volunteer Experience</Label>
+          <Textarea
+            id="reg-volunteer-experience"
+            rows={2}
+            value={formData.volunteerExperience || ""}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                volunteerExperience: e.target.value,
+              })
+            }
+            placeholder="Professional background, prior committee or volunteer work, or skills you'd love to share!"
           />
         </div>
       </section>

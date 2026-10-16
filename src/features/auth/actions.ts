@@ -30,7 +30,7 @@ async function resolveIdentifierToEmail(identifier: string): Promise<string> {
   const { data: profile } = await admin
     .from("profiles")
     .select("id")
-    .ilike("username", trimmed)
+    .eq("username", trimmed.toLowerCase())
     .maybeSingle();
 
   if (!profile) {
@@ -114,16 +114,34 @@ export async function registerAction(
 
   const data = parseResult.data;
   const supabase = await createClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:3000";
 
-  // Create Auth user
+  // Create Auth user with full metadata so database trigger provisions profile, interests, and term atomically
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
     options: {
+      emailRedirectTo: `${siteUrl}/auth/confirm?next=/profile`,
       data: {
-        username: data.username,
+        username: data.username.toLowerCase(),
         first_name: data.firstName,
         last_name: data.lastName,
+        phone: data.phoneHome || null,
+        secondary_phone: data.phoneCell || null,
+        address_line1: data.addressLine1 || null,
+        address_line2: data.addressLine2 || null,
+        city: data.city || null,
+        state: data.state || null,
+        postal_code: data.zipCode || null,
+        birth_month: data.birthMonth || null,
+        birth_day: data.birthDay || null,
+        spouse_name: data.spouseFirstName || null,
+        is_master_gardener: data.masterGardener,
+        directory_opt_out: data.directoryOptOut ?? false,
+        gardening_interests: data.gardeningInterests || null,
+        volunteer_experience: data.volunteerExperience || null,
+        interests_experience: data.interestsExperience || data.gardeningInterests || null,
+        project_interests: data.projectInterests,
       },
     },
   });
@@ -136,66 +154,6 @@ export async function registerAction(
   }
 
   const userId = authData.user.id;
-
-  // Insert profile using server client
-  const { error: profileError } = await supabase.from("profiles").upsert(
-    {
-      id: userId,
-      username: data.username.toLowerCase(),
-      first_name: data.firstName,
-      last_name: data.lastName,
-      spouse_name: data.spouseFirstName || null,
-      phone: data.phoneHome || null,
-      secondary_phone: data.phoneCell || null,
-      address_line1: data.addressLine1 || null,
-      address_line2: data.addressLine2 || null,
-      city: data.city || null,
-      state: data.state || null,
-      postal_code: data.zipCode || null,
-      birth_month: data.birthMonth || null,
-      birth_day: data.birthDay || null,
-      is_master_gardener: data.masterGardener,
-      interests_experience: data.interestsExperience || null,
-    },
-    { onConflict: "id" },
-  );
-
-  if (profileError) {
-    return {
-      success: false,
-      error: `Profile creation failed: ${profileError.message}`,
-    };
-  }
-
-  // Insert project interests
-  if (data.projectInterests.length > 0) {
-    const interestRows = data.projectInterests.map((code) => ({
-      user_id: userId,
-      project_code: code,
-    }));
-    await supabase
-      .from("profile_interests")
-      .upsert(interestRows, { onConflict: "user_id,project_code" });
-  }
-
-  // Create pending membership for 2026 term
-  const { data: term } = await supabase
-    .from("membership_terms")
-    .select("id")
-    .eq("year", 2026)
-    .maybeSingle();
-
-  if (term) {
-    await supabase.from("memberships").upsert(
-      {
-        user_id: userId,
-        term_id: term.id,
-        status: "pending",
-      },
-      { onConflict: "user_id,term_id" },
-    );
-  }
-
   revalidatePath("/", "layout");
   return {
     success: true,

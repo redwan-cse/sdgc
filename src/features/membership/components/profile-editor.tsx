@@ -38,6 +38,8 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     spouseFirstName: initialProfile.spouseFirstName || "",
     masterGardener: initialProfile.masterGardener,
     directoryOptOut: initialProfile.directoryOptOut ?? false,
+    gardeningInterests: initialProfile.gardeningInterests || "",
+    volunteerExperience: initialProfile.volunteerExperience || "",
     interestsExperience: initialProfile.interestsExperience || "",
     projectInterests: initialProfile.projectInterests,
   });
@@ -339,12 +341,24 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
         </div>
 
         <div>
-          <Label htmlFor="prof-experience">Gardening Interests & Experience</Label>
+          <Label htmlFor="prof-gardening-interests">Gardening Interests</Label>
           <Textarea
-            id="prof-experience"
-            rows={3}
-            value={formData.interestsExperience || ""}
-            onChange={(e) => setFormData({ ...formData, interestsExperience: e.target.value })}
+            id="prof-gardening-interests"
+            rows={2}
+            value={formData.gardeningInterests || ""}
+            onChange={(e) => setFormData({ ...formData, gardeningInterests: e.target.value })}
+            placeholder="Favorite plants, home gardening hobbies, or specialized interests."
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="prof-volunteer-experience">Work & Volunteer Experience</Label>
+          <Textarea
+            id="prof-volunteer-experience"
+            rows={2}
+            value={formData.volunteerExperience || ""}
+            onChange={(e) => setFormData({ ...formData, volunteerExperience: e.target.value })}
+            placeholder="Professional skills, community volunteering, or background you'd love to share."
           />
         </div>
       </section>

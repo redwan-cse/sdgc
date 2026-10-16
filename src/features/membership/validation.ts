@@ -44,6 +44,8 @@ export const memberProfileSchema = z
     spouseFirstName: z.string().trim().optional().or(z.literal("")),
     masterGardener: z.boolean().default(false),
     directoryOptOut: z.boolean().default(false),
+    gardeningInterests: z.string().trim().optional().or(z.literal("")),
+    volunteerExperience: z.string().trim().optional().or(z.literal("")),
     interestsExperience: z.string().trim().optional().or(z.literal("")),
     projectInterests: z.array(z.enum(projectCodes)).default([]),
   })

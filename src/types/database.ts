@@ -252,14 +252,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "address_line1": string | null,"address_line2": string | null,"birth_day": number | null,"birth_month": number | null,"city": string | null,"created_at": string,"directory_opt_out": boolean,"first_name": string,"id": string,"interests_experience": string | null,"is_master_gardener": boolean,"last_name": string,"phone": string | null,"postal_code": string | null,"secondary_phone": string | null,"spouse_name": string | null,"state": string | null,"updated_at": string,"username": string
+                    "address_line1": string | null,"address_line2": string | null,"birth_day": number | null,"birth_month": number | null,"city": string | null,"created_at": string,"directory_opt_out": boolean,"first_name": string,"gardening_interests": string | null,"id": string,"interests_experience": string | null,"is_master_gardener": boolean,"last_name": string,"phone": string | null,"postal_code": string | null,"secondary_phone": string | null,"spouse_name": string | null,"state": string | null,"updated_at": string,"username": string,"volunteer_experience": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "address_line1"?: string | null,"address_line2"?: string | null,"birth_day"?: number | null,"birth_month"?: number | null,"city"?: string | null,"created_at"?: string,"directory_opt_out"?: boolean,"first_name": string,"id": string,"interests_experience"?: string | null,"is_master_gardener"?: boolean,"last_name": string,"phone"?: string | null,"postal_code"?: string | null,"secondary_phone"?: string | null,"spouse_name"?: string | null,"state"?: string | null,"updated_at"?: string,"username": string
+                    "address_line1"?: string | null,"address_line2"?: string | null,"birth_day"?: number | null,"birth_month"?: number | null,"city"?: string | null,"created_at"?: string,"directory_opt_out"?: boolean,"first_name": string,"gardening_interests"?: string | null,"id": string,"interests_experience"?: string | null,"is_master_gardener"?: boolean,"last_name": string,"phone"?: string | null,"postal_code"?: string | null,"secondary_phone"?: string | null,"spouse_name"?: string | null,"state"?: string | null,"updated_at"?: string,"username": string,"volunteer_experience"?: string | null
                   }
                   Update: {
-                    "address_line1"?: string | null,"address_line2"?: string | null,"birth_day"?: number | null,"birth_month"?: number | null,"city"?: string | null,"created_at"?: string,"directory_opt_out"?: boolean,"first_name"?: string,"id"?: string,"interests_experience"?: string | null,"is_master_gardener"?: boolean,"last_name"?: string,"phone"?: string | null,"postal_code"?: string | null,"secondary_phone"?: string | null,"spouse_name"?: string | null,"state"?: string | null,"updated_at"?: string,"username"?: string
+                    "address_line1"?: string | null,"address_line2"?: string | null,"birth_day"?: number | null,"birth_month"?: number | null,"city"?: string | null,"created_at"?: string,"directory_opt_out"?: boolean,"first_name"?: string,"gardening_interests"?: string | null,"id"?: string,"interests_experience"?: string | null,"is_master_gardener"?: boolean,"last_name"?: string,"phone"?: string | null,"postal_code"?: string | null,"secondary_phone"?: string | null,"spouse_name"?: string | null,"state"?: string | null,"updated_at"?: string,"username"?: string,"volunteer_experience"?: string | null
                   }
                   Relationships: [
 
@@ -325,14 +325,14 @@ isOneToOne: false
           Views: {
             "member_directory": {
                   Row: {
-                    "city": string | null,"first_name": string | null,"id": string | null,"interests_experience": string | null,"is_master_gardener": boolean | null,"last_name": string | null,"phone": string | null,"project_interests": Json | null,"secondary_phone": string | null,"state": string | null,"username": string | null
+                    "city": string | null,"first_name": string | null,"gardening_interests": string | null,"id": string | null,"interests_experience": string | null,"is_master_gardener": boolean | null,"last_name": string | null,"phone": string | null,"project_interests": Json | null,"secondary_phone": string | null,"state": string | null,"username": string | null,"volunteer_experience": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                           "city"?: string | null,"first_name"?: string | null,"id"?: string | null,"interests_experience"?: string | null,"is_master_gardener"?: boolean | null,"last_name"?: string | null,"phone"?: string | null,"project_interests"?: never,"secondary_phone"?: string | null,"state"?: string | null,"username"?: string | null
+                           "city"?: string | null,"first_name"?: string | null,"gardening_interests"?: string | null,"id"?: string | null,"interests_experience"?: string | null,"is_master_gardener"?: boolean | null,"last_name"?: string | null,"phone"?: string | null,"project_interests"?: never,"secondary_phone"?: string | null,"state"?: string | null,"username"?: string | null,"volunteer_experience"?: string | null
                          }
                         Update: {
-                           "city"?: string | null,"first_name"?: string | null,"id"?: string | null,"interests_experience"?: string | null,"is_master_gardener"?: boolean | null,"last_name"?: string | null,"phone"?: string | null,"project_interests"?: never,"secondary_phone"?: string | null,"state"?: string | null,"username"?: string | null
+                           "city"?: string | null,"first_name"?: string | null,"gardening_interests"?: string | null,"id"?: string | null,"interests_experience"?: string | null,"is_master_gardener"?: boolean | null,"last_name"?: string | null,"phone"?: string | null,"project_interests"?: never,"secondary_phone"?: string | null,"state"?: string | null,"username"?: string | null,"volunteer_experience"?: string | null
                          }
                         Relationships: [
 
@@ -357,6 +357,9 @@ isOneToOne: false
                            },
 "reconcile_payment":
 { Args: { "p_notes"?: string,"p_payment_id": string }; Returns: Json
+                           },
+"update_member_profile":
+{ Args: { "p_address_line1"?: string,"p_address_line2"?: string,"p_birth_day"?: number,"p_birth_month"?: number,"p_city"?: string,"p_directory_opt_out"?: boolean,"p_first_name": string,"p_gardening_interests"?: string,"p_is_master_gardener"?: boolean,"p_last_name": string,"p_phone"?: string,"p_postal_code"?: string,"p_project_interests"?: (string)[],"p_secondary_phone"?: string,"p_spouse_name"?: string,"p_state"?: string,"p_volunteer_experience"?: string }; Returns: undefined
                            }
           }
           Enums: {

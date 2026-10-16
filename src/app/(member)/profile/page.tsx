@@ -1,4 +1,3 @@
-import { FIXTURE_MEMBER } from "../../../../tests/fixtures/public-content";
 import { getCurrentUser } from "@/features/auth/authorization";
 import { getOwnProfile } from "@/features/membership/queries";
 import { ProfileEditor } from "@/features/membership/components/profile-editor";
@@ -28,7 +27,16 @@ export default async function ProfilePage() {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 sm:p-10 shadow-sm">
-        <ProfileEditor initialProfile={profile ?? FIXTURE_MEMBER} />
+        {profile ? (
+          <ProfileEditor initialProfile={profile} />
+        ) : (
+          <div className="text-center py-12 space-y-4">
+            <h2 className="text-xl font-semibold text-foreground">Profile Not Found</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Unable to load your member profile. Please try refreshing the page or sign in again.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

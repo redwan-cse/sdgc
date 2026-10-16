@@ -28,6 +28,8 @@ export interface MemberProfileInput {
   spouseFirstName?: string;
   masterGardener: boolean;
   directoryOptOut?: boolean;
+  gardeningInterests?: string;
+  volunteerExperience?: string;
   interestsExperience?: string;
   projectInterests: ProjectInterestCode[];
 }
@@ -70,6 +72,8 @@ export interface DirectoryMember {
   state?: string;
   postalCode?: string;
   isMasterGardener: boolean;
+  gardeningInterests?: string;
+  volunteerExperience?: string;
   interestsExperience?: string;
   projectInterests: string[];
 }
