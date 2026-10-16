@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "@fontsource-variable/inter";
 import "@fontsource-variable/lora";
 import { siteConfig } from "@/config/site";
@@ -41,7 +42,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script
+        <Script
+          id="theme-initializer"
+          strategy="beforeInteractive"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: Theme initialization script must run before render to prevent flash of wrong theme
           dangerouslySetInnerHTML={{
             __html: `try {

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 export function ContactForm() {
+  const [mounted, setMounted] = React.useState(false);
   const [formData, setFormData] = React.useState<ContactFormData>({
     name: "",
     email: "",
@@ -19,6 +20,36 @@ export function ContactForm() {
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submittedReference, setSubmittedReference] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="h-4 w-20 bg-muted/40 rounded" />
+            <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 w-24 bg-muted/40 rounded" />
+            <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 w-24 bg-muted/40 rounded" />
+          <div className="h-10 w-full rounded-md border border-input bg-background/50" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 w-16 bg-muted/40 rounded" />
+          <div className="h-28 w-full rounded-md border border-input bg-background/50" />
+        </div>
+        <div className="h-10 w-36 rounded-md bg-primary/20" />
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
