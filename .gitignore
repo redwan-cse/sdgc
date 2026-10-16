@@ -25,6 +25,7 @@ supabase/.env*
 /playwright/.auth/
 /artifacts/
 /imports/private/
+/imports/live-crawl/
 /temp/
 /.bootstrap/
 

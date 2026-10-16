@@ -12,3 +12,5 @@ supabase/.branches
 src/types/database.ts
 docs/reference/theme/original.css
 docs/reference/theme/original-layout.tsx
+imports
+imports/**

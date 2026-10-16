@@ -11,6 +11,7 @@
       "!!**/playwright-report",
       "!!**/test-results",
       "!!**/artifacts",
+      "!!**/imports",
       "!src/types/database.ts"
     ]
   },
