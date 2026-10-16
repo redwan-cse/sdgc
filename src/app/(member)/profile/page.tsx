@@ -1,4 +1,6 @@
 import { FIXTURE_MEMBER } from "../../../../tests/fixtures/public-content";
+import { getCurrentUser } from "@/features/auth/authorization";
+import { getOwnProfile } from "@/features/membership/queries";
 import { ProfileEditor } from "@/features/membership/components/profile-editor";
 
 export const metadata = {
@@ -7,7 +9,10 @@ export const metadata = {
     "View and edit your personal member profile details and project volunteer preferences.",
 };
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const user = await getCurrentUser();
+  const profile = user ? await getOwnProfile() : null;
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <div>
@@ -23,7 +28,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 sm:p-10 shadow-sm">
-        <ProfileEditor initialProfile={FIXTURE_MEMBER} />
+        <ProfileEditor initialProfile={profile ?? FIXTURE_MEMBER} />
       </div>
     </div>
   );

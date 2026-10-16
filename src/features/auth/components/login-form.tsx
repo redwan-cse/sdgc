@@ -2,24 +2,30 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { loginSchema, type LoginFormData } from "../validation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { loginAction } from "@/features/auth/actions";
+import { type LoginFormData, loginSchema } from "../validation";
 
 export function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+
   const [formData, setFormData] = React.useState<LoginFormData>({
     identifier: "",
     password: "",
   });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    setStatusMessage(null);
+    setErrorMessage(null);
 
     const result = loginSchema.safeParse(formData);
     if (!result.success) {
@@ -34,12 +40,30 @@ export function LoginForm() {
     }
 
     setIsSubmitting(true);
-    // Preview interaction (P4 connects real Supabase Auth SSR session)
     try {
-      await new Promise((res) => setTimeout(res, 300));
-      setStatusMessage(
-        "Frontend preview: Authentication form validated. Server authentication connects in Phase 4.",
-      );
+      const formPayload = new FormData();
+      formPayload.append("identifier", formData.identifier);
+      formPayload.append("password", formData.password);
+      if (returnTo) {
+        formPayload.append("returnTo", returnTo);
+      }
+
+      const res = await loginAction(formPayload);
+      if (!res.success) {
+        setErrorMessage(res.error);
+        if (res.fieldErrors) {
+          const mapped: Record<string, string> = {};
+          for (const [k, v] of Object.entries(res.fieldErrors)) {
+            if (v?.[0]) mapped[k] = v[0];
+          }
+          setErrors(mapped);
+        }
+      } else {
+        router.push(res.data.returnTo as Parameters<typeof router.push>[0]);
+        router.refresh();
+      }
+    } catch {
+      setErrorMessage("An unexpected network error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -47,12 +71,12 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-6">
-      {statusMessage && (
+      {errorMessage && (
         <div
-          className="rounded-md bg-primary/10 border border-primary/20 p-3 text-xs text-primary"
-          role="status"
+          className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive"
+          role="alert"
         >
-          {statusMessage}
+          {errorMessage}
         </div>
       )}
 

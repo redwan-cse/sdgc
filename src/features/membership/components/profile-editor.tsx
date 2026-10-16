@@ -2,7 +2,13 @@
 
 import * as React from "react";
 import { memberProfileSchema, type MemberProfileFormData } from "../validation";
-import { PROJECT_INTEREST_CHOICES, type MemberProfile, type ProjectInterestCode } from "../types";
+import {
+  PROJECT_INTEREST_CHOICES,
+  type MemberProfile,
+  type MemberProfileInput,
+  type ProjectInterestCode,
+} from "../types";
+import { updateOwnProfileAction } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,10 +73,30 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     }
 
     setIsSaving(true);
-    // Preview interaction (P4 connects real Supabase profile update)
     try {
-      await new Promise((res) => setTimeout(res, 300));
-      setStatusMessage("Profile updated successfully!");
+      const payload: MemberProfileInput = {
+        ...result.data,
+        birthMonth: result.data.birthMonth ?? undefined,
+        birthDay: result.data.birthDay ?? undefined,
+        projectInterests: result.data.projectInterests as ProjectInterestCode[],
+      };
+      const res = await updateOwnProfileAction(payload);
+      if (res.success) {
+        setStatusMessage("Profile updated successfully!");
+      } else {
+        setStatusMessage(null);
+        if (res.fieldErrors) {
+          const mapped: Record<string, string> = {};
+          for (const [k, v] of Object.entries(res.fieldErrors)) {
+            if (v?.[0]) mapped[k] = v[0];
+          }
+          setErrors(mapped);
+        } else {
+          setErrors({ form: res.error });
+        }
+      }
+    } catch {
+      setStatusMessage("Failed to update profile. Please try again.");
     } finally {
       setIsSaving(false);
     }

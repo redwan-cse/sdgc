@@ -3,12 +3,20 @@ import type { MemberProfile } from "@/features/membership/types";
 export type AppRole = "admin" | "editor" | "treasurer";
 
 export type Capability =
-  | "read_public"
-  | "manage_own_profile"
-  | "view_member_resources"
-  | "manage_content"
-  | "reconcile_dues"
-  | "manage_club";
+  | "content.manage"
+  | "events.manage"
+  | "media.manage"
+  | "dues.reconcile"
+  | "memberships.approve"
+  | "members.manage"
+  | "messages.manage"
+  | "roles.manage"
+  | "settings.manage"
+  | "audit.view";
+
+export type ActionResult<T = void> =
+  | { success: true; data: T }
+  | { success: false; error: string; fieldErrors?: Record<string, string[]> };
 
 export interface AuthSessionUser {
   id: string;
@@ -17,4 +25,5 @@ export interface AuthSessionUser {
   roles: AppRole[];
   capabilities: Capability[];
   profile?: MemberProfile;
+  membershipStatus?: "approved" | "pending" | "none" | "expired";
 }

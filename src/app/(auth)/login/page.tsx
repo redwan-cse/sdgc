@@ -1,3 +1,4 @@
+import * as React from "react";
 import { LoginForm } from "@/features/auth/components/login-form";
 
 export const metadata = {
@@ -19,7 +20,9 @@ export default function LoginPage() {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm">
-        <LoginForm />
+        <React.Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-muted/40" />}>
+          <LoginForm />
+        </React.Suspense>
       </div>
     </div>
   );

@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { registerAction } from "@/features/auth/actions";
 import { registerSchema, type RegisterFormData } from "../validation";
 import { PROJECT_INTEREST_CHOICES, type ProjectInterestCode } from "@/features/membership/types";
 import { Button } from "@/components/ui/button";
@@ -12,6 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
 
 export function RegisterForm() {
+  const router = useRouter();
+
   const [formData, setFormData] = React.useState<RegisterFormData>({
     username: "",
     firstName: "",
@@ -35,7 +39,8 @@ export function RegisterForm() {
   });
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const handleProjectToggle = (code: ProjectInterestCode) => {
@@ -51,7 +56,8 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    setStatusMessage(null);
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
     const result = registerSchema.safeParse(formData);
     if (!result.success) {
@@ -66,12 +72,52 @@ export function RegisterForm() {
     }
 
     setIsSubmitting(true);
-    // Preview interaction (P4 connects real Supabase Auth SSR signup)
     try {
-      await new Promise((res) => setTimeout(res, 400));
-      setStatusMessage(
-        "Frontend preview: Registration form passed all client validations. Real user creation connects in Phase 4.",
-      );
+      const formPayload = new FormData();
+      formPayload.append("username", formData.username);
+      formPayload.append("firstName", formData.firstName);
+      formPayload.append("lastName", formData.lastName);
+      formPayload.append("email", formData.email);
+      formPayload.append("password", formData.password);
+      formPayload.append("passwordConfirmation", formData.passwordConfirmation);
+      if (formData.phoneHome) formPayload.append("phoneHome", formData.phoneHome);
+      if (formData.phoneCell) formPayload.append("phoneCell", formData.phoneCell);
+      if (formData.addressLine1) formPayload.append("addressLine1", formData.addressLine1);
+      if (formData.addressLine2) formPayload.append("addressLine2", formData.addressLine2);
+      if (formData.city) formPayload.append("city", formData.city);
+      if (formData.state) formPayload.append("state", formData.state);
+      if (formData.zipCode) formPayload.append("zipCode", formData.zipCode);
+      if (formData.birthMonth) formPayload.append("birthMonth", String(formData.birthMonth));
+      if (formData.birthDay) formPayload.append("birthDay", String(formData.birthDay));
+      if (formData.spouseFirstName) formPayload.append("spouseFirstName", formData.spouseFirstName);
+      if (formData.masterGardener) formPayload.append("masterGardener", "true");
+      if (formData.interestsExperience)
+        formPayload.append("interestsExperience", formData.interestsExperience);
+      for (const code of formData.projectInterests) {
+        formPayload.append("projectInterests", code);
+      }
+
+      const res = await registerAction(formPayload);
+      if (!res.success) {
+        setErrorMessage(res.error);
+        if (res.fieldErrors) {
+          const mapped: Record<string, string> = {};
+          for (const [k, v] of Object.entries(res.fieldErrors)) {
+            if (v?.[0]) mapped[k] = v[0];
+          }
+          setErrors(mapped);
+        }
+      } else {
+        setSuccessMessage(
+          "Your membership registration has been submitted successfully! Redirecting to login...",
+        );
+        setTimeout(() => {
+          router.push("/login?registered=true");
+          router.refresh();
+        }, 1500);
+      }
+    } catch {
+      setErrorMessage("An unexpected network error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -79,12 +125,21 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-8">
-      {statusMessage && (
+      {errorMessage && (
+        <div
+          className="rounded-md bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive"
+          role="alert"
+        >
+          {errorMessage}
+        </div>
+      )}
+
+      {successMessage && (
         <div
           className="rounded-md bg-primary/10 border border-primary/20 p-4 text-sm text-primary"
           role="status"
         >
-          {statusMessage}
+          {successMessage}
         </div>
       )}
 
@@ -167,7 +222,12 @@ export function RegisterForm() {
               id="reg-confirm-password"
               type="password"
               value={formData.passwordConfirmation}
-              onChange={(e) => setFormData({ ...formData, passwordConfirmation: e.target.value })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  passwordConfirmation: e.target.value,
+                })
+              }
               placeholder="••••••••••••"
               error={errors.passwordConfirmation}
               aria-describedby={errors.passwordConfirmation ? "confirm-error" : undefined}
@@ -385,7 +445,12 @@ export function RegisterForm() {
             id="reg-experience"
             rows={3}
             value={formData.interestsExperience || ""}
-            onChange={(e) => setFormData({ ...formData, interestsExperience: e.target.value })}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                interestsExperience: e.target.value,
+              })
+            }
             placeholder="Tell us what you enjoy growing, past gardening experience, or skills you'd love to share!"
           />
         </div>

@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { forgotPasswordSchema, type ForgotPasswordFormData } from "../validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { forgotPasswordAction } from "@/features/auth/actions";
+import { type ForgotPasswordFormData, forgotPasswordSchema } from "../validation";
 
 export function ForgotPasswordForm() {
   const [formData, setFormData] = React.useState<ForgotPasswordFormData>({
@@ -27,11 +28,18 @@ export function ForgotPasswordForm() {
     }
 
     setIsSubmitting(true);
-    // Preview interaction (P4 connects real Supabase resetPasswordForEmail)
     try {
-      await new Promise((res) => setTimeout(res, 300));
+      const res = await forgotPasswordAction(formData.email);
+      if (res.success) {
+        setStatusMessage(
+          "If an account exists with that email address, a password reset link has been dispatched to your inbox.",
+        );
+      } else {
+        setErrors({ email: res.error });
+      }
+    } catch {
       setStatusMessage(
-        "If an account exists with that email address, a password reset link has been dispatched to your local mail capture inbox.",
+        "If an account exists with that email address, a password reset link has been dispatched to your inbox.",
       );
     } finally {
       setIsSubmitting(false);

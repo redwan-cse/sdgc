@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { resetPasswordSchema, type ResetPasswordFormData } from "../validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { resetPasswordAction } from "@/features/auth/actions";
+import { type ResetPasswordFormData, resetPasswordSchema } from "../validation";
 
 export function ResetPasswordForm() {
   const [formData, setFormData] = React.useState<ResetPasswordFormData>({
@@ -14,12 +15,14 @@ export function ResetPasswordForm() {
   });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setStatusMessage(null);
+    setErrorMessage(null);
 
     const result = resetPasswordSchema.safeParse(formData);
     if (!result.success) {
@@ -34,12 +37,17 @@ export function ResetPasswordForm() {
     }
 
     setIsSubmitting(true);
-    // Preview interaction (P4 connects real Supabase updateUser password)
     try {
-      await new Promise((res) => setTimeout(res, 300));
-      setStatusMessage(
-        "Password updated successfully! You can now log in with your new credentials.",
-      );
+      const res = await resetPasswordAction(formData.password);
+      if (res.success) {
+        setStatusMessage(
+          "Password updated successfully! You can now log in with your new credentials.",
+        );
+      } else {
+        setErrorMessage(res.error);
+      }
+    } catch {
+      setErrorMessage("Failed to update password. Your recovery link may have expired.");
     } finally {
       setIsSubmitting(false);
     }
@@ -53,6 +61,15 @@ export function ResetPasswordForm() {
           role="status"
         >
           {statusMessage}
+        </div>
+      )}
+
+      {errorMessage && (
+        <div
+          className="rounded-md bg-destructive/10 border border-destructive/20 p-4 text-xs text-destructive"
+          role="alert"
+        >
+          {errorMessage}
         </div>
       )}
 
@@ -85,7 +102,12 @@ export function ResetPasswordForm() {
           id="reset-confirm-password"
           type="password"
           value={formData.passwordConfirmation}
-          onChange={(e) => setFormData({ ...formData, passwordConfirmation: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              passwordConfirmation: e.target.value,
+            })
+          }
           placeholder="••••••••••••"
           error={errors.passwordConfirmation}
           aria-describedby={errors.passwordConfirmation ? "reset-confirm-error" : undefined}
