@@ -3,6 +3,7 @@ import "server-only";
 import type { AppRole, AuthSessionUser } from "@/features/auth/types";
 import { getCurrentUser } from "@/features/auth/authorization";
 import { createClient } from "@/lib/supabase/server";
+import { getMembershipYear } from "@/features/membership/rules";
 
 export async function getAuthSession(): Promise<AuthSessionUser | null> {
   const user = await getCurrentUser();
@@ -26,7 +27,7 @@ export async function getAuthSession(): Promise<AuthSessionUser | null> {
   const roles = (rolesData?.map((r) => r.role) ?? []) as AppRole[];
 
   // Load current term membership status
-  const currentYear = 2026;
+  const currentYear = getMembershipYear(new Date(), "America/Detroit");
   const { data: membershipData } = await supabase
     .from("memberships")
     .select("status, membership_terms!inner(year)")
@@ -59,10 +60,13 @@ export async function getAuthSession(): Promise<AuthSessionUser | null> {
           birthDay: profile.birth_day ?? undefined,
           masterGardener: profile.is_master_gardener,
           projectInterests: [],
+          gardeningInterests: profile.gardening_interests ?? undefined,
+          volunteerExperience: profile.volunteer_experience ?? undefined,
           interestsExperience: profile.interests_experience ?? undefined,
         }
       : undefined,
     membershipStatus:
-      (membershipData?.status as "approved" | "pending" | "expired" | undefined) ?? "none",
+      (membershipData?.status as
+        "approved" | "pending" | "expired" | "rejected" | "suspended" | undefined) ?? "none",
   };
 }

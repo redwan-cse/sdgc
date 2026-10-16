@@ -9,7 +9,7 @@ export async function approveMembershipAction(input: {
   membershipId: string;
   expectedVersion?: number;
 }): Promise<ActionResult> {
-  await requireCapability("members.manage");
+  await requireCapability(["members.manage", "memberships.approve"]);
   const supabase = await createClient();
 
   // Call atomic PostgreSQL procedure

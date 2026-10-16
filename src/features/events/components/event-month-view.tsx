@@ -2,13 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { getMonthMatrix, formatEventTime } from "../calendar";
+import { useRouter, useSearchParams } from "next/navigation";
+import { formatEventTime, getMonthMatrix } from "../calendar";
+import { getMembershipYear } from "@/features/membership/rules";
 import type { EventSummary } from "../types";
 
 interface EventMonthViewProps {
   events: EventSummary[];
   initialYear?: number;
   initialMonth?: number;
+  error?: string;
 }
 
 const MONTH_NAMES = [
@@ -28,30 +31,65 @@ const MONTH_NAMES = [
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function EventMonthView({
-  events,
-  initialYear = 2026,
-  initialMonth = 7, // Default July 2026 (Garden Walk month)
-}: EventMonthViewProps) {
-  const [year, setYear] = React.useState(initialYear);
-  const [month, setMonth] = React.useState(initialMonth);
+export function EventMonthView({ events, initialYear, initialMonth, error }: EventMonthViewProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const nowInDetroit = React.useMemo(() => new Date(), []);
+  const currentDetroitYear = React.useMemo(
+    () => getMembershipYear(nowInDetroit, "America/Detroit"),
+    [nowInDetroit],
+  );
+  const currentDetroitMonth = React.useMemo(
+    () =>
+      Number.parseInt(
+        new Intl.DateTimeFormat("en-US", { timeZone: "America/Detroit", month: "numeric" }).format(
+          nowInDetroit,
+        ),
+        10,
+      ),
+    [nowInDetroit],
+  );
+
+  const effectiveInitialYear = initialYear ?? currentDetroitYear;
+  const effectiveInitialMonth = initialMonth ?? currentDetroitMonth;
+
+  const [year, setYear] = React.useState(effectiveInitialYear);
+  const [month, setMonth] = React.useState(effectiveInitialMonth);
+
+  // Keep state in sync if props change
+  React.useEffect(() => {
+    if (initialYear && initialYear !== year) setYear(initialYear);
+    if (initialMonth && initialMonth !== month) setMonth(initialMonth);
+  }, [initialYear, initialMonth, year, month]);
+
+  const updateYearMonth = (newYear: number, newMonth: number) => {
+    setYear(newYear);
+    setMonth(newMonth);
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
+    params.set("year", String(newYear));
+    params.set("month", String(newMonth));
+    router.replace(`/events/month?${params.toString()}`, { scroll: false });
+  };
 
   const handlePrevMonth = () => {
     if (month === 1) {
-      setMonth(12);
-      setYear((y) => y - 1);
+      updateYearMonth(year - 1, 12);
     } else {
-      setMonth((m) => m - 1);
+      updateYearMonth(year, month - 1);
     }
   };
 
   const handleNextMonth = () => {
     if (month === 12) {
-      setMonth(1);
-      setYear((y) => y + 1);
+      updateYearMonth(year + 1, 1);
     } else {
-      setMonth((m) => m + 1);
+      updateYearMonth(year, month + 1);
     }
+  };
+
+  const handleResetToday = () => {
+    updateYearMonth(currentDetroitYear, currentDetroitMonth);
   };
 
   const matrix = React.useMemo(() => {
@@ -89,13 +127,10 @@ export function EventMonthView({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setYear(2026);
-              setMonth(7);
-            }}
+            onClick={handleResetToday}
             className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted cursor-pointer"
           >
-            Today / July &apos;26
+            Current Month
           </button>
           <button
             type="button"
@@ -115,6 +150,16 @@ export function EventMonthView({
           </button>
         </div>
       </div>
+
+      {error && (
+        <div
+          className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-center text-destructive"
+          role="alert"
+        >
+          <p className="text-base font-semibold">Unable to load calendar events</p>
+          <p className="text-xs mt-1 text-muted-foreground">{error}</p>
+        </div>
+      )}
 
       {/* Responsive Calendar Grid */}
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">

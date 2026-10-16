@@ -2,12 +2,14 @@ import "server-only";
 
 import { requireUser } from "@/features/auth/authorization";
 import type {
+  ApplicationStatus,
   DirectoryMember,
   MemberProfile,
   MembershipSummary,
+  PaymentStatus,
   ProjectInterestCode,
 } from "@/features/membership/types";
-import { isMembershipActive } from "@/features/membership/rules";
+import { getMembershipYear, isMembershipActive } from "@/features/membership/rules";
 import { createClient } from "@/lib/supabase/server";
 
 export async function getOwnProfile(): Promise<MemberProfile | null> {
@@ -63,9 +65,10 @@ export async function getOwnMembershipSummary(): Promise<MembershipSummary | nul
   const user = await requireUser("/profile");
   const supabase = await createClient();
 
-  // Find membership for current term (2026)
-  const currentYear = 2026;
-  const { data: membership } = await supabase
+  const currentMichiganYear = getMembershipYear(new Date(), "America/Detroit");
+
+  // Find membership for current Michigan term
+  let { data: membership } = await supabase
     .from("memberships")
     .select(
       `
@@ -74,12 +77,33 @@ export async function getOwnMembershipSummary(): Promise<MembershipSummary | nul
       status,
       approved_at,
       approved_by,
-      membership_terms!inner(id, year, dues_cents)
+      membership_terms!inner(id, year, dues_cents, opens_at, closes_at)
     `,
     )
     .eq("user_id", user.id)
-    .eq("membership_terms.year", currentYear)
+    .eq("membership_terms.year", currentMichiganYear)
     .maybeSingle();
+
+  // If user has no membership for current Michigan year, fetch their most recent membership record
+  if (!membership) {
+    const { data: latestRecord } = await supabase
+      .from("memberships")
+      .select(
+        `
+        id,
+        user_id,
+        status,
+        approved_at,
+        approved_by,
+        membership_terms!inner(id, year, dues_cents, opens_at, closes_at)
+      `,
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    membership = latestRecord;
+  }
 
   if (!membership) {
     return null;
@@ -96,12 +120,16 @@ export async function getOwnMembershipSummary(): Promise<MembershipSummary | nul
     payments?.find((p) => p.status === "confirmed" || p.status === "succeeded") ?? payments?.[0];
 
   const isApproved = membership.status === "approved";
-  const isSuspended = false; // DB check constraint: status is pending, approved, or expired
+  const isSuspended = membership.status === "suspended";
+  const termYear = membership.membership_terms.year;
+  const duesCents = membership.membership_terms.dues_cents;
+
   const isActive = isMembershipActive(
     {
       approved: isApproved,
       suspended: isSuspended,
-      year: currentYear,
+      year: termYear,
+      status: membership.status,
     },
     new Date(),
   );
@@ -109,21 +137,11 @@ export async function getOwnMembershipSummary(): Promise<MembershipSummary | nul
   return {
     id: membership.id,
     userId: membership.user_id,
-    year: currentYear,
-    duesCents: membership.membership_terms.dues_cents,
+    year: termYear,
+    duesCents,
     currency: "USD",
-    applicationStatus:
-      membership.status === "approved"
-        ? "approved"
-        : membership.status === "expired"
-          ? "rejected"
-          : "pending",
-    paymentStatus:
-      payment?.status === "confirmed" || payment?.status === "succeeded"
-        ? "confirmed"
-        : payment?.status === "failed"
-          ? "failed"
-          : "pending",
+    applicationStatus: membership.status as ApplicationStatus,
+    paymentStatus: (payment?.status as PaymentStatus) || "pending",
     paymentMethod: payment?.payment_method === "check" ? "check" : "credit_card",
     isApproved,
     isSuspended,

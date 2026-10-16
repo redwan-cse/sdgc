@@ -3,35 +3,59 @@
 import * as React from "react";
 import type { Route } from "next";
 import Link from "next/link";
-import { formatEventDate, formatEventTime } from "../calendar";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  eventOccursOnDate,
+  formatEventDate,
+  formatEventTime,
+  getDetroitDateString,
+} from "../calendar";
 import type { EventSummary } from "../types";
 import { Badge } from "@/components/ui/badge";
 
 interface EventDayViewProps {
   events: EventSummary[];
   initialDate?: string; // YYYY-MM-DD
+  error?: string;
 }
 
-export function EventDayView({
-  events,
-  initialDate = "2026-07-11", // Default to 2026 Garden Walk day
-}: EventDayViewProps) {
-  const [selectedDate, setSelectedDate] = React.useState(initialDate);
+export function EventDayView({ events, initialDate, error }: EventDayViewProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const effectiveInitialDate = initialDate || getDetroitDateString(new Date().toISOString());
+
+  const [selectedDate, setSelectedDate] = React.useState(effectiveInitialDate);
+
+  // Keep state in sync if initialDate changes from searchParams
+  React.useEffect(() => {
+    if (initialDate && initialDate !== selectedDate) {
+      setSelectedDate(initialDate);
+    }
+  }, [initialDate, selectedDate]);
+
+  const updateDate = (newDate: string) => {
+    setSelectedDate(newDate);
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
+    params.set("date", newDate);
+    router.replace(`/events/day?${params.toString()}`, { scroll: false });
+  };
 
   const dayEvents = React.useMemo(() => {
-    return events.filter((e) => e.startsAt.startsWith(selectedDate));
+    return events.filter((e) => eventOccursOnDate(e, selectedDate));
   }, [events, selectedDate]);
 
   const handlePrevDay = () => {
     const d = new Date(`${selectedDate}T12:00:00Z`);
     d.setUTCDate(d.getUTCDate() - 1);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    const newDateStr = d.toISOString().slice(0, 10);
+    updateDate(newDateStr);
   };
 
   const handleNextDay = () => {
     const d = new Date(`${selectedDate}T12:00:00Z`);
     d.setUTCDate(d.getUTCDate() + 1);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    const newDateStr = d.toISOString().slice(0, 10);
+    updateDate(newDateStr);
   };
 
   return (
@@ -89,14 +113,22 @@ export function EventDayView({
             id="day-picker"
             type="date"
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            onChange={(e) => updateDate(e.target.value)}
             className="rounded-md border border-input bg-background px-2.5 py-1 text-xs text-foreground"
           />
         </div>
       </div>
 
       {/* Events for this day */}
-      {dayEvents.length === 0 ? (
+      {error ? (
+        <div
+          className="rounded-xl border border-destructive/40 bg-destructive/5 p-8 text-center text-destructive"
+          role="alert"
+        >
+          <p className="text-base font-semibold">Unable to load calendar events</p>
+          <p className="text-xs mt-1 text-muted-foreground">{error}</p>
+        </div>
+      ) : dayEvents.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-12 text-center text-muted-foreground">
           <p className="text-base font-medium">No events scheduled for this day.</p>
           <p className="text-xs mt-1">

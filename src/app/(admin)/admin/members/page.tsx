@@ -7,7 +7,7 @@ export const metadata = {
 };
 
 export default async function AdminMembersPage() {
-  await requireCapability("members.manage", "/admin/members");
+  await requireCapability(["members.manage", "memberships.approve"], "/admin/members");
   const members = await getAdminMembers();
   return <AdminMembers initialMembers={members} />;
 }

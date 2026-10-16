@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 
 interface EventListViewProps {
   events: EventSummary[];
+  error?: string;
 }
 
-export function EventListView({ events }: EventListViewProps) {
+export function EventListView({ events, error }: EventListViewProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
 
@@ -40,6 +41,16 @@ export function EventListView({ events }: EventListViewProps) {
 
   return (
     <div className="space-y-8">
+      {error && (
+        <div
+          className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-center text-destructive"
+          role="alert"
+        >
+          <p className="text-base font-semibold">Unable to load calendar events</p>
+          <p className="text-xs mt-1 text-muted-foreground">{error}</p>
+        </div>
+      )}
+
       {/* Search and Category Filter */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="w-full sm:max-w-xs">

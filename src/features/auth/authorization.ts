@@ -39,33 +39,39 @@ export async function requireUser(returnTo?: string): Promise<AuthenticatedUser>
   return user;
 }
 
+export async function hasCapability(
+  capability: Capability | readonly Capability[],
+  userId?: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const caps = Array.isArray(capability) ? capability : [capability];
+
+  for (const cap of caps) {
+    const { data: hasCap, error } = await supabase.rpc("has_capability", {
+      capability_name: cap,
+      check_user_id: userId,
+    });
+
+    if (!error && hasCap) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export async function requireCapability(
-  capability: Capability,
+  capability: Capability | readonly Capability[],
   returnTo?: string,
 ): Promise<AuthenticatedUser> {
   const user = await requireUser(returnTo);
-  const supabase = await createClient();
+  const allowed = await hasCapability(capability, user.id);
 
-  const { data: hasCap, error } = await supabase.rpc("has_capability", {
-    capability_name: capability,
-    check_user_id: user.id,
-  });
-
-  if (error || !hasCap) {
+  if (!allowed) {
     redirect("/login?error=unauthorized");
   }
 
   return user;
-}
-
-export async function hasCapability(capability: Capability, userId?: string): Promise<boolean> {
-  const supabase = await createClient();
-  const { data: hasCap, error } = await supabase.rpc("has_capability", {
-    capability_name: capability,
-    check_user_id: userId,
-  });
-
-  return !error && !!hasCap;
 }
 
 export async function checkIsActiveMember(userId?: string): Promise<boolean> {

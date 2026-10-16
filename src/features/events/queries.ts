@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { CLUB_TIMEZONE } from "./calendar";
+import { CLUB_TIMEZONE, getDetroitDateString } from "./calendar";
 import type { EventCalendarView, EventPage, EventSummary } from "./types";
 
 export interface EventFilterOptions {
@@ -34,7 +34,7 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
   const supabase = await createClient();
   const currentView: EventCalendarView = filters.view || "list";
   const selectedDate: string =
-    filters.date || new Date().toISOString().split("T")[0] || "2026-06-01";
+    filters.date || getDetroitDateString(new Date().toISOString(), CLUB_TIMEZONE);
 
   let query = supabase
     .from("events")
@@ -60,7 +60,8 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
     `,
     )
     .eq("status", "published")
-    .order("starts_at", { ascending: true });
+    .order("starts_at", { ascending: true })
+    .limit(100);
 
   if (filters.query) {
     query = query.ilike("title", `%${filters.query}%`);
@@ -83,6 +84,7 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
       total: 0,
       currentView,
       selectedDate,
+      error: error ? error.message : "Failed to load events",
     };
   }
 

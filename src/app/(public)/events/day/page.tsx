@@ -1,14 +1,32 @@
-import { listEvents } from "@/features/events/queries";
-import { EventViewSelector } from "@/features/events/components/event-view-selector";
+import { getDetroitDateString } from "@/features/events/calendar";
 import { EventDayView } from "@/features/events/components/event-day-view";
+import { EventViewSelector } from "@/features/events/components/event-view-selector";
+import { listEvents } from "@/features/events/queries";
 
 export const metadata = {
   title: "Events Calendar (Day View)",
   description: "Daily schedule view of Saugatuck Douglas Garden Club activities and programs.",
 };
 
-export default async function EventsDayPage() {
-  const { events } = await listEvents({ view: "day" });
+interface EventsDayPageProps {
+  searchParams: Promise<{
+    date?: string;
+    query?: string;
+  }>;
+}
+
+export default async function EventsDayPage(props: EventsDayPageProps) {
+  const searchParams = await props.searchParams;
+  const todayDetroit = getDetroitDateString(new Date().toISOString());
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const date =
+    searchParams.date && dateRegex.test(searchParams.date) ? searchParams.date : todayDetroit;
+
+  const { events, error } = await listEvents({
+    view: "day",
+    date,
+    query: searchParams.query,
+  });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-8">
@@ -26,7 +44,7 @@ export default async function EventsDayPage() {
 
       <EventViewSelector currentView="day" />
 
-      <EventDayView events={events} initialDate="2026-07-11" />
+      <EventDayView events={events} initialDate={date} error={error} />
     </div>
   );
 }

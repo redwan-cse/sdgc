@@ -25,5 +25,5 @@ export interface AuthSessionUser {
   roles: AppRole[];
   capabilities: Capability[];
   profile?: MemberProfile;
-  membershipStatus?: "approved" | "pending" | "none" | "expired";
+  membershipStatus?: "approved" | "pending" | "none" | "expired" | "rejected" | "suspended";
 }

@@ -8,12 +8,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { InitiateDuesInput, InitiateDuesResult } from "./types";
 import { localPaymentProvider } from "./local-provider";
 
+import { getMembershipYear } from "@/features/membership/rules";
+
 export async function initiateDuesPaymentAction(
   input: InitiateDuesInput,
 ): Promise<ActionResult<InitiateDuesResult>> {
   // 1. Authorize user server identity
   const user = await requireUser("/membership");
-  const targetYear = input.termYear ?? 2026;
+  const targetYear = input.termYear ?? getMembershipYear(new Date(), "America/Detroit");
 
   if (input.method !== "credit_card" && input.method !== "check") {
     return {
@@ -143,14 +145,14 @@ export async function initiateDuesPaymentAction(
     }
 
     finalStatus = "confirmed";
+    const formattedAmount = `$${(term.dues_cents / 100).toFixed(2)} ${term.currency}`;
     // CRITICAL: We intentionally do NOT change membership status to approved!
     // Club bylaws mandate that online payment confirmation leaves membership pending manual staff approval.
-    message =
-      "Payment Simulation: Card payment of $50.00 recorded as CONFIRMED. As required by club bylaws, your membership remains PENDING manual approval by staff.";
+    message = `Payment Simulation: Card payment of ${formattedAmount} recorded as CONFIRMED. As required by club bylaws, your membership remains PENDING manual approval by staff.`;
   } else {
+    const formattedAmount = `$${(term.dues_cents / 100).toFixed(2)} ${term.currency}`;
     // Paper check mailing instructions
-    message =
-      "Check Instructions: Please mail your $50.00 check payable to 'SDGC' to P.O. Box 1011, Douglas, MI 49406. Staff will reconcile your check upon receipt and activate your membership.";
+    message = `Check Instructions: Please mail your ${formattedAmount} check payable to 'SDGC' to P.O. Box 1011, Douglas, MI 49406. Staff will reconcile your check upon receipt and activate your membership.`;
   }
 
   revalidatePath("/membership");

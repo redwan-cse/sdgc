@@ -9,6 +9,7 @@
 ## 1. Scope & Objectives
 
 Remediate gaps identified in Work Package R2 of `docs/audit/ANTIGRAVITY-NEXT-STEPS.md`:
+
 1. **Unconfirmed Signup Provisioning**: Provision profile, project interests, and pending membership row upon registration even before email confirmation, ensuring no registration state is lost.
 2. **Email Confirmation & Password Recovery Flows**: Implement a dedicated `/auth/confirm` route handler supporting OTP tokens (`token_hash`) and PKCE exchange, validating against local Mailpit capture.
 3. **Profile Schema Parity**:
@@ -24,6 +25,7 @@ Remediate gaps identified in Work Package R2 of `docs/audit/ANTIGRAVITY-NEXT-STE
 ## 2. Changes Implemented
 
 ### 2.1 Database & Migrations
+
 - **Migration**: `supabase/migrations/20261016150653_signup_and_profile_parity.sql`
   - Added `gardening_interests` (text) and `volunteer_experience` (text) to `public.profiles`, backfilling from `interests_experience`.
   - Created unique index `profiles_username_lower_idx` on `lower(username)`.
@@ -33,6 +35,7 @@ Remediate gaps identified in Work Package R2 of `docs/audit/ANTIGRAVITY-NEXT-STE
 - Regenerated `src/types/database.ts` via `npm run db:types`.
 
 ### 2.2 Auth & Email Handling
+
 - **`/auth/confirm/route.ts`**: Implemented route handler handling both PKCE code exchange and OTP verification (`token_hash` / `token`) with strict `sanitizeReturnTo` protection.
 - **`/auth/callback/route.ts`**: Added recovery and OTP token support.
 - **`src/features/auth/actions.ts`**:
@@ -40,6 +43,7 @@ Remediate gaps identified in Work Package R2 of `docs/audit/ANTIGRAVITY-NEXT-STE
   - `registerAction`: Passes complete metadata and sets `emailRedirectTo: "/auth/confirm?next=/profile"`.
 
 ### 2.3 Profile & Directory Components
+
 - **`src/features/membership/types.ts` & `validation.ts`**: Added `gardeningInterests` and `volunteerExperience` with 2000-character caps; updated schemas.
 - **`src/features/membership/actions.ts`**: Updated `updateOwnProfileAction` to call atomic `update_member_profile` RPC.
 - **`src/features/membership/queries.ts`**: Updated `getOwnProfile` and `getMemberDirectory` to return separated fields.
@@ -53,7 +57,9 @@ Remediate gaps identified in Work Package R2 of `docs/audit/ANTIGRAVITY-NEXT-STE
 ## 3. Automated Verification Evidence
 
 ### 3.1 Integration Test Suite (`tests/integration/remediation-r2.test.ts`)
+
 Run command: `npm run test:integration`
+
 ```
 ✓ tests/integration/remediation-r2.test.ts (4 tests) 1020ms
   ✓ R2: Signup, Recovery, and Profile Parity Regression Suite (4)
@@ -64,6 +70,7 @@ Run command: `npm run test:integration`
 ```
 
 ### 3.2 Database Verification (pgTAP & Linter)
+
 - `npm run db:lint`: 0 schema errors found.
 - `npm run db:test`: All 4 test files and 40 subtests passed:
   - `supabase/tests/membership.test.sql`: PASS
@@ -72,6 +79,7 @@ Run command: `npm run test:integration`
   - `supabase/tests/schema.test.sql`: PASS
 
 ### 3.3 Quality Gates
+
 - `npm run format:check`: PASS (All matched files use Prettier style).
 - `npm run lint`: PASS (`biome lint . --error-on-warnings` checked 168 files in 117ms; 0 warnings, 0 errors).
 - `npm run typecheck`: PASS (`next typegen && tsc --noEmit` completed with 0 errors).

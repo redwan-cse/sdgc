@@ -2,6 +2,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser, checkIsActiveMember, hasCapability } from "@/features/auth/authorization";
+import { getMembershipYear } from "@/features/membership/rules";
 import { getMemberDirectory } from "@/features/membership/queries";
 import { MemberDirectory } from "@/features/membership/components/member-directory";
 
@@ -22,6 +23,7 @@ export default async function DirectoryPage() {
   ]);
 
   if (!isActive && !isAdmin) {
+    const termYear = getMembershipYear();
     return (
       <div className="mx-auto max-w-2xl text-center py-16 px-4 space-y-6">
         <div className="mx-auto h-16 w-16 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center text-2xl font-bold">
@@ -32,8 +34,8 @@ export default async function DirectoryPage() {
         </h1>
         <p className="text-muted-foreground leading-relaxed text-sm">
           The SDGC Member Directory is a private community benefit reserved for active members in
-          good standing. Your application or dues payment is currently awaiting confirmation for the
-          2026 calendar year.
+          good standing. Your application or dues payment is currently awaiting confirmation for the{" "}
+          {termYear} calendar year.
         </p>
 
         <div className="rounded-xl border border-border bg-card p-6 text-left space-y-3">

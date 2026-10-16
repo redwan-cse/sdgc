@@ -10,7 +10,7 @@ interface AdminOverviewProps {
 export function AdminOverview({ metrics }: AdminOverviewProps) {
   const stats = [
     {
-      label: "Active Members (2026)",
+      label: "Active Members (Current Term)",
       value: metrics ? String(metrics.totalMembers) : "48",
       href: "/admin/members",
     },

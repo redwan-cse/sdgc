@@ -2,13 +2,23 @@ import type { Route } from "next";
 import Link from "next/link";
 import { RegisterForm } from "@/features/auth/components/register-form";
 
+import { getCurrentTermInfo } from "@/features/payments/queries";
+import { getMembershipYear } from "@/features/membership/rules";
+
 export const metadata = {
   title: "Become A Member",
   description:
     "Join the Saugatuck Douglas Garden Club. Register your member profile, select volunteer project interests, and connect with fellow gardeners.",
 };
 
-export default function JoinPage() {
+export default async function JoinPage() {
+  const term = await getCurrentTermInfo();
+  const currentMichiganYear = getMembershipYear(new Date(), "America/Detroit");
+  const year = term?.year ?? currentMichiganYear;
+  const duesFormatted = term
+    ? `$${(term.duesCents / 100).toFixed(2)} ${term.currency}`
+    : "$50.00 USD";
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8 space-y-10">
       {/* Informational Header & Already a Member Callout */}
@@ -26,12 +36,12 @@ export default function JoinPage() {
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li>
                 Currently accepting new membership requests for{" "}
-                <span className="font-semibold text-foreground">calendar year 2026</span>.
+                <span className="font-semibold text-foreground">calendar year {year}</span>.
               </li>
               <li>
                 Membership dues are{" "}
-                <span className="font-semibold text-foreground">$50.00 USD</span> for January 1st to
-                December 31st.
+                <span className="font-semibold text-foreground">{duesFormatted}</span> for January
+                1st to December 31st.
               </li>
               <li>
                 Membership renewals are annual in accordance with club bylaws (automatic recurring

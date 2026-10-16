@@ -15,11 +15,14 @@ export function getMembershipYear(
 }
 
 export function isMembershipActive(
-  input: { approved: boolean; suspended: boolean; year: number },
+  input: { approved: boolean; suspended: boolean; year: number; status?: string },
   at: Date = new Date(),
   timeZone: string = "America/Detroit",
 ): boolean {
   if (!input.approved || input.suspended) {
+    return false;
+  }
+  if (input.status && input.status !== "approved") {
     return false;
   }
   const currentYear = getMembershipYear(at, timeZone);

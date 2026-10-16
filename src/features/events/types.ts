@@ -22,4 +22,5 @@ export interface EventPage {
   total: number;
   currentView: EventCalendarView;
   selectedDate: string; // YYYY-MM-DD
+  error?: string;
 }

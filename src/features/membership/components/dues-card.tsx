@@ -59,6 +59,8 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
     }
   };
 
+  const formattedDues = `$${(membership.duesCents / 100).toFixed(2)}`;
+
   return (
     <div className="space-y-6">
       {/* Current Status Overview Card */}
@@ -93,7 +95,7 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
           <div className="rounded-lg bg-muted/40 p-3 border border-border">
             <span className="text-xs text-muted-foreground block">Annual Dues Rate</span>
             <span className="text-lg font-bold text-foreground">
-              ${(membership.duesCents / 100).toFixed(2)} {membership.currency}
+              {formattedDues} {membership.currency}
             </span>
           </div>
 
@@ -174,7 +176,7 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
               <span className="font-semibold text-foreground text-sm">
                 Online Credit / Debit Card
               </span>
-              <span className="text-xs font-bold text-primary">$50.00</span>
+              <span className="text-xs font-bold text-primary">{formattedDues}</span>
             </div>
             <p className="text-xs text-muted-foreground">
               Instant electronic payment record. Requires subsequent manual staff review for
@@ -194,7 +196,7 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
           >
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-foreground text-sm">Mail-In Paper Check</span>
-              <span className="text-xs font-bold text-primary">$50.00</span>
+              <span className="text-xs font-bold text-primary">{formattedDues}</span>
             </div>
             <p className="text-xs text-muted-foreground">
               Payable to SDGC, P.O. Box 1011, Douglas, MI 49406. Activated once check clears.
@@ -210,7 +212,10 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
               <span className="font-bold">Saugatuck Douglas Garden Club (SDGC)</span>
             </p>
             <p>
-              2. Amount: <span className="font-bold">$50.00 USD</span>
+              2. Amount:{" "}
+              <span className="font-bold">
+                {formattedDues} {membership.currency}
+              </span>
             </p>
             <p>3. Memo line: Write your username or full name</p>
             <p>
@@ -238,9 +243,9 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
           {isProcessing
             ? "Processing..."
             : isConfirmed
-              ? "2026 Dues Paid & Confirmed"
+              ? `${membership.year} Dues Paid & Confirmed`
               : selectedMethod === "credit_card"
-                ? "Pay $50.00 Dues Online"
+                ? `Pay ${formattedDues} Dues Online`
                 : "Confirm Check Mailing Plan"}
         </Button>
       </div>

@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { EventCalendarView } from "../types";
 
 interface EventViewSelectorProps {
@@ -13,6 +13,8 @@ interface EventViewSelectorProps {
 
 export function EventViewSelector({ currentView }: EventViewSelectorProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryParam = searchParams?.get("query");
 
   const views: { view: EventCalendarView; label: string; href: Route }[] = [
     { view: "list", label: "List View", href: "/events" },
@@ -25,10 +27,14 @@ export function EventViewSelector({ currentView }: EventViewSelectorProps) {
       <div className="flex items-center space-x-1 rounded-lg border border-border bg-card p-1 shadow-2xs">
         {views.map((v) => {
           const isActive = pathname === v.href || currentView === v.view;
+          const targetHref = (
+            queryParam ? `${v.href}?query=${encodeURIComponent(queryParam)}` : v.href
+          ) as Route;
+
           return (
             <Link
               key={v.view}
-              href={v.href}
+              href={targetHref}
               className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-xs font-semibold"

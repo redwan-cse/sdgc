@@ -8,8 +8,18 @@ export const metadata = {
     "Upcoming gardening workshops, monthly membership meetings, civic planting days, and Garden Walk events in Saugatuck and Douglas, MI.",
 };
 
-export default async function EventsListPage() {
-  const { events } = await listEvents({ view: "list" });
+interface EventsListPageProps {
+  searchParams: Promise<{
+    query?: string;
+  }>;
+}
+
+export default async function EventsListPage(props: EventsListPageProps) {
+  const searchParams = await props.searchParams;
+  const { events, error } = await listEvents({
+    view: "list",
+    query: searchParams.query,
+  });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-8">
@@ -28,7 +38,7 @@ export default async function EventsListPage() {
 
       <EventViewSelector currentView="list" />
 
-      <EventListView events={events} />
+      <EventListView events={events} error={error} />
     </div>
   );
 }

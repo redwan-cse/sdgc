@@ -47,6 +47,38 @@ export interface CalendarDay {
   events: EventSummary[];
 }
 
+export function getDetroitDateString(isoString: string, timeZone: string = CLUB_TIMEZONE): string {
+  const date = new Date(isoString);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+export function eventOccursOnDate(
+  event: EventSummary,
+  targetDateStr: string, // YYYY-MM-DD
+  timeZone: string = CLUB_TIMEZONE,
+): boolean {
+  const startDateStr = getDetroitDateString(event.startsAt, timeZone);
+
+  const startDate = new Date(event.startsAt);
+  const endDate = new Date(event.endsAt);
+
+  // If endsAt is before or equal to startsAt, it only occurs on startDate
+  if (endDate.getTime() <= startDate.getTime()) {
+    return startDateStr === targetDateStr;
+  }
+
+  // Adjust end date by 1 millisecond to handle midnight boundaries (e.g. 00:00 concluding the prior day)
+  const adjustedEndIso = new Date(endDate.getTime() - 1).toISOString();
+  const endDateStr = getDetroitDateString(adjustedEndIso, timeZone);
+
+  return startDateStr <= targetDateStr && targetDateStr <= endDateStr;
+}
+
 export function getMonthMatrix(
   year: number,
   month: number, // 1-12
@@ -81,7 +113,7 @@ export function getMonthMatrix(
       dayNumber: dayNum,
       isCurrentMonth: false,
       isToday: dateStr === today,
-      events: events.filter((e) => e.startsAt.startsWith(dateStr)),
+      events: events.filter((e) => eventOccursOnDate(e, dateStr, timeZone)),
     });
   }
 
@@ -93,7 +125,7 @@ export function getMonthMatrix(
       dayNumber: d,
       isCurrentMonth: true,
       isToday: dateStr === today,
-      events: events.filter((e) => e.startsAt.startsWith(dateStr)),
+      events: events.filter((e) => eventOccursOnDate(e, dateStr, timeZone)),
     });
 
     if (currentWeek.length === 7) {
@@ -114,7 +146,7 @@ export function getMonthMatrix(
         dayNumber: nextDay,
         isCurrentMonth: false,
         isToday: dateStr === today,
-        events: events.filter((e) => e.startsAt.startsWith(dateStr)),
+        events: events.filter((e) => eventOccursOnDate(e, dateStr, timeZone)),
       });
       nextDay++;
     }

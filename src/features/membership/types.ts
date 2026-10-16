@@ -40,7 +40,7 @@ export interface MemberProfile extends MemberProfileInput {
   updatedAt?: string;
 }
 
-export type ApplicationStatus = "pending" | "approved" | "rejected";
+export type ApplicationStatus = "pending" | "approved" | "rejected" | "expired" | "suspended";
 export type PaymentStatus = "pending" | "confirmed" | "failed" | "refunded";
 export type PaymentMethod = "credit_card" | "check";
 

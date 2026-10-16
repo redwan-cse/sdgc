@@ -1,6 +1,7 @@
-import { listEvents } from "@/features/events/queries";
-import { EventViewSelector } from "@/features/events/components/event-view-selector";
+import { getMembershipYear } from "@/features/membership/rules";
 import { EventMonthView } from "@/features/events/components/event-month-view";
+import { EventViewSelector } from "@/features/events/components/event-view-selector";
+import { listEvents } from "@/features/events/queries";
 
 export const metadata = {
   title: "Events Calendar (Month View)",
@@ -8,8 +9,39 @@ export const metadata = {
     "Monthly calendar view of Saugatuck Douglas Garden Club workshops, civic plantings, and tour dates.",
 };
 
-export default async function EventsMonthPage() {
-  const { events } = await listEvents({ view: "month" });
+interface EventsMonthPageProps {
+  searchParams: Promise<{
+    year?: string;
+    month?: string;
+    query?: string;
+  }>;
+}
+
+export default async function EventsMonthPage(props: EventsMonthPageProps) {
+  const searchParams = await props.searchParams;
+  const now = new Date();
+  const defaultYear = getMembershipYear(now, "America/Detroit");
+  const defaultMonth = Number.parseInt(
+    new Intl.DateTimeFormat("en-US", { timeZone: "America/Detroit", month: "numeric" }).format(now),
+    10,
+  );
+
+  const parsedYear = searchParams.year ? Number.parseInt(searchParams.year, 10) : defaultYear;
+  const year =
+    Number.isFinite(parsedYear) && parsedYear >= 2000 && parsedYear <= 2100
+      ? parsedYear
+      : defaultYear;
+
+  const parsedMonth = searchParams.month ? Number.parseInt(searchParams.month, 10) : defaultMonth;
+  const month =
+    Number.isFinite(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12
+      ? parsedMonth
+      : defaultMonth;
+
+  const { events, error } = await listEvents({
+    view: "month",
+    query: searchParams.query,
+  });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-8">
@@ -27,7 +59,7 @@ export default async function EventsMonthPage() {
 
       <EventViewSelector currentView="month" />
 
-      <EventMonthView events={events} initialYear={2026} initialMonth={7} />
+      <EventMonthView events={events} initialYear={year} initialMonth={month} error={error} />
     </div>
   );
 }

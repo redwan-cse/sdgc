@@ -44,7 +44,7 @@ export async function getAdminOverviewStats(): Promise<AdminMetrics> {
 }
 
 export async function getAdminMembers(): Promise<AdminMemberRecord[]> {
-  await requireCapability("members.manage");
+  await requireCapability(["members.manage", "memberships.approve"]);
   const supabase = await createClient();
 
   const { data: memberships, error } = await supabase
@@ -114,8 +114,7 @@ export async function getAdminMembers(): Promise<AdminMemberRecord[]> {
       name: `${p.first_name} ${p.last_name}`.trim(),
       email: `${p.username}@example.com`,
       year: m.membership_terms.year,
-      applicationStatus:
-        m.status === "approved" ? "approved" : m.status === "rejected" ? "rejected" : "pending",
+      applicationStatus: (m.status as AdminMemberRecord["applicationStatus"]) || "pending",
       paymentStatus:
         payment?.status === "confirmed"
           ? "confirmed"
