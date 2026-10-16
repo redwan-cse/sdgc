@@ -117,6 +117,10 @@ test.describe("Browser Hydration and Script Tag Verification", () => {
 
     expect(await identifierInput.inputValue()).toBe("admin_tester");
     expect(await passwordInput.inputValue()).toBe("secretPassword123");
+
+    await page.screenshot({
+      path: "C:/Users/redwan/.gemini/antigravity-ide/brain/7cc90902-d8da-485c-8644-5bf298b93507/phase-08-screenshots/login-page.png",
+    });
   });
 
   test("join page and forgot-password page load cleanly without hydration errors", async ({
