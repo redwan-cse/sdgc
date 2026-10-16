@@ -28,14 +28,19 @@ if (!publishableKey || !status.SERVICE_ROLE_KEY) {
 }
 writeFileSync(
   ".env.local",
-  [
+  `${[
     "# Generated from this project's local Docker Supabase; never commit this file.",
     "NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000",
     `NEXT_PUBLIC_SUPABASE_URL=${url.origin}`,
     `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${publishableKey}`,
+    status.ANON_KEY ? `NEXT_PUBLIC_SUPABASE_ANON_KEY=${status.ANON_KEY}` : "",
     `SUPABASE_SERVICE_ROLE_KEY=${status.SERVICE_ROLE_KEY}`,
+    "NEXT_PUBLIC_LOCAL_PAYMENTS_ENABLED=true",
+    "LOCAL_PAYMENTS_SIMULATION=true",
     "",
-  ].join("\n"),
+  ]
+    .filter(Boolean)
+    .join("\n")}\n`,
   { encoding: "utf8", flag: "wx", mode: 0o600 },
 );
 console.log("Created ignored .env.local from local status. No keys were printed.");
