@@ -18,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import sanitizeHtmlLib from "sanitize-html";
 
 if (fs.existsSync(".env.local")) {
   const envContent = fs.readFileSync(".env.local", "utf8");
@@ -37,33 +38,34 @@ if (fs.existsSync(".env.local")) {
 }
 
 /**
- * Sanitizes HTML content by removing scripts, iframes, inline event handlers, and javascript: links.
+ * Sanitizes HTML content using the industry-standard sanitize-html library,
+ * removing scripts, iframes, inline event handlers, and javascript: links.
  * @param {string} html
  * @returns {string}
  */
 export function sanitizeHtml(html) {
   if (!html || typeof html !== "string") return "";
 
-  let clean = html;
-  let prev = "";
-
-  do {
-    prev = clean;
-    clean = clean
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi, "")
-      .replace(/<script\b[^>]*\/>/gi, "")
-      .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe[^>]*>/gi, "")
-      .replace(/<iframe\b[^>]*\/>/gi, "")
-      .replace(/<object\b[^>]*>[\s\S]*?<\/object[^>]*>/gi, "")
-      .replace(/<object\b[^>]*\/>/gi, "")
-      .replace(/<embed\b[^>]*>[\s\S]*?<\/embed[^>]*>/gi, "")
-      .replace(/<embed\b[^>]*\/>/gi, "")
-      .replace(/\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-      .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
-      .replace(/src\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'src=""');
-  } while (clean !== prev);
-
-  return clean.trim();
+  return sanitizeHtmlLib(html, {
+    allowedTags: sanitizeHtmlLib.defaults.allowedTags.concat([
+      "img",
+      "h1",
+      "h2",
+      "span",
+      "article",
+      "section",
+      "figure",
+      "figcaption",
+    ]),
+    allowedAttributes: {
+      ...sanitizeHtmlLib.defaults.allowedAttributes,
+      img: ["src", "alt", "title", "width", "height", "class", "loading"],
+      a: ["href", "name", "target", "rel", "class"],
+      "*": ["class", "id", "style"],
+    },
+    allowedSchemes: ["http", "https", "mailto", "tel"],
+    disallowedTagsMode: "discard",
+  }).trim();
 }
 
 /**

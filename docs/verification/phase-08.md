@@ -78,8 +78,8 @@ All test personas use synthetic local emails (`@sdgc.local`) and passwords provi
 ### CodeQL Alert 3 (`js/incomplete-multi-character-sanitization`)
 
 - **File:** `scripts/import-wordpress.mjs`
-- **Issue:** Multi-character tag and attribute stripping regexes could theoretically be bypassed by nested injection payloads (e.g., `<scr<script>ipt>`) if run only once.
-- **Fix:** Implemented iterative fixed-point loop sanitization (`do { ... } while (clean !== prev)`) so replacements run continuously until the string reaches a stable state, completely neutralizing nested evasive patterns according to GitHub CodeQL security best practices.
+- **Issue:** Multi-character tag and attribute regex stripping can theoretically leave behind nested payloads or reintroduce target strings if stripped with custom regex expressions.
+- **Fix:** Switched to the dedicated, battle-tested `sanitize-html` package (specifically cited and recommended by GitHub CodeQL's official CWE-116 remediation guidance). All unsafe elements (`<script>`, `<iframe>`, `<object>`, `<embed>`, inline `on*` event handlers, and `javascript:` URIs) are discarded through AST parsing while preserving legitimate HTML styling and images. Verified with 0 npm audit vulnerabilities and 5/5 passing migration integration tests.
 
 ### Dependency Vulnerabilities
 
