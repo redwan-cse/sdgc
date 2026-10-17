@@ -2,7 +2,7 @@
 
 **Audit Date:** October 17, 2026  
 **Target Codebase:** `sdgc` (Next.js 16.4.1, React 19, Tailwind CSS 4, Supabase JS/SSR)  
-**Remediation Baseline:** Completed Work Packages R0 through R6
+**Remediation Baseline:** Completed Work Packages R0 through R7 + Pre-Production Hardening Patches (Storage Signed URLs, Next.js Image Remote Patterns, Stripe Delegation, Environment Templates)
 
 ---
 
