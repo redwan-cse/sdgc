@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { contactSchema, type ContactFormData } from "./validation";
 import type { ActionResult } from "@/features/auth/types";
+import { dispatchContactNotification } from "./notifications";
 
 export async function submitContactAction(
   input: ContactFormData,
@@ -52,6 +53,17 @@ export async function submitContactAction(
   }
 
   const reference = `SDGC-MSG-${data.id.slice(0, 8).toUpperCase()}`;
+
+  // Deliver notification to local capture with deduplication (safe for test environments)
+  await dispatchContactNotification({
+    messageId: data.id,
+    reference,
+    senderName: name,
+    senderEmail: email,
+    senderPhone: phone || null,
+    messageBody: message,
+    submittedAt: new Date().toISOString(),
+  });
 
   return {
     success: true,

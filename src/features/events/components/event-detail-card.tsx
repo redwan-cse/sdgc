@@ -132,6 +132,39 @@ export function EventDetailCard({ event, prevEvent, nextEvent }: EventDetailCard
           </div>
         )}
 
+        {/* Calendar Subscription / Export */}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <a
+            href={`/event/${event.slug}/ics`}
+            download={`${event.slug}.ics`}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors shadow-2xs"
+            aria-label="Export event to iCalendar file"
+          >
+            <svg
+              className="h-4 w-4 text-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            Add to Calendar (.ics)
+          </a>
+          <a
+            href="/events/feed.ics"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors shadow-2xs"
+            aria-label="Subscribe to full club calendar feed"
+          >
+            Subscribe to All Club Events (.ics)
+          </a>
+        </div>
+
         {/* Adjacent Events Navigation */}
         <div className="mt-12 border-t border-border pt-6 flex flex-col sm:flex-row justify-between gap-4 text-sm">
           {prevEvent ? (

@@ -9,6 +9,7 @@
 ## 1. Summary of Changes
 
 ### 1.1 Legacy Route Redirects (`next.config.ts`)
+
 - Configured HTTP 308 permanent redirects for all cataloged legacy WordPress routes:
   - Core public: `/aboutourclub`, `/aboutourclub/` -> `/about`, `/becomeamember`, `/becomeamember/` -> `/join`, `/gardenwalk`, `/gardenwalk/`, `/gardens`, `/gardens/` -> `/garden-walk`.
   - Administrative & Login: `/wp-admin`, `/wp-admin/`, `/wp-admin/:path*` -> `/admin`, `/wp-login.php` -> `/login`.
@@ -19,12 +20,14 @@
   - Payment returns & portal deep links: `/payment-successful`, `/payment-successful/` -> `/join?status=success`, `/payment-cancelled`, `/payment-cancelled/` -> `/join?status=cancelled`, `/already-subscribed`, `/already-subscribed/`, `/subscription-cancellation`, `/subscription-cancellation/`, `/customer-portal`, `/customer-portal/` -> `/profile`, `/stripe`, `/stripe/` -> `/join`.
 
 ### 1.2 Safe Logout Session-Termination Route Handler (`src/app/logout/route.ts`)
+
 - Implemented `GET` and `POST` handlers on `/logout`.
 - Calls `supabase.auth.signOut()` to terminate active Supabase sessions safely.
 - Redirects to `/login?notice=signed_out` via HTTP 303 See Other.
 - Validates any custom return destinations through `sanitizeReturnTo` to strictly prevent external open redirects.
 
 ### 1.3 Event Ticketing Parity & Separation from Club Membership Dues
+
 - Created dedicated public route: `/tickets-checkout` (`src/app/(public)/tickets-checkout/page.tsx`).
 - Created interactive component: `src/features/tickets/components/tickets-checkout.tsx`.
 - Implemented server action: `processTicketOrderAction` in `src/features/tickets/actions.ts`.
@@ -33,6 +36,7 @@
 - **Strict Constraint Enforced**: Ticket orders never write to `public.memberships` or grant club member roles. Annual club membership dues and approvals remain completely independent.
 
 ### 1.4 Importer CLI Flag Reconciliation & Zero-PII Compliance (`scripts/import-wordpress.mjs`)
+
 - Reconciled argument parsing in `parseArgs`: supports `--input-dir <path>`, `--input <path>`, `--input-dir=<path>`, `--input=<path>`, `--apply`, `--dry-run`. Unknown flags are rejected with a fatal error.
 - Updated active term resolution: dynamically resolves the current calendar year term instead of hardcoding past years.
 - Added comprehensive database error handling on all Supabase writes (`pages`, `events`, `media_assets`, `legacy_mappings`, `profiles`, `profile_interests`, `memberships`).
@@ -42,14 +46,14 @@
 
 ## 2. Test Verification Matrix
 
-| Test Suite | File | Tests Run | Result | Notes |
-|------------|------|-----------|--------|-------|
-| Code Style & Formatting | `npm run format:check` | All workspace files | **PASSED** | 100% Prettier compliant |
-| Static Linter | `npm run lint` | 177 files | **PASSED** | 0 errors, 0 warnings (Biome) |
-| Strict TypeScript | `npm run typecheck` | Next.js typegen + `tsc` | **PASSED** | 0 type errors |
-| Unit Tests | `npm test` | 9 test files, 44 tests | **PASSED** (100%) | Includes redirects, JSON-LD, auth, contact, validation, import binding |
-| Integration Tests | `npm run test:integration` | 11 test files, 92 tests | **PASSED** (100%) | Real local Docker Supabase stack; includes 10 new tests in `remediation-r5.test.ts` |
-| Production Build | `npm run build` | Next.js 16.4.1 (Turbopack) | **PASSED** | All 29 routes successfully compiled |
+| Test Suite              | File                       | Tests Run                  | Result            | Notes                                                                               |
+| ----------------------- | -------------------------- | -------------------------- | ----------------- | ----------------------------------------------------------------------------------- |
+| Code Style & Formatting | `npm run format:check`     | All workspace files        | **PASSED**        | 100% Prettier compliant                                                             |
+| Static Linter           | `npm run lint`             | 177 files                  | **PASSED**        | 0 errors, 0 warnings (Biome)                                                        |
+| Strict TypeScript       | `npm run typecheck`        | Next.js typegen + `tsc`    | **PASSED**        | 0 type errors                                                                       |
+| Unit Tests              | `npm test`                 | 9 test files, 44 tests     | **PASSED** (100%) | Includes redirects, JSON-LD, auth, contact, validation, import binding              |
+| Integration Tests       | `npm run test:integration` | 11 test files, 92 tests    | **PASSED** (100%) | Real local Docker Supabase stack; includes 10 new tests in `remediation-r5.test.ts` |
+| Production Build        | `npm run build`            | Next.js 16.4.1 (Turbopack) | **PASSED**        | All 29 routes successfully compiled                                                 |
 
 ---
 
