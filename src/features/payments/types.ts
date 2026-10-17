@@ -44,4 +44,5 @@ export interface InitiateDuesResult {
   method: PaymentMethod;
   amountCents: number;
   message: string;
+  checkoutUrl?: string;
 }

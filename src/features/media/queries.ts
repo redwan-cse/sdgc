@@ -273,14 +273,39 @@ export async function listGalleryMedia(): Promise<MediaItem[]> {
     .order("created_at", { ascending: false });
 
   if (!error && dbMedia && dbMedia.length > 0) {
+    const storagePaths = dbMedia
+      .map((m: Record<string, unknown>) => (m.storage_path as string) || "")
+      .filter((p) => Boolean(p) && !p.startsWith("http") && !p.startsWith("/"));
+
+    const signedUrlMap = new Map<string, string>();
+    if (storagePaths.length > 0) {
+      try {
+        const { data: signedResults } = await supabase.storage
+          .from("club-media")
+          .createSignedUrls(storagePaths, 86400);
+
+        if (signedResults) {
+          for (const sr of signedResults) {
+            if (sr.signedUrl && sr.path) {
+              signedUrlMap.set(sr.path, sr.signedUrl);
+            }
+          }
+        }
+      } catch {
+        // Fallback gracefully if storage API is unreachable
+      }
+    }
+
     const items: MediaItem[] = dbMedia.map((m: Record<string, unknown>) => {
       const albumItems = m.album_items as
         Array<{ album_id: string; sort_order: number }> | undefined;
       const albumItem = albumItems?.[0];
       const storagePath = (m.storage_path as string) || "";
-      const src = storagePath.startsWith("public/")
-        ? `${supabaseUrl}/storage/v1/object/public/club-media/${storagePath}`
-        : `/images/gallery/garden-walk-2025.jpeg`;
+      const src =
+        storagePath.startsWith("http") || storagePath.startsWith("/")
+          ? storagePath
+          : signedUrlMap.get(storagePath) ||
+            `${supabaseUrl}/storage/v1/object/public/club-media/${storagePath}`;
 
       return {
         id: m.id as string,

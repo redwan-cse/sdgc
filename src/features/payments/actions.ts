@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { InitiateDuesInput, InitiateDuesResult } from "./types";
 import { localPaymentProvider } from "./local-provider";
+import { stripePaymentProvider } from "./stripe-provider";
 
 import { getMembershipYear } from "@/features/membership/rules";
 
@@ -88,6 +89,16 @@ export async function initiateDuesPaymentAction(
 
   // 5. Insert initial payment record as 'pending'
   const isCard = input.method === "credit_card";
+  const isSimulation = process.env.LOCAL_PAYMENTS_SIMULATION === "true";
+  const stripeStatus = stripePaymentProvider.getConfigStatus();
+
+  const providerName = isCard ? (isSimulation ? "simulated" : "stripe") : "check";
+  const notesText = isCard
+    ? isSimulation
+      ? "Online card checkout via local simulated test adapter"
+      : "Online card checkout via Stripe Checkout"
+    : "Check to be mailed to P.O. Box 1011, Douglas, MI 49406";
+
   const { data: newPayment, error: paymentError } = await supabase
     .from("payments")
     .insert({
@@ -98,10 +109,8 @@ export async function initiateDuesPaymentAction(
       currency: "USD",
       payment_method: input.method,
       status: "pending",
-      provider: isCard ? "simulated" : "check",
-      notes: isCard
-        ? "Online card checkout via local simulated test adapter"
-        : "Check to be mailed to P.O. Box 1011, Douglas, MI 49406",
+      provider: providerName,
+      notes: notesText,
     })
     .select("id")
     .single();
@@ -116,39 +125,73 @@ export async function initiateDuesPaymentAction(
   // 6. Handle payment flow
   let finalStatus: "pending" | "confirmed" = "pending";
   let message: string;
+  let checkoutUrl: string | undefined;
 
   if (isCard) {
-    // Local simulation: confirm payment via server admin client (simulating webhook execution)
-    const checkout = await localPaymentProvider.createCheckout({
-      paymentId: newPayment.id,
-      amountCents: term.dues_cents,
-      currency: "USD",
-      returnPath: "/membership",
-      membershipId,
-    });
+    if (isSimulation) {
+      // Local simulation: confirm payment via server admin client (simulating webhook execution)
+      const checkout = await localPaymentProvider.createCheckout({
+        paymentId: newPayment.id,
+        amountCents: term.dues_cents,
+        currency: "USD",
+        returnPath: "/membership",
+        membershipId,
+      });
 
-    const admin = createAdminClient();
-    const { error: confirmError } = await admin
-      .from("payments")
-      .update({
-        status: "confirmed",
-        provider_transaction_id: checkout.providerReference,
-        provider_event_id: `evt_${checkout.providerReference}`,
-      })
-      .eq("id", newPayment.id);
+      const admin = createAdminClient();
+      const { error: confirmError } = await admin
+        .from("payments")
+        .update({
+          status: "confirmed",
+          provider_transaction_id: checkout.providerReference,
+          provider_event_id: `evt_${checkout.providerReference}`,
+        })
+        .eq("id", newPayment.id);
 
-    if (confirmError) {
+      if (confirmError) {
+        return {
+          success: false,
+          error: `Failed to confirm simulated transaction: ${confirmError.message}`,
+        };
+      }
+
+      finalStatus = "confirmed";
+      const formattedAmount = `$${(term.dues_cents / 100).toFixed(2)} ${term.currency}`;
+      // CRITICAL: We intentionally do NOT change membership status to approved!
+      // Club bylaws mandate that online payment confirmation leaves membership pending manual staff approval.
+      message = `Payment Simulation: Card payment of ${formattedAmount} recorded as CONFIRMED. As required by club bylaws, your membership remains PENDING manual approval by staff.`;
+    } else if (stripeStatus.isConfigured) {
+      // Production or Sandbox Stripe Checkout Session
+      const checkout = await stripePaymentProvider.createCheckoutSession({
+        paymentId: newPayment.id,
+        amountCents: term.dues_cents,
+        currency: "USD",
+        returnPath: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/membership`,
+        membershipId,
+        termYear: targetYear,
+        userId: user.id,
+        customerEmail: user.email,
+      });
+
+      const admin = createAdminClient();
+      await admin
+        .from("payments")
+        .update({
+          provider: "stripe",
+          provider_transaction_id: checkout.providerReference,
+        })
+        .eq("id", newPayment.id);
+
+      finalStatus = "pending";
+      checkoutUrl = checkout.checkoutUrl;
+      message = "Redirecting to secure Stripe Checkout...";
+    } else {
       return {
         success: false,
-        error: `Failed to confirm simulated transaction: ${confirmError.message}`,
+        error:
+          "Online card payments are currently being configured. Please select 'Check' or contact the club treasurer.",
       };
     }
-
-    finalStatus = "confirmed";
-    const formattedAmount = `$${(term.dues_cents / 100).toFixed(2)} ${term.currency}`;
-    // CRITICAL: We intentionally do NOT change membership status to approved!
-    // Club bylaws mandate that online payment confirmation leaves membership pending manual staff approval.
-    message = `Payment Simulation: Card payment of ${formattedAmount} recorded as CONFIRMED. As required by club bylaws, your membership remains PENDING manual approval by staff.`;
   } else {
     const formattedAmount = `$${(term.dues_cents / 100).toFixed(2)} ${term.currency}`;
     // Paper check mailing instructions
@@ -166,6 +209,7 @@ export async function initiateDuesPaymentAction(
       method: input.method,
       amountCents: term.dues_cents,
       message,
+      checkoutUrl,
     },
   };
 }

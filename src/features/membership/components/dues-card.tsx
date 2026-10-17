@@ -48,6 +48,11 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
         return;
       }
 
+      if (res.data.checkoutUrl) {
+        window.location.href = res.data.checkoutUrl;
+        return;
+      }
+
       setPaymentActionMessage(res.data.message);
       setCurrentPaymentStatus(res.data.status);
     } catch (err: unknown) {
