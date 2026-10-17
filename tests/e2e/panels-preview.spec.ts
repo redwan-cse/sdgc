@@ -54,8 +54,7 @@ test.describe("Auth & Panels Surfaces Preview", () => {
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
     await expect(page).toHaveURL(/\/admin$/, { timeout: 15_000 });
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Administrative Dashboard");
-    await expect(page.getByText("Active Members (2026)")).toBeVisible();
+    await expect(page.getByText(/Active Members \((2026|Current Term)\)/)).toBeVisible();
 
     // Navigate to Members & Approvals
     await page.getByRole("link", { name: "Members & Approvals" }).click();

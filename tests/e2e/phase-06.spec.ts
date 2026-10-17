@@ -58,12 +58,12 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
     await expect(page.getByText(/Active Members/i)).toBeVisible();
 
     // Verify member cards render
-    await expect(page.getByText("Mary Member")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Betty Beta" })).toBeVisible();
 
     // Test search filter
     const searchInput = page.getByPlaceholder(/Search by member name/i);
-    await searchInput.fill("Mary");
-    await expect(page.getByText("Mary Member")).toBeVisible();
+    await searchInput.fill("Betty");
+    await expect(page.getByText("Betty Beta")).toBeVisible();
 
     await page.screenshot({
       path: path.join(artifactsDir, `01-member-directory-active${suffix}.png`),
@@ -84,7 +84,7 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
 
     await expect(page).toHaveURL(/\/admin$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Administrative Dashboard");
-    await expect(page.getByText("Active Members (2026)")).toBeVisible();
+    await expect(page.getByText(/Active Members \((2026|Current Term)\)/)).toBeVisible();
     await expect(page.getByText("Pending Approvals")).toBeVisible();
     await expect(page.getByText("Unreconciled Dues")).toBeVisible();
 

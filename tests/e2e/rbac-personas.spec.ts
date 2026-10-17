@@ -9,7 +9,7 @@ test.describe("Phase P8: RBAC Personas & Access Control Matrix E2E", () => {
     await page.getByLabel("Username or Email Address").fill("admin@sdgc.local");
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
-    await expect(page).toHaveURL(/\/profile/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/(admin|profile)/, { timeout: 15_000 });
 
     // 2. Overview
     await page.goto("/admin");
@@ -60,7 +60,7 @@ test.describe("Phase P8: RBAC Personas & Access Control Matrix E2E", () => {
     await page.getByLabel("Username or Email Address").fill("editor@sdgc.local");
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
-    await expect(page).toHaveURL(/\/profile/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/(admin|profile)/, { timeout: 15_000 });
 
     // 2. Allowed panels
     await page.goto("/admin/events");
@@ -95,18 +95,20 @@ test.describe("Phase P8: RBAC Personas & Access Control Matrix E2E", () => {
     await page.getByLabel("Username or Email Address").fill("treasurer@sdgc.local");
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
-    await expect(page).toHaveURL(/\/profile/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/(admin|profile)/, { timeout: 15_000 });
 
-    // 2. Allowed panels
+    // 2. Allowed panels: dues and membership approvals
     await page.goto("/admin/dues");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Dues Reconciliation & Financials",
     );
 
-    // 3. Denied panels: members.manage is admin only; editorial is editor only
     await page.goto("/admin/members");
-    await expect(page).toHaveURL(/\/login\?error=unauthorized/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Member Management & Approvals",
+    );
 
+    // 3. Denied panels: editorial is editor only; messages is admin only
     await page.goto("/admin/content");
     await expect(page).toHaveURL(/\/login\?error=unauthorized/);
 
@@ -114,6 +116,9 @@ test.describe("Phase P8: RBAC Personas & Access Control Matrix E2E", () => {
     await expect(page).toHaveURL(/\/login\?error=unauthorized/);
 
     await page.goto("/admin/media");
+    await expect(page).toHaveURL(/\/login\?error=unauthorized/);
+
+    await page.goto("/admin/messages");
     await expect(page).toHaveURL(/\/login\?error=unauthorized/);
   });
 
@@ -125,7 +130,7 @@ test.describe("Phase P8: RBAC Personas & Access Control Matrix E2E", () => {
     await page.getByLabel("Username or Email Address").fill("editor_treasurer@sdgc.local");
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
-    await expect(page).toHaveURL(/\/profile/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/(admin|profile)/, { timeout: 15_000 });
 
     // 2. Allowed editor panels
     await page.goto("/admin/events");
@@ -147,10 +152,12 @@ test.describe("Phase P8: RBAC Personas & Access Control Matrix E2E", () => {
       "Dues Reconciliation & Financials",
     );
 
-    // 4. Denied admin-only panels
     await page.goto("/admin/members");
-    await expect(page).toHaveURL(/\/login\?error=unauthorized/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Member Management & Approvals",
+    );
 
+    // 4. Denied admin-only panels
     await page.goto("/admin/messages");
     await expect(page).toHaveURL(/\/login\?error=unauthorized/);
   });

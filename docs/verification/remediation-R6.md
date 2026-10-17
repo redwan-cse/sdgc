@@ -61,13 +61,13 @@
 
 ## 2. Test Verification Matrix
 
-| Test Suite              | File                       | Tests Run                  | Result            | Notes                                                                                |
-| ----------------------- | -------------------------- | -------------------------- | ----------------- | ------------------------------------------------------------------------------------ |
-| Code Style & Formatting | `npm run format:check`     | All workspace files        | **PASSED**        | 100% Prettier compliant                                                              |
-| Static Linter           | `npm run lint`             | 188 files                  | **PASSED**        | 0 errors, 0 warnings (Biome)                                                         |
-| Strict TypeScript       | `npm run typecheck`        | Next.js typegen + `tsc`    | **PASSED**        | 0 type errors                                                                        |
-| Unit Tests              | `npm test`                 | 9 test files, 44 tests     | **PASSED** (100%) | Includes redirects, JSON-LD, auth, contact, validation, import binding               |
-| Integration Tests       | `npm run test:integration` | 12 test files, 104 tests   | **PASSED** (100%) | Real local Docker Supabase stack; includes 12 new tests in `remediation-r6.test.ts`  |
+| Test Suite              | File                       | Tests Run                  | Result            | Notes                                                                                   |
+| ----------------------- | -------------------------- | -------------------------- | ----------------- | --------------------------------------------------------------------------------------- |
+| Code Style & Formatting | `npm run format:check`     | All workspace files        | **PASSED**        | 100% Prettier compliant                                                                 |
+| Static Linter           | `npm run lint`             | 188 files                  | **PASSED**        | 0 errors, 0 warnings (Biome)                                                            |
+| Strict TypeScript       | `npm run typecheck`        | Next.js typegen + `tsc`    | **PASSED**        | 0 type errors                                                                           |
+| Unit Tests              | `npm test`                 | 9 test files, 44 tests     | **PASSED** (100%) | Includes redirects, JSON-LD, auth, contact, validation, import binding                  |
+| Integration Tests       | `npm run test:integration` | 12 test files, 104 tests   | **PASSED** (100%) | Real local Docker Supabase stack; includes 12 new tests in `remediation-r6.test.ts`     |
 | Production Build        | `npm run build`            | Next.js 16.4.1 (Turbopack) | **PASSED**        | All 32 routes successfully compiled (including `/events/feed.ics`, `/event/[slug]/ics`) |
 
 ---

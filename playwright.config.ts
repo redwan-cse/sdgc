@@ -24,6 +24,7 @@ export default defineConfig({
     env: {
       NEXT_PUBLIC_LOCAL_PAYMENTS_ENABLED: "true",
       LOCAL_PAYMENTS_SIMULATION: "true",
+      ALLOW_LOCAL_PRODUCTION_BUILD_TESTING: "true",
     },
   },
 });
