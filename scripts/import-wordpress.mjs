@@ -160,7 +160,8 @@ export function reconcileLegacyUserIdentity({ existingProfile, existingAuthUser,
     if (existingEmail && existingEmail !== importedEmail) {
       return {
         status: "conflict",
-        reason: `Identity conflict for username "${importedUser.username}": existing account has email "${existingEmail}", but import specifies "${importedEmail}". Transfer rejected to prevent account takeover.`,
+        reason:
+          "Identity conflict for username: existing account has an email mismatch. Transfer rejected to prevent account takeover.",
       };
     }
   }
@@ -169,7 +170,8 @@ export function reconcileLegacyUserIdentity({ existingProfile, existingAuthUser,
     if (existingProfile.username !== importedUser.username) {
       return {
         status: "conflict",
-        reason: `Identity conflict for email "${importedUser.email}": existing profile has username "${existingProfile.username}", but import specifies "${importedUser.username}". Transfer rejected.`,
+        reason:
+          "Identity conflict for email: existing profile has a username mismatch. Transfer rejected.",
       };
     }
   }
@@ -335,16 +337,29 @@ export async function runImport({
       };
 
       if (existing) {
-        await supabase.from("pages").update(pagePayload).eq("id", existing.id);
-        report.counts.pages.updated++;
+        const { error: updateErr } = await supabase
+          .from("pages")
+          .update(pagePayload)
+          .eq("id", existing.id);
+        if (updateErr) {
+          report.counts.pages.rejected++;
+          report.errors.push(`Page update failed (${page.slug}): ${updateErr.message}`);
+        } else {
+          report.counts.pages.updated++;
+        }
       } else {
-        await supabase.from("pages").insert(pagePayload);
-        report.counts.pages.created++;
+        const { error: insertErr } = await supabase.from("pages").insert(pagePayload);
+        if (insertErr) {
+          report.counts.pages.rejected++;
+          report.errors.push(`Page insert failed (${page.slug}): ${insertErr.message}`);
+        } else {
+          report.counts.pages.created++;
+        }
       }
 
       // Record legacy mapping
       if (page.legacy_id) {
-        await supabase.from("legacy_mappings").upsert(
+        const { error: mapErr } = await supabase.from("legacy_mappings").upsert(
           {
             legacy_id: page.legacy_id,
             legacy_url: `https://saugatuckdouglasgardenclub.com/${page.slug}/`,
@@ -353,7 +368,11 @@ export async function runImport({
           },
           { onConflict: "legacy_url" },
         );
-        report.counts.legacyMappings.created++;
+        if (mapErr) {
+          report.errors.push(`Legacy mapping failed (${page.slug}): ${mapErr.message}`);
+        } else {
+          report.counts.legacyMappings.created++;
+        }
       }
     } else {
       report.counts.pages.created++;
@@ -397,16 +416,29 @@ export async function runImport({
       };
 
       if (existing) {
-        await supabase.from("events").update(eventPayload).eq("id", existing.id);
-        report.counts.events.updated++;
+        const { error: eventUpdateErr } = await supabase
+          .from("events")
+          .update(eventPayload)
+          .eq("id", existing.id);
+        if (eventUpdateErr) {
+          report.counts.events.rejected++;
+          report.errors.push(`Event update failed (${event.slug}): ${eventUpdateErr.message}`);
+        } else {
+          report.counts.events.updated++;
+        }
       } else {
-        await supabase.from("events").insert(eventPayload);
-        report.counts.events.created++;
+        const { error: eventInsertErr } = await supabase.from("events").insert(eventPayload);
+        if (eventInsertErr) {
+          report.counts.events.rejected++;
+          report.errors.push(`Event insert failed (${event.slug}): ${eventInsertErr.message}`);
+        } else {
+          report.counts.events.created++;
+        }
       }
 
       // Legacy mapping
       if (event.legacy_id) {
-        await supabase.from("legacy_mappings").upsert(
+        const { error: mapErr } = await supabase.from("legacy_mappings").upsert(
           {
             legacy_id: event.legacy_id,
             legacy_url: `https://saugatuckdouglasgardenclub.com/event/${event.slug}/`,
@@ -415,7 +447,11 @@ export async function runImport({
           },
           { onConflict: "legacy_url" },
         );
-        report.counts.legacyMappings.created++;
+        if (mapErr) {
+          report.errors.push(`Legacy mapping failed for event (${event.slug}): ${mapErr.message}`);
+        } else {
+          report.counts.legacyMappings.created++;
+        }
       }
     } else {
       report.counts.events.created++;
@@ -457,15 +493,32 @@ export async function runImport({
       };
 
       if (existing) {
-        await supabase.from("media_assets").update(mediaPayload).eq("id", existing.id);
-        report.counts.media.updated++;
+        const { error: mediaUpdateErr } = await supabase
+          .from("media_assets")
+          .update(mediaPayload)
+          .eq("id", existing.id);
+        if (mediaUpdateErr) {
+          report.counts.media.rejected++;
+          report.errors.push(
+            `Media update failed (${media.storage_path}): ${mediaUpdateErr.message}`,
+          );
+        } else {
+          report.counts.media.updated++;
+        }
       } else {
-        await supabase.from("media_assets").insert(mediaPayload);
-        report.counts.media.created++;
+        const { error: mediaInsertErr } = await supabase.from("media_assets").insert(mediaPayload);
+        if (mediaInsertErr) {
+          report.counts.media.rejected++;
+          report.errors.push(
+            `Media insert failed (${media.storage_path}): ${mediaInsertErr.message}`,
+          );
+        } else {
+          report.counts.media.created++;
+        }
       }
 
       if (media.legacy_id && media.source_url) {
-        await supabase.from("legacy_mappings").upsert(
+        const { error: mapErr } = await supabase.from("legacy_mappings").upsert(
           {
             legacy_id: media.legacy_id,
             legacy_url: media.source_url,
@@ -474,7 +527,13 @@ export async function runImport({
           },
           { onConflict: "legacy_url" },
         );
-        report.counts.legacyMappings.created++;
+        if (mapErr) {
+          report.errors.push(
+            `Legacy mapping failed for media (${media.storage_path}): ${mapErr.message}`,
+          );
+        } else {
+          report.counts.legacyMappings.created++;
+        }
       }
     } else {
       report.counts.media.created++;
@@ -486,25 +545,40 @@ export async function runImport({
   // STRICT CONSTRAINT: WordPress phpass password hashes must NEVER be imported into Supabase passwords.
   let activeTermId = null;
   if (!dryRun && supabase) {
+    const currentYear = new Date().getFullYear();
     const { data: term } = await supabase
       .from("membership_terms")
       .select("id")
-      .eq("year", 2026)
+      .eq("year", currentYear)
       .maybeSingle();
-    activeTermId = term?.id || null;
+
+    if (term) {
+      activeTermId = term.id;
+    } else {
+      const { data: fallbackTerm } = await supabase
+        .from("membership_terms")
+        .select("id")
+        .order("year", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      activeTermId = fallbackTerm?.id || null;
+    }
   }
 
-  for (const user of usersData) {
+  for (let idx = 0; idx < usersData.length; idx++) {
+    const user = usersData[idx];
+    const recordLabel = `record #${user.legacy_id || idx + 1}`;
+
     if (!user.username || !user.email) {
       report.counts.users.rejected++;
-      report.warnings.push(`User missing username or email; skipped.`);
+      report.warnings.push(`User ${recordLabel} missing username or email; skipped.`);
       continue;
     }
 
-    // Security check: Flag WordPress password hashes
+    // Security check: Flag WordPress password hashes without leaking username/email
     if (user.wp_password_hash || user.user_pass) {
       report.warnings.push(
-        `User "${user.username}" had WordPress phpass hash; hash rejected. Account flagged for password reset/invitation flow.`,
+        `User ${recordLabel} had WordPress phpass hash; hash rejected. Account flagged for password reset/invitation flow.`,
       );
     }
 
@@ -537,7 +611,7 @@ export async function runImport({
 
       if (reconciliation.status === "conflict") {
         report.counts.users.rejected++;
-        report.warnings.push(reconciliation.reason);
+        report.warnings.push(`User ${recordLabel}: ${reconciliation.reason}`);
         continue;
       }
 
@@ -558,7 +632,7 @@ export async function runImport({
 
         if (authErr || !createdAuth.user) {
           report.counts.users.rejected++;
-          report.errors.push(`Auth creation failed for user: ${authErr?.message}`);
+          report.errors.push(`Auth creation failed for ${recordLabel}: ${authErr?.message}`);
           continue;
         }
         targetUserId = createdAuth.user.id;
@@ -592,7 +666,8 @@ export async function runImport({
         .from("profiles")
         .upsert(profilePayload, { onConflict: "id" });
       if (profileErr) {
-        report.errors.push(`Profile upsert failed: ${profileErr.message}`);
+        report.counts.users.rejected++;
+        report.errors.push(`Profile upsert failed for ${recordLabel}: ${profileErr.message}`);
       } else if (existingProfile) {
         report.counts.users.updated++;
       } else {
@@ -602,18 +677,21 @@ export async function runImport({
       // Interests
       if (Array.isArray(user.interests) && user.interests.length > 0) {
         for (const code of user.interests) {
-          await supabase
+          const { error: interestErr } = await supabase
             .from("profile_interests")
             .upsert(
               { user_id: targetUserId, project_code: code },
               { onConflict: "user_id,project_code" },
             );
+          if (interestErr) {
+            report.errors.push(`Interest upsert failed for ${recordLabel}: ${interestErr.message}`);
+          }
         }
       }
 
       // Membership
       if (user.membership && activeTermId) {
-        await supabase.from("memberships").upsert(
+        const { error: memErr } = await supabase.from("memberships").upsert(
           {
             user_id: targetUserId,
             term_id: activeTermId,
@@ -623,6 +701,9 @@ export async function runImport({
           },
           { onConflict: "user_id,term_id" },
         );
+        if (memErr) {
+          report.errors.push(`Membership upsert failed for ${recordLabel}: ${memErr.message}`);
+        }
       }
     } else {
       report.counts.users.created++;

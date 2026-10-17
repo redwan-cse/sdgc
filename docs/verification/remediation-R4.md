@@ -91,6 +91,7 @@ Remediate gaps identified in Work Package R4 of `docs/audit/ANTIGRAVITY-NEXT-STE
 ```powershell
 npm run check
 ```
+
 - **Prettier:** All matched files use Prettier code style.
 - **Biome:** Checked 171 files in 127ms. 0 warnings, 0 errors.
 - **TypeScript (`next typegen && tsc --noEmit`):** Clean exit with 0 errors.
@@ -101,7 +102,9 @@ npm run check
 ```powershell
 npm run test:integration -- tests/integration/remediation-r4.test.ts
 ```
+
 **Results:**
+
 ```
 ✓ tests/integration/remediation-r4.test.ts (12 tests) 712ms
   ✓ Public Content Persistence (Real Database Pages, No Fixture Fallbacks) (4)
@@ -130,7 +133,9 @@ Tests       12 passed (12)
 ```powershell
 npm run test:integration
 ```
+
 **Results:**
+
 - 10 test files passed (82 tests passed, 0 failures).
 
 ### 3.4 Production Build (`npm run build`)
@@ -138,5 +143,6 @@ npm run test:integration
 ```powershell
 npm run build
 ```
+
 - Next.js 16.4.1 (Turbopack) successfully compiled all 28 static & dynamic routes.
 - Zero TypeScript or bundling warnings.

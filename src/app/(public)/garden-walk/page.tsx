@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getGardenWalkPageContent } from "@/features/content/queries";
@@ -106,7 +107,7 @@ export default async function GardenWalkPage() {
 
           <div className="flex flex-col gap-4 sm:flex-row lg:flex-col shrink-0">
             <Link
-              href="/event/2026-garden-walk-fundraiser"
+              href={"/tickets-checkout" as Route}
               className="rounded-xl bg-primary px-8 py-4 text-center font-serif text-lg font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
             >
               Get Garden Walk Tickets &rarr;
