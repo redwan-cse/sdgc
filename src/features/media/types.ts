@@ -8,6 +8,8 @@ export interface MediaItem {
   albumId?: string;
   year?: number;
   order?: number;
+  isPublic?: boolean;
+  storagePath?: string;
 }
 
 export interface AlbumSummary {

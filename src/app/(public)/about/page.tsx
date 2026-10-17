@@ -1,6 +1,7 @@
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { getAboutPageContent } from "@/features/content/queries";
 
 export const metadata = {
@@ -11,6 +12,9 @@ export const metadata = {
 
 export default async function AboutPage() {
   const about = await getAboutPageContent();
+  if (!about) {
+    notFound();
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-12">

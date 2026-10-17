@@ -1,5 +1,5 @@
 import { AdminDues } from "@/features/admin/components/admin-dues";
-import { getAdminDuesRecords } from "@/features/admin/queries";
+import { getAdminDuesRecords, getAdminTerms } from "@/features/admin/queries";
 import { requireCapability } from "@/features/auth/authorization";
 
 export const metadata = {
@@ -8,6 +8,6 @@ export const metadata = {
 
 export default async function AdminDuesPage() {
   await requireCapability("dues.reconcile", "/admin/dues");
-  const records = await getAdminDuesRecords();
-  return <AdminDues initialRecords={records} />;
+  const [records, terms] = await Promise.all([getAdminDuesRecords(), getAdminTerms()]);
+  return <AdminDues initialRecords={records} initialTerms={terms} />;
 }

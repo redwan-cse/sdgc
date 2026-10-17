@@ -47,86 +47,65 @@ export async function getAdminMembers(): Promise<AdminMemberRecord[]> {
   await requireCapability(["members.manage", "memberships.approve"]);
   const supabase = await createClient();
 
-  const { data: memberships, error } = await supabase
-    .from("memberships")
-    .select(
-      `
-      id,
-      user_id,
-      status,
-      version,
-      created_at,
-      profiles!inner (
-        id,
-        username,
-        first_name,
-        last_name,
-        is_master_gardener
-      ),
-      membership_terms!inner (
-        year
-      )
-    `,
-    )
-    .order("created_at", { ascending: false });
+  const { data: roster, error } = await supabase.rpc("get_admin_member_roster");
 
-  if (error || !memberships) {
+  if (error || !roster) {
+    console.error("Error fetching admin member roster:", error);
     return [];
   }
 
-  // Get payments and roles
-  const userIds = memberships.map((m) => m.user_id);
-  const membershipIds = memberships.map((m) => m.id);
-
-  const [paymentsRes, rolesRes] = await Promise.all([
-    supabase
-      .from("payments")
-      .select("membership_id, status, payment_method")
-      .in("membership_id", membershipIds),
-    supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
-  ]);
-
-  const paymentsMap = new Map<string, { status: string; method: string }>();
-  for (const p of paymentsRes.data ?? []) {
-    // Prefer confirmed over pending
-    if (!paymentsMap.has(p.membership_id) || p.status === "confirmed") {
-      paymentsMap.set(p.membership_id, { status: p.status, method: p.payment_method });
-    }
-  }
+  // Get roles map for all roster users
+  const userIds = [...new Set((roster as Array<{ user_id: string }>).map((r) => r.user_id))];
+  const { data: rolesRes } = await supabase
+    .from("user_roles")
+    .select("user_id, role")
+    .in("user_id", userIds);
 
   const rolesMap = new Map<string, string[]>();
-  for (const r of rolesRes.data ?? []) {
+  for (const r of rolesRes ?? []) {
     const list = rolesMap.get(r.user_id) ?? [];
     list.push(r.role);
     rolesMap.set(r.user_id, list);
   }
 
-  return memberships.map((m) => {
-    const p = m.profiles;
-    const payment = paymentsMap.get(m.id);
-    const roles = rolesMap.get(m.user_id) ?? ["member"];
+  return (roster as Array<Record<string, unknown>>).map((m) => {
+    const roles = rolesMap.get(m.user_id as string) ?? ["member"];
     if (!roles.includes("member")) roles.unshift("member");
 
+    const firstName = (m.first_name as string) || "";
+    const lastName = (m.last_name as string) || "";
+    const fullName = `${firstName} ${lastName}`.trim() || (m.username as string);
+
     return {
-      id: m.id,
-      userId: m.user_id,
-      username: p.username,
-      name: `${p.first_name} ${p.last_name}`.trim(),
-      email: `${p.username}@example.com`,
-      year: m.membership_terms.year,
+      id: m.id as string,
+      userId: m.user_id as string,
+      username: m.username as string,
+      name: fullName,
+      email: m.email as string,
+      year: Number(m.term_year),
       applicationStatus: (m.status as AdminMemberRecord["applicationStatus"]) || "pending",
       paymentStatus:
-        payment?.status === "confirmed"
+        m.payment_status === "confirmed"
           ? "confirmed"
-          : payment?.status === "failed"
+          : m.payment_status === "failed"
             ? "failed"
             : "pending",
-      paymentMethod: payment?.method,
+      paymentMethod: (m.payment_method as string) || undefined,
       isApproved: m.status === "approved",
-      isMasterGardener: p.is_master_gardener,
-      version: m.version,
+      isMasterGardener: Boolean(m.is_master_gardener),
+      version: Number(m.version),
       roles,
-      appliedAt: m.created_at,
+      appliedAt: m.applied_at as string,
+      phone: (m.phone as string) || undefined,
+      altPhone: (m.alt_phone as string) || undefined,
+      addressLine1: (m.address_line1 as string) || undefined,
+      addressLine2: (m.address_line2 as string) || undefined,
+      city: (m.city as string) || undefined,
+      state: (m.state as string) || undefined,
+      postalCode: (m.postal_code as string) || undefined,
+      spouseFirstName: (m.spouse_first_name as string) || undefined,
+      gardeningInterests: (m.gardening_interests as string) || undefined,
+      workExperience: (m.work_experience as string) || undefined,
     };
   });
 }
@@ -269,5 +248,33 @@ export async function getAdminMessages(): Promise<AdminMessageRecord[]> {
     message: m.message,
     status: m.status as "unread" | "read" | "archived",
     createdAt: m.created_at,
+  }));
+}
+
+export async function getAdminTerms(): Promise<
+  Array<{
+    id: string;
+    year: number;
+    duesCents: number;
+    currency: string;
+    opensAt: string;
+    closesAt: string;
+  }>
+> {
+  await requireCapability(["dues.reconcile", "members.manage"]);
+  const supabase = await createClient();
+
+  const { data: terms } = await supabase
+    .from("membership_terms")
+    .select("id, year, dues_cents, currency, opens_at, closes_at")
+    .order("year", { ascending: false });
+
+  return (terms ?? []).map((t) => ({
+    id: t.id,
+    year: t.year,
+    duesCents: t.dues_cents,
+    currency: t.currency,
+    opensAt: t.opens_at,
+    closesAt: t.closes_at,
   }));
 }

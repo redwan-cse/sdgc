@@ -3,24 +3,81 @@
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { AdminDuesRecord } from "../types";
-import { reconcilePaymentAction } from "../actions";
+import type { AdminDuesRecord, AdminTermRecord } from "../types";
+import { reconcilePaymentAction, updateDuesRateAction } from "../actions";
 
 interface AdminDuesProps {
   initialRecords: AdminDuesRecord[];
+  initialTerms?: AdminTermRecord[];
 }
 
-export function AdminDues({ initialRecords }: AdminDuesProps) {
+export function AdminDues({ initialRecords, initialTerms = [] }: AdminDuesProps) {
   const [records, setRecords] = React.useState<AdminDuesRecord[]>(initialRecords);
+  const [terms, setTerms] = React.useState<AdminTermRecord[]>(initialTerms);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [isError, setIsError] = React.useState(false);
   const [reconcilingId, setReconcilingId] = React.useState<string | null>(null);
   const [reconcileNotes, setReconcileNotes] = React.useState<string>("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  // Term rate edit modal state
+  const [editingTerm, setEditingTerm] = React.useState<AdminTermRecord | null>(null);
+  const [editAmountDollars, setEditAmountDollars] = React.useState<string>("");
+
   React.useEffect(() => {
     setRecords(initialRecords);
   }, [initialRecords]);
+
+  React.useEffect(() => {
+    setTerms(initialTerms);
+  }, [initialTerms]);
+
+  const activeTerm =
+    terms.length > 0 ? terms.find((t) => t.year === new Date().getFullYear()) || terms[0] : null;
+
+  const handleOpenEditTerm = (term: AdminTermRecord) => {
+    setEditingTerm(term);
+    setEditAmountDollars((term.duesCents / 100).toFixed(2));
+  };
+
+  const handleSaveTermRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTerm) return;
+    const parsedDollars = parseFloat(editAmountDollars);
+    if (Number.isNaN(parsedDollars) || parsedDollars <= 0) {
+      setIsError(true);
+      setNotice("Please enter a valid dues amount.");
+      return;
+    }
+    const cents = Math.round(parsedDollars * 100);
+
+    setIsSubmitting(true);
+    setIsError(false);
+    try {
+      const res = await updateDuesRateAction({
+        year: editingTerm.year,
+        duesCents: cents,
+      });
+
+      if (res.success) {
+        setTerms((prev) =>
+          prev.map((t) => (t.year === editingTerm.year ? { ...t, duesCents: cents } : t)),
+        );
+        setNotice(
+          `Updated dues rate for term ${editingTerm.year} to $${parsedDollars.toFixed(2)}.`,
+        );
+        setEditingTerm(null);
+      } else {
+        setIsError(true);
+        setNotice(`Failed to update dues rate: ${res.error}`);
+      }
+    } catch (err: unknown) {
+      setIsError(true);
+      setNotice(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleReconcile = async (id: string, member: string) => {
     setIsSubmitting(true);
@@ -90,14 +147,54 @@ export function AdminDues({ initialRecords }: AdminDuesProps) {
           <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
             Active Annual Dues Term
           </span>
-          <p className="text-lg font-bold text-foreground">Calendar Year 2026 &bull; $50.00 USD</p>
+          <p className="text-lg font-bold text-foreground">
+            {activeTerm
+              ? `Calendar Year ${activeTerm.year} • $${(activeTerm.duesCents / 100).toFixed(2)} USD`
+              : "No active terms configured"}
+          </p>
           <p className="text-xs text-muted-foreground">
-            Term valid: Jan 1, 2026 – Dec 31, 2026 &bull; Manual approval required for all
-            activations
+            {activeTerm
+              ? `Term active: ${activeTerm.opensAt.slice(0, 10)} to ${activeTerm.closesAt.slice(0, 10)}`
+              : "Configure an annual membership term below."}
           </p>
         </div>
-        <Badge variant="outline">Configured in Site Settings</Badge>
+        {activeTerm && (
+          <Button size="sm" variant="outline" onClick={() => handleOpenEditTerm(activeTerm)}>
+            Edit Term Rate
+          </Button>
+        )}
       </div>
+
+      {terms.length > 1 && (
+        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">
+            All Membership Terms
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {terms.map((t) => (
+              <div
+                key={t.year}
+                className="flex items-center justify-between p-3 rounded-lg border border-border bg-background"
+              >
+                <div>
+                  <span className="font-semibold text-sm text-foreground">Year {t.year}</span>
+                  <p className="text-xs text-muted-foreground">
+                    ${(t.duesCents / 100).toFixed(2)} USD
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs"
+                  onClick={() => handleOpenEditTerm(t)}
+                >
+                  Edit
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Transactions Table */}
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
@@ -205,6 +302,51 @@ export function AdminDues({ initialRecords }: AdminDuesProps) {
           </table>
         </div>
       </div>
+
+      {/* Edit Term Rate Modal */}
+      {editingTerm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4">
+            <h2 className="font-serif text-xl font-bold text-foreground">
+              Configure Dues Rate &bull; Year {editingTerm.year}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Update the annual membership fee and grace period. Rates apply to new membership
+              applications and renewal dues.
+            </p>
+
+            <form onSubmit={handleSaveTermRate} className="space-y-4 pt-2">
+              <div>
+                <label
+                  htmlFor="edit-dues-amount"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                >
+                  Annual Dues Amount ($ USD) *
+                </label>
+                <input
+                  id="edit-dues-amount"
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  required
+                  value={editAmountDollars}
+                  onChange={(e) => setEditAmountDollars(e.target.value)}
+                  className="w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setEditingTerm(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  Save Dues Rate
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

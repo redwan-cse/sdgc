@@ -249,5 +249,59 @@ export async function listMediaAlbums(): Promise<AlbumSummary[]> {
 }
 
 export async function listGalleryMedia(): Promise<MediaItem[]> {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
+
+  const { data: dbMedia, error } = await supabase
+    .from("media_assets")
+    .select(
+      `
+      id,
+      storage_path,
+      alt_text,
+      caption,
+      width,
+      height,
+      is_public,
+      album_items (
+        album_id,
+        sort_order
+      )
+    `,
+    )
+    .eq("is_public", true)
+    .order("created_at", { ascending: false });
+
+  if (!error && dbMedia && dbMedia.length > 0) {
+    const items: MediaItem[] = dbMedia.map((m: Record<string, unknown>) => {
+      const albumItems = m.album_items as
+        Array<{ album_id: string; sort_order: number }> | undefined;
+      const albumItem = albumItems?.[0];
+      const storagePath = (m.storage_path as string) || "";
+      const src = storagePath.startsWith("public/")
+        ? `${supabaseUrl}/storage/v1/object/public/club-media/${storagePath}`
+        : `/images/gallery/garden-walk-2025.jpeg`;
+
+      return {
+        id: m.id as string,
+        src,
+        width: (m.width as number) || 1200,
+        height: (m.height as number) || 800,
+        alt: (m.alt_text as string) || "Garden club photograph",
+        caption: (m.caption as string) || undefined,
+        albumId: albumItem?.album_id,
+        order: albumItem?.sort_order || 0,
+        isPublic: m.is_public as boolean,
+        storagePath,
+      };
+    });
+
+    // Merge with local curated gallery images so gallery display is vibrant and populated
+    const nonDuplicatedLocal = REAL_LOCAL_GALLERY_MEDIA.filter(
+      (rm) => !items.some((i) => i.id === rm.id),
+    );
+    return [...items, ...nonDuplicatedLocal];
+  }
+
   return REAL_LOCAL_GALLERY_MEDIA;
 }

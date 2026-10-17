@@ -1,8 +1,10 @@
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { siteConfig } from "@/config/site";
-import { FIXTURE_PAGES, FIXTURE_EVENTS } from "../../../tests/fixtures/public-content";
+import { getHomePageContent } from "@/features/content/queries";
+import { listUpcomingEvents } from "@/features/events/queries";
 import { ContactForm } from "@/features/contact/components/contact-form";
 import { formatEventDateTime } from "@/features/events/calendar";
 
@@ -13,9 +15,13 @@ export const metadata = {
   description: siteConfig.description,
 };
 
-export default function HomePage() {
-  const homeData = FIXTURE_PAGES.home;
-  const upcomingEvents = FIXTURE_EVENTS.filter((e) => !e.isPast).slice(0, 3);
+export default async function HomePage() {
+  const homeData = await getHomePageContent();
+  if (!homeData) {
+    notFound();
+  }
+
+  const upcomingEvents = await listUpcomingEvents(3);
 
   return (
     <div className="space-y-16 py-8 sm:py-12">

@@ -181,3 +181,97 @@ export async function getEventBySlug(slug: string): Promise<EventSummary | null>
     isPast: startsDate < now,
   };
 }
+
+export async function listUpcomingEvents(limit: number = 3): Promise<EventSummary[]> {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  // Try fetching future events first
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      description,
+      starts_at,
+      ends_at,
+      timezone,
+      all_day,
+      status,
+      ticket_url,
+      venues (
+        name,
+        address,
+        city,
+        state,
+        postal_code
+      )
+    `,
+    )
+    .eq("status", "published")
+    .gte("ends_at", now)
+    .order("starts_at", { ascending: true })
+    .limit(limit);
+
+  const rawRows: EventRowWithVenue[] = [];
+  if (!error && data && data.length > 0) {
+    rawRows.push(...(data as unknown as EventRowWithVenue[]));
+  } else {
+    // If no future events exist, display the most recent published events
+    const { data: recent } = await supabase
+      .from("events")
+      .select(
+        `
+        id,
+        slug,
+        title,
+        description,
+        starts_at,
+        ends_at,
+        timezone,
+        all_day,
+        status,
+        ticket_url,
+        venues (
+          name,
+          address,
+          city,
+          state,
+          postal_code
+        )
+      `,
+      )
+      .eq("status", "published")
+      .order("starts_at", { ascending: false })
+      .limit(limit);
+
+    if (recent) {
+      rawRows.push(...(recent as unknown as EventRowWithVenue[]));
+    }
+  }
+
+  const nowDate = new Date();
+  return rawRows.map((item) => {
+    const venue = item.venues;
+    const fullAddress = venue
+      ? [venue.address, venue.city, venue.state, venue.postal_code].filter(Boolean).join(", ")
+      : undefined;
+
+    return {
+      id: item.id,
+      slug: item.slug,
+      title: item.title,
+      description: item.description || "",
+      startsAt: item.starts_at,
+      endsAt: item.ends_at,
+      timezone: item.timezone || CLUB_TIMEZONE,
+      allDay: Boolean(item.all_day),
+      venueName: venue?.name || "TBD Saugatuck / Douglas",
+      venueAddress: fullAddress,
+      ticketUrl: item.ticket_url || undefined,
+      isPast: new Date(item.starts_at) < nowDate,
+    };
+  });
+}

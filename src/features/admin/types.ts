@@ -30,6 +30,27 @@ export interface AdminMemberRecord {
   version: number;
   roles: string[];
   appliedAt: string;
+  phone?: string;
+  altPhone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  spouseFirstName?: string;
+  gardeningInterests?: string;
+  workExperience?: string;
+  volunteerExperience?: string;
+  adminNotes?: string;
+}
+
+export interface AdminTermRecord {
+  id: string;
+  year: number;
+  duesCents: number;
+  currency: string;
+  opensAt: string;
+  closesAt: string;
 }
 
 export interface AdminDuesRecord {

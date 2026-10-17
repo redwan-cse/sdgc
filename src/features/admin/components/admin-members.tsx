@@ -5,7 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AdminMemberRecord } from "../types";
-import { approveMembershipAction, setUserRolesAction } from "../actions";
+import {
+  approveMembershipAction,
+  setUserRolesAction,
+  adminUpdateMemberProfileAction,
+} from "../actions";
 
 interface AdminMembersProps {
   initialMembers: AdminMemberRecord[];
@@ -23,6 +27,91 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
     [],
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Profile Edit State
+  const [editingMember, setEditingMember] = React.useState<AdminMemberRecord | null>(null);
+  const [editFullName, setEditFullName] = React.useState("");
+  const [editPhone, setEditPhone] = React.useState("");
+  const [editAddressLine1, setEditAddressLine1] = React.useState("");
+  const [editAddressLine2, setEditAddressLine2] = React.useState("");
+  const [editCity, setEditCity] = React.useState("");
+  const [editState, setEditState] = React.useState("");
+  const [editPostalCode, setEditPostalCode] = React.useState("");
+  const [editGardeningInterests, setEditGardeningInterests] = React.useState("");
+  const [editVolunteerExperience, setEditVolunteerExperience] = React.useState("");
+  const [editIsMasterGardener, setEditIsMasterGardener] = React.useState(false);
+  const [editNotes, setEditNotes] = React.useState("");
+
+  const handleOpenEditProfile = (member: AdminMemberRecord) => {
+    setEditingMember(member);
+    setEditFullName(member.name);
+    setEditPhone(member.phone || "");
+    setEditAddressLine1(member.addressLine1 || "");
+    setEditAddressLine2(member.addressLine2 || "");
+    setEditCity(member.city || "");
+    setEditState(member.state || "");
+    setEditPostalCode(member.postalCode || "");
+    setEditGardeningInterests(member.gardeningInterests || "");
+    setEditVolunteerExperience(member.volunteerExperience || "");
+    setEditIsMasterGardener(member.isMasterGardener);
+    setEditNotes(member.adminNotes || "");
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+    setIsSubmitting(true);
+    setIsError(false);
+    try {
+      const res = await adminUpdateMemberProfileAction({
+        userId: editingMember.userId,
+        fullName: editFullName.trim(),
+        phone: editPhone.trim() || undefined,
+        addressLine1: editAddressLine1.trim() || undefined,
+        addressLine2: editAddressLine2.trim() || undefined,
+        city: editCity.trim() || undefined,
+        state: editState.trim() || undefined,
+        postalCode: editPostalCode.trim() || undefined,
+        gardeningInterests: editGardeningInterests.trim() || undefined,
+        volunteerExperience: editVolunteerExperience.trim() || undefined,
+        isMasterGardener: editIsMasterGardener,
+        notes: editNotes.trim() || undefined,
+      });
+
+      if (res.success) {
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.userId === editingMember.userId
+              ? {
+                  ...m,
+                  name: editFullName.trim(),
+                  phone: editPhone.trim() || undefined,
+                  addressLine1: editAddressLine1.trim() || undefined,
+                  addressLine2: editAddressLine2.trim() || undefined,
+                  city: editCity.trim() || undefined,
+                  state: editState.trim() || undefined,
+                  postalCode: editPostalCode.trim() || undefined,
+                  gardeningInterests: editGardeningInterests.trim() || undefined,
+                  volunteerExperience: editVolunteerExperience.trim() || undefined,
+                  isMasterGardener: editIsMasterGardener,
+                  adminNotes: editNotes.trim() || undefined,
+                }
+              : m,
+          ),
+        );
+        setActionNotice(`Member profile updated for ${editFullName.trim()}.`);
+        setEditingMember(null);
+      } else {
+        setIsError(true);
+        setActionNotice(`Failed to update profile: ${res.error}`);
+      }
+    } catch (err: unknown) {
+      setIsError(true);
+      setActionNotice(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Sync if initialMembers changes
   React.useEffect(() => {
@@ -207,6 +296,13 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
                     </div>
                   </td>
                   <td className="p-4 text-right space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOpenEditProfile(member)}
+                    >
+                      Details / Edit
+                    </Button>
                     {!member.isApproved ? (
                       <Button
                         size="sm"
@@ -286,6 +382,208 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
                 Save Roles
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Details & Edit Modal */}
+      {editingMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="font-serif text-xl font-bold text-foreground">
+              Member Details: {editingMember.name}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Username: <span className="font-mono">@{editingMember.username}</span> &bull; Email:{" "}
+              <span>{editingMember.email}</span> &bull; Status:{" "}
+              <span className="capitalize font-semibold">{editingMember.applicationStatus}</span>
+            </p>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
+              <div>
+                <label
+                  htmlFor="edit-fullname"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                >
+                  Full Name *
+                </label>
+                <Input
+                  id="edit-fullname"
+                  required
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-phone"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                >
+                  Phone Number
+                </label>
+                <Input
+                  id="edit-phone"
+                  type="tel"
+                  placeholder="(269) 555-0123"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="edit-addr1"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Address Line 1
+                  </label>
+                  <Input
+                    id="edit-addr1"
+                    placeholder="Street address"
+                    value={editAddressLine1}
+                    onChange={(e) => setEditAddressLine1(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="edit-addr2"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Address Line 2
+                  </label>
+                  <Input
+                    id="edit-addr2"
+                    placeholder="Apt, Suite, Unit"
+                    value={editAddressLine2}
+                    onChange={(e) => setEditAddressLine2(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label
+                    htmlFor="edit-city"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    City
+                  </label>
+                  <Input
+                    id="edit-city"
+                    value={editCity}
+                    onChange={(e) => setEditCity(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="edit-state"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    State
+                  </label>
+                  <Input
+                    id="edit-state"
+                    value={editState}
+                    onChange={(e) => setEditState(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="edit-zip"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    ZIP Code
+                  </label>
+                  <Input
+                    id="edit-zip"
+                    value={editPostalCode}
+                    onChange={(e) => setEditPostalCode(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-interests"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                >
+                  Gardening Interests
+                </label>
+                <textarea
+                  id="edit-interests"
+                  rows={2}
+                  value={editGardeningInterests}
+                  onChange={(e) => setEditGardeningInterests(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background p-2 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-experience"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                >
+                  Work & Volunteer Experience
+                </label>
+                <textarea
+                  id="edit-experience"
+                  rows={2}
+                  value={editVolunteerExperience}
+                  onChange={(e) => setEditVolunteerExperience(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background p-2 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  id="edit-master-gardener"
+                  type="checkbox"
+                  checked={editIsMasterGardener}
+                  onChange={(e) => setEditIsMasterGardener(e.target.checked)}
+                  className="rounded border border-input"
+                />
+                <label
+                  htmlFor="edit-master-gardener"
+                  className="text-xs text-foreground font-medium"
+                >
+                  Master Gardener Certified
+                </label>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-admin-notes"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                >
+                  Administrative Notes (Staff Only)
+                </label>
+                <textarea
+                  id="edit-admin-notes"
+                  rows={2}
+                  placeholder="Internal notes, committee assignments..."
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background p-2 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingMember(null)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={isSubmitting}>
+                  Save Profile
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

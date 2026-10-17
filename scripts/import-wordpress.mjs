@@ -588,11 +588,14 @@ export async function runImport({
         updated_at: new Date().toISOString(),
       };
 
-      if (existingProfile) {
-        await supabase.from("profiles").update(profilePayload).eq("id", targetUserId);
+      const { error: profileErr } = await supabase
+        .from("profiles")
+        .upsert(profilePayload, { onConflict: "id" });
+      if (profileErr) {
+        report.errors.push(`Profile upsert failed: ${profileErr.message}`);
+      } else if (existingProfile) {
         report.counts.users.updated++;
       } else {
-        await supabase.from("profiles").insert(profilePayload);
         report.counts.users.created++;
       }
 

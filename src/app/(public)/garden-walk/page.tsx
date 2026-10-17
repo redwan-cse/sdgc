@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { FIXTURE_PAGES } from "../../../../tests/fixtures/public-content";
+import { notFound } from "next/navigation";
+import { getGardenWalkPageContent } from "@/features/content/queries";
 
 export const metadata = {
   title: "Annual Garden Walk",
@@ -59,8 +60,11 @@ const FEATURED_GARDEN_WALK_PHOTOS = [
   },
 ];
 
-export default function GardenWalkPage() {
-  const walk = FIXTURE_PAGES.gardenWalk;
+export default async function GardenWalkPage() {
+  const walk = await getGardenWalkPageContent();
+  if (!walk) {
+    notFound();
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-12">

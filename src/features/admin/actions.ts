@@ -269,3 +269,252 @@ export async function updateMessageStatusAction(
   revalidatePath("/admin");
   return { success: true, message: "Message status updated" };
 }
+
+export async function updateEventAction(input: {
+  id: string;
+  title: string;
+  slug: string;
+  startsAt: string;
+  endsAt?: string;
+  category?: string;
+  status: "published" | "draft";
+  description?: string;
+  venueId?: string;
+  venueName?: string;
+}): Promise<ActionResult> {
+  const user = await requireCapability("events.manage");
+  const supabase = await createClient();
+
+  const endsAt =
+    input.endsAt || new Date(new Date(input.startsAt).getTime() + 2 * 3600000).toISOString();
+
+  const { error } = await supabase
+    .from("events")
+    .update({
+      title: input.title,
+      slug: input.slug,
+      starts_at: input.startsAt,
+      ends_at: endsAt,
+      excerpt: input.category || null,
+      status: input.status,
+      venue_id: input.venueId || null,
+      description: input.description || input.title,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "event.updated",
+    entity_type: "event",
+    entity_id: input.id,
+    details: input,
+  });
+
+  revalidatePath("/events");
+  revalidatePath("/admin/events");
+  revalidatePath("/admin");
+  return { success: true, message: "Event updated successfully" };
+}
+
+export async function updateDuesRateAction(input: {
+  year: number;
+  duesCents: number;
+}): Promise<ActionResult> {
+  await requireCapability(["dues.reconcile", "members.manage"]);
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("update_dues_rate", {
+    p_term_year: input.year,
+    p_dues_cents: input.duesCents,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/admin/dues");
+  revalidatePath("/admin");
+  revalidatePath("/membership");
+  revalidatePath("/join");
+  return { success: true, message: "Annual dues rate updated successfully", data };
+}
+
+export async function adminUpdateMemberProfileAction(input: {
+  userId: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  phone?: string;
+  altPhone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  spouseFirstName?: string;
+  isMasterGardener?: boolean;
+  directoryOptOut?: boolean;
+  gardeningInterests?: string;
+  workExperience?: string;
+  volunteerExperience?: string;
+  notes?: string;
+}): Promise<ActionResult> {
+  await requireCapability("members.manage");
+  const supabase = await createClient();
+
+  let fName = input.firstName || "";
+  let lName = input.lastName || "";
+  if (!fName && !lName && input.fullName) {
+    const parts = input.fullName.trim().split(/\s+/);
+    fName = parts[0] || "";
+    lName = parts.slice(1).join(" ") || "";
+  }
+
+  const { error } = await supabase.rpc("admin_update_member_profile", {
+    target_user_id: input.userId,
+    p_first_name: fName,
+    p_last_name: lName,
+    p_phone: input.phone || "",
+    p_alt_phone: input.altPhone || "",
+    p_address_line1: input.addressLine1 || "",
+    p_address_line2: input.addressLine2 || "",
+    p_city: input.city || "",
+    p_state: input.state || "",
+    p_postal_code: input.postalCode || "",
+    p_spouse_first_name: input.spouseFirstName || "",
+    p_is_master_gardener: input.isMasterGardener ?? false,
+    p_directory_opt_out: input.directoryOptOut ?? false,
+    p_gardening_interests: input.gardeningInterests || "",
+    p_work_experience: input.workExperience || input.volunteerExperience || "",
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/admin/members");
+  revalidatePath("/admin");
+  revalidatePath("/directory");
+  return { success: true, message: "Member profile updated successfully" };
+}
+
+export async function updateMediaAssetAction(input: {
+  id: string;
+  altText: string;
+  caption?: string;
+  isPublic?: boolean;
+}): Promise<ActionResult> {
+  const user = await requireCapability("media.manage");
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("media_assets")
+    .update({
+      alt_text: input.altText,
+      caption: input.caption || null,
+      is_public: input.isPublic ?? true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "media.updated",
+    entity_type: "media_asset",
+    entity_id: input.id,
+    details: input,
+  });
+
+  revalidatePath("/gallery");
+  revalidatePath("/admin/media");
+  revalidatePath("/admin");
+  return { success: true, message: "Media metadata updated successfully" };
+}
+
+export async function deleteMediaAssetAction(id: string): Promise<ActionResult> {
+  const user = await requireCapability("media.manage");
+  const supabase = await createClient();
+
+  // Retrieve storage path before deletion
+  const { data: asset } = await supabase
+    .from("media_assets")
+    .select("storage_path")
+    .eq("id", id)
+    .single();
+
+  if (asset?.storage_path) {
+    await supabase.storage.from("club-media").remove([asset.storage_path]);
+  }
+
+  const { error } = await supabase.from("media_assets").delete().eq("id", id);
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "media.deleted",
+    entity_type: "media_asset",
+    entity_id: id,
+  });
+
+  revalidatePath("/gallery");
+  revalidatePath("/admin/media");
+  revalidatePath("/admin");
+  return { success: true, message: "Media item removed successfully" };
+}
+
+export async function createMediaAssetAction(input: {
+  storagePath: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  altText: string;
+  caption?: string;
+  isPublic?: boolean;
+  width?: number;
+  height?: number;
+}): Promise<ActionResult<{ id: string }>> {
+  const user = await requireCapability("media.manage");
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("media_assets")
+    .insert({
+      storage_path: input.storagePath,
+      mime_type: input.mimeType || "image/jpeg",
+      size_bytes: input.sizeBytes || 0,
+      alt_text: input.altText,
+      caption: input.caption || null,
+      is_public: input.isPublic ?? true,
+      width: input.width || 1200,
+      height: input.height || 800,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "media.created",
+    entity_type: "media_asset",
+    entity_id: data.id,
+    details: { storagePath: input.storagePath, altText: input.altText },
+  });
+
+  revalidatePath("/gallery");
+  revalidatePath("/admin/media");
+  revalidatePath("/admin");
+  return { success: true, message: "Photo uploaded and published", data: { id: data.id } };
+}

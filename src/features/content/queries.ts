@@ -1,27 +1,32 @@
 import { createClient } from "@/lib/supabase/server";
 import type { PageContent } from "./types";
 
-export async function getAboutPageContent(): Promise<PageContent> {
+export async function getAboutPageContent(): Promise<PageContent | null> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("pages")
     .select("slug, title, content, meta_description")
     .in("slug", ["about", "aboutourclub"])
     .eq("status", "published")
     .maybeSingle();
 
+  if (error || !data) {
+    return null;
+  }
+
   return {
     slug: "about",
-    title: data?.title || "About Our Club",
+    title: data.title || "About Our Club",
     subtitle:
-      data?.meta_description ||
+      data.meta_description ||
       "Civic beautification, education, scholarships, and friendship since 1980 across Saugatuck and Douglas, Michigan.",
     sections: [
       {
         id: "our-story",
         heading: "Our Story & Purpose",
         body: [
-          "For more than four decades, the Saugatuck Douglas Garden Club has united plant lovers, Master Gardeners, and community volunteers dedicated to enhancing our shared public spaces.",
+          data.content ||
+            "For more than four decades, the Saugatuck Douglas Garden Club has united plant lovers, Master Gardeners, and community volunteers dedicated to enhancing our shared public spaces.",
           "We operate as an active 501(c)(3) nonprofit organization welcoming gardeners of all experience levels to foster horticultural education and civic pride.",
         ],
         image: "/images/content/executive-committee.jpeg",
@@ -74,6 +79,91 @@ export async function getAboutPageContent(): Promise<PageContent> {
         callToAction: {
           label: "Become A Member Today",
           href: "/join",
+        },
+      },
+    ],
+  };
+}
+
+export async function getHomePageContent(): Promise<PageContent | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("pages")
+    .select("slug, title, content, meta_description")
+    .eq("slug", "home")
+    .eq("status", "published")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    slug: "home",
+    title: data.title || "Saugatuck Douglas Garden Club",
+    subtitle:
+      data.meta_description ||
+      "Cultivating civic landscaping, horticultural education, and lakeshore community spirit.",
+    sections: [
+      {
+        id: "civic-landscaping",
+        heading: "Civic Beautification & Public Gardens",
+        body: [
+          "For more than 40 years, the Saugatuck Douglas Garden Club has planned, planted, and maintained vibrant public floral displays throughout Saugatuck and Douglas, Michigan.",
+          "Our dedicated volunteer members cultivate sidewalk pots, corner bump-outs, civic plazas, and library gardens that welcome residents and visitors across the lakeshore.",
+        ],
+        callToAction: {
+          label: "Explore Community Beautification",
+          href: "/about#community-beautification",
+        },
+      },
+      {
+        id: "garden-walk-feature",
+        heading: "The Annual Garden Walk Fundraiser",
+        body: [
+          "Every summer, our signature Garden Walk invites the public to tour exquisite private sanctuaries and innovative coastal gardens throughout our historic twin cities.",
+          "Proceeds directly fund academic scholarships for Allegan County high school seniors studying horticulture, botany, conservation, and landscape architecture.",
+        ],
+        callToAction: {
+          label: "Discover the Garden Walk",
+          href: "/garden-walk",
+        },
+      },
+    ],
+  };
+}
+
+export async function getGardenWalkPageContent(): Promise<PageContent | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("pages")
+    .select("slug, title, content, meta_description")
+    .eq("slug", "garden-walk")
+    .eq("status", "published")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    slug: "garden-walk",
+    title: data.title || "Annual Garden Walk",
+    subtitle:
+      data.meta_description ||
+      "Explore the annual Saugatuck Douglas Garden Walk: tour exquisite private gardens and support local community beautification and scholarships.",
+    sections: [
+      {
+        id: "tour-details",
+        heading: "Tour Details & Garden Highlights",
+        body: [
+          data.content ||
+            "The Garden Walk is the club's premier annual fundraising event. For over four decades, local gardeners open their private landscapes to the public, sharing ideas and inspiration.",
+          "Self-guided walking and driving routes begin at the Old School House in Douglas, featuring diverse shade sanctuaries, native pollinator habitats, and historic cottage borders.",
+        ],
+        callToAction: {
+          label: "View Events & Dates",
+          href: "/events",
         },
       },
     ],

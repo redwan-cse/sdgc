@@ -340,8 +340,16 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "approve_membership":
+            "admin_update_member_profile":
+{ Args: { "p_address_line1": string,"p_address_line2": string,"p_alt_phone": string,"p_city": string,"p_directory_opt_out": boolean,"p_first_name": string,"p_gardening_interests": string,"p_is_master_gardener": boolean,"p_last_name": string,"p_phone": string,"p_postal_code": string,"p_spouse_first_name": string,"p_state": string,"p_work_experience": string,"target_user_id": string }; Returns: undefined
+                           },
+"approve_membership":
 { Args: { "p_expected_version"?: number,"p_membership_id": string }; Returns: Json
+                           },
+"get_admin_member_roster":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "address_line1": string,"address_line2": string,"alt_phone": string,"applied_at": string,"birth_day": number,"birth_month": number,"city": string,"directory_opt_out": boolean,"dues_cents": number,"email": string,"first_name": string,"gardening_interests": string,"id": string,"is_master_gardener": boolean,"last_name": string,"payment_amount_cents": number,"payment_method": string,"payment_status": string,"phone": string,"postal_code": string,"spouse_first_name": string,"state": string,"status": string,"term_year": number,"updated_at": string,"user_id": string,"username": string,"version": number,"work_experience": string
+            }[]
                            },
 "has_capability":
 { Args: { "capability_name": string,"check_user_id"?: string }; Returns: boolean
@@ -357,6 +365,11 @@ isOneToOne: false
                            },
 "reconcile_payment":
 { Args: { "p_notes"?: string,"p_payment_id": string }; Returns: Json
+                           },
+"update_dues_rate":
+{ Args: { "p_dues_cents": number,"p_term_year": number }; Returns: {
+              "closes_at": string,"currency": string,"dues_cents": number,"id": string,"opens_at": string,"updated_at": string,"year": number
+            }[]
                            },
 "update_member_profile":
 { Args: { "p_address_line1"?: string,"p_address_line2"?: string,"p_birth_day"?: number,"p_birth_month"?: number,"p_city"?: string,"p_directory_opt_out"?: boolean,"p_first_name": string,"p_gardening_interests"?: string,"p_is_master_gardener"?: boolean,"p_last_name": string,"p_phone"?: string,"p_postal_code"?: string,"p_project_interests"?: (string)[],"p_secondary_phone"?: string,"p_spouse_name"?: string,"p_state"?: string,"p_volunteer_experience"?: string }; Returns: undefined
