@@ -55,29 +55,16 @@ export function TicketsCheckout({ events }: TicketsCheckoutProps) {
   if (confirmedOrder) {
     return (
       <div className="mx-auto max-w-2xl space-y-8 py-8 px-4">
-        {/* Success Banner */}
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+        {/* Simulated Success Banner */}
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center space-y-2">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300">
+            Simulated Order — No Payment Collected
           </div>
-          <h2 className="mt-3 font-serif text-2xl font-bold text-foreground">
-            Advance Ticket Order Confirmed!
+          <h2 className="mt-2 font-serif text-2xl font-bold text-foreground">
+            Advance Ticket Reservation Preview
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            A confirmation receipt has been generated for your records.
+          <p className="text-sm text-muted-foreground">
+            Local development simulation mode. No financial charges were processed.
           </p>
         </div>
 
@@ -89,7 +76,7 @@ export function TicketsCheckout({ events }: TicketsCheckoutProps) {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4 gap-2">
             <div>
               <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                Order Reference
+                Order Reference (Simulated)
               </span>
               <p
                 id="order-reference-code"
@@ -148,7 +135,7 @@ export function TicketsCheckout({ events }: TicketsCheckoutProps) {
               </span>
             </div>
             <div className="flex justify-between border-t border-border/60 pt-2 text-base font-bold">
-              <span className="text-foreground">Total Paid</span>
+              <span className="text-foreground">Total (Simulated — No Payment Collected)</span>
               <span className="text-primary">
                 ${(confirmedOrder.totalCents / 100).toFixed(2)} USD
               </span>
@@ -192,12 +179,40 @@ export function TicketsCheckout({ events }: TicketsCheckoutProps) {
     );
   }
 
+  if (events.length === 0) {
+    return (
+      <div className="mx-auto max-w-2xl py-16 px-4 text-center space-y-4">
+        <h2 className="font-serif text-2xl font-bold text-foreground">
+          No Advance Ticket Sales Currently Open
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          There are currently no published events with online advance ticket checkout available.
+          Please check back closer to our scheduled tour dates or view our upcoming schedule on the
+          events calendar.
+        </p>
+        <div className="pt-4">
+          <Link
+            href={"/events" as Route}
+            className="inline-flex items-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            View Events Calendar &rarr;
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-4xl py-8 px-4 space-y-8">
-      {/* Title & Legacy Notice */}
+      {/* Title & Simulation Notice */}
       <div className="space-y-3">
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-          Advance Admissions
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            Advance Admissions
+          </div>
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300">
+            Local Simulation Mode — No Live Payments
+          </div>
         </div>
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-foreground">
           Event Ticket Checkout

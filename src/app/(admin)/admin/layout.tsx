@@ -1,5 +1,3 @@
-import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
 import { AdminShell } from "@/features/admin/components/admin-shell";
 import { requireUser } from "@/features/auth/authorization";
 import { createClient } from "@/lib/supabase/server";
@@ -35,10 +33,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         : "Staff";
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <SiteHeader initialUser={{ email: user.email, isStaff: true }} />
-      <AdminShell activeRole={primaryRole}>{children}</AdminShell>
-      <SiteFooter />
-    </div>
+    <AdminShell activeRole={primaryRole} userEmail={user.email ?? ""}>
+      {children}
+    </AdminShell>
   );
 }

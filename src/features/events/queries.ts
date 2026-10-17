@@ -60,20 +60,28 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
     `,
     )
     .eq("status", "published")
-    .order("starts_at", { ascending: true })
-    .limit(100);
+    .order("starts_at", { ascending: true });
 
   if (filters.query) {
     query = query.ilike("title", `%${filters.query}%`);
   }
 
-  if (filters.from) {
-    query = query.gte("starts_at", filters.from);
-  }
-
+  // Multi-day overlap semantics (V11-07):
+  // An event overlaps interval [from, to] if:
+  // 1. starts_at <= to
+  // 2. ends_at >= from OR (ends_at IS NULL and starts_at >= from)
   if (filters.to) {
     query = query.lte("starts_at", filters.to);
   }
+
+  if (filters.from) {
+    query = query.or(
+      `ends_at.gte.${filters.from},and(ends_at.is.null,starts_at.gte.${filters.from})`,
+    );
+  }
+
+  // Default limit: 500 to ensure upcoming events are not truncated by historical rows
+  query = query.limit(500);
 
   const { data, error } = await query;
 

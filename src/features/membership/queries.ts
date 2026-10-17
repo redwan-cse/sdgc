@@ -61,14 +61,16 @@ export async function getOwnProfile(): Promise<MemberProfile | null> {
   };
 }
 
-export async function getOwnMembershipSummary(): Promise<MembershipSummary | null> {
+export async function getOwnMembershipSummary(
+  targetYear?: number,
+): Promise<MembershipSummary | null> {
   const user = await requireUser("/profile");
   const supabase = await createClient();
 
-  const currentMichiganYear = getMembershipYear(new Date(), "America/Detroit");
+  const requestedYear = targetYear ?? getMembershipYear(new Date(), "America/Detroit");
 
-  // Find membership for current Michigan term
-  let { data: membership } = await supabase
+  // Find membership for the specific requested term
+  const { data: membership } = await supabase
     .from("memberships")
     .select(
       `
@@ -81,30 +83,12 @@ export async function getOwnMembershipSummary(): Promise<MembershipSummary | nul
     `,
     )
     .eq("user_id", user.id)
-    .eq("membership_terms.year", currentMichiganYear)
+    .eq("membership_terms.year", requestedYear)
     .maybeSingle();
 
-  // If user has no membership for current Michigan year, fetch their most recent membership record
-  if (!membership) {
-    const { data: latestRecord } = await supabase
-      .from("memberships")
-      .select(
-        `
-        id,
-        user_id,
-        status,
-        approved_at,
-        approved_by,
-        membership_terms!inner(id, year, dues_cents, opens_at, closes_at)
-      `,
-      )
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    membership = latestRecord;
-  }
-
+  // STRICT BYLAW & AUDIT REQUIREMENT (V11-03):
+  // Separate historical membership records from current-term renewal eligibility.
+  // Do NOT silently fall back to an old year's membership as if it was current!
   if (!membership) {
     return null;
   }

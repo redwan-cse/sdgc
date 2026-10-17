@@ -17,16 +17,19 @@ export async function generateMetadata() {
 
 export default async function MembershipPage() {
   const user = await getCurrentUser();
-  const summary = user ? await getOwnMembershipSummary() : null;
   const term = await getCurrentTermInfo();
   const michiganYear = getMembershipYear(new Date(), "America/Detroit");
+  const targetYear = term?.year ?? michiganYear;
+  const summary = user ? await getOwnMembershipSummary(targetYear) : null;
 
   const membershipData = summary ?? {
     ...FIXTURE_MEMBERSHIP,
     duesCents: term?.duesCents ?? 5000,
-    year: term?.year ?? michiganYear,
+    year: targetYear,
     userId: user?.id ?? "",
     paymentStatus: "pending",
+    approved: false,
+    status: "pending",
   };
 
   return (

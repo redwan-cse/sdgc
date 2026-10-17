@@ -38,8 +38,13 @@ export default async function EventsMonthPage(props: EventsMonthPageProps) {
       ? parsedMonth
       : defaultMonth;
 
+  const startOfMonth = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0)).toISOString();
+  const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString();
+
   const { events, error } = await listEvents({
     view: "month",
+    from: startOfMonth,
+    to: endOfMonth,
     query: searchParams.query,
   });
 

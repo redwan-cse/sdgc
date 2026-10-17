@@ -5,8 +5,14 @@ import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { stripePaymentProvider } from "@/features/payments/stripe-provider";
 import { POST as stripeWebhookPost } from "@/app/api/webhooks/stripe/route";
-import { dispatchContactNotification } from "@/features/contact/notifications";
+import {
+  dispatchContactNotification,
+  clearProcessedNotifications,
+} from "@/features/contact/notifications";
 import { submitContactAction } from "@/features/contact/actions";
+import { listGalleryMedia, listStaffMedia } from "@/features/media/queries";
+import { getHomePageContent } from "@/features/content/queries";
+import { listEvents } from "@/features/events/queries";
 import {
   escapeIcsText,
   formatIcsTimestamp,
@@ -41,138 +47,305 @@ describe("Remediation Package R6 — Integrations, Accessibility & Calendar Feed
       expect(session.providerReference).toMatch(/^cs_test_[a-f0-9]{24}$/);
     });
 
-    it("rejects unsigned or invalid stripe webhooks with 400 Bad Request", async () => {
-      const request = new NextRequest("http://127.0.0.1:3000/api/webhooks/stripe", {
-        method: "POST",
-        body: JSON.stringify({ type: "checkout.session.completed" }),
-        headers: { "stripe-signature": "invalid_sig" },
-      });
+    const testWebhookSecret = "whsec_test_local_secret_mock_123456789";
 
-      const response = await stripeWebhookPost(request);
-      expect(response.status).toBe(400);
-      const json = await response.json();
-      expect(json.error).toContain("signature");
+    function computeStripeSignature(payload: string, secret: string, timestamp?: number): string {
+      const t = timestamp ?? Math.floor(Date.now() / 1000);
+      const signedPayload = `${t}.${payload}`;
+      const hmac = crypto.createHmac("sha256", secret).update(signedPayload, "utf8").digest("hex");
+      return `t=${t},v1=${hmac}`;
+    }
+
+    it("rejects unsigned or invalid stripe webhooks with 400 Bad Request", async () => {
+      const prevSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      delete process.env.STRIPE_WEBHOOK_SECRET;
+
+      try {
+        const request = new NextRequest("http://127.0.0.1:3000/api/webhooks/stripe", {
+          method: "POST",
+          body: JSON.stringify({ type: "checkout.session.completed" }),
+          headers: { "stripe-signature": "invalid_sig" },
+        });
+
+        const response = await stripeWebhookPost(request);
+        expect(response.status).toBe(400);
+        const json = await response.json();
+        expect(json.error).toContain("signature");
+      } finally {
+        if (prevSecret) process.env.STRIPE_WEBHOOK_SECRET = prevSecret;
+      }
+    });
+
+    it("rejects forged signature headers even when shaped like a signature", async () => {
+      const prevSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      process.env.STRIPE_WEBHOOK_SECRET = testWebhookSecret;
+
+      try {
+        const forgedPayload = JSON.stringify({
+          id: "evt_forged_1",
+          type: "checkout.session.completed",
+          data: { object: { id: "cs_forged", payment_status: "paid" } },
+        });
+
+        const forgedHeader = `t=${Math.floor(Date.now() / 1000)},v1=arbitrary_forged_hex_digest_value_1234567890`;
+
+        const request = new NextRequest("http://127.0.0.1:3000/api/webhooks/stripe", {
+          method: "POST",
+          body: forgedPayload,
+          headers: {
+            "stripe-signature": forgedHeader,
+            "content-type": "application/json",
+          },
+        });
+
+        const response = await stripeWebhookPost(request);
+        expect(response.status).toBe(400);
+        const json = await response.json();
+        expect(json.error).toContain("signature");
+      } finally {
+        if (prevSecret) process.env.STRIPE_WEBHOOK_SECRET = prevSecret;
+        else delete process.env.STRIPE_WEBHOOK_SECRET;
+      }
+    });
+
+    it("rejects unpaid completion, wrong amount, or currency mismatch", async () => {
+      const serviceClient = createServiceClient();
+      const prevSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      process.env.STRIPE_WEBHOOK_SECRET = testWebhookSecret;
+
+      try {
+        const { data: term } = await serviceClient
+          .from("membership_terms")
+          .select("id")
+          .limit(1)
+          .single();
+        const { data: profile } = await serviceClient
+          .from("profiles")
+          .select("id")
+          .limit(1)
+          .single();
+
+        const { data: membership } = await serviceClient
+          .from("memberships")
+          .upsert(
+            { user_id: profile?.id ?? "", term_id: term?.id ?? "", status: "pending" },
+            { onConflict: "user_id,term_id" },
+          )
+          .select("id")
+          .single();
+
+        expect(profile).toBeDefined();
+        expect(membership).toBeDefined();
+        expect(term).toBeDefined();
+
+        const { data: payment } = await serviceClient
+          .from("payments")
+          .insert({
+            user_id: profile?.id ?? "",
+            membership_id: membership?.id ?? "",
+            term_id: term?.id ?? "",
+            amount_cents: 5000,
+            currency: "USD",
+            payment_method: "credit_card",
+            provider: "stripe",
+            status: "pending",
+          })
+          .select("id")
+          .single();
+
+        expect(payment).toBeDefined();
+
+        // 1. Unpaid payment_status
+        const unpaidPayload = JSON.stringify({
+          id: `evt_unpaid_${Date.now()}`,
+          type: "checkout.session.completed",
+          data: {
+            object: {
+              id: "cs_unpaid",
+              client_reference_id: payment?.id ?? "",
+              payment_status: "unpaid",
+              amount_total: 5000,
+              currency: "usd",
+            },
+          },
+        });
+
+        const unpaidSig = computeStripeSignature(unpaidPayload, testWebhookSecret);
+        const unpaidRes = await stripeWebhookPost(
+          new NextRequest("http://127.0.0.1:3000/api/webhooks/stripe", {
+            method: "POST",
+            body: unpaidPayload,
+            headers: { "stripe-signature": unpaidSig, "content-type": "application/json" },
+          }),
+        );
+        expect(unpaidRes.status).toBe(400);
+
+        // 2. Amount mismatch
+        const wrongAmountPayload = JSON.stringify({
+          id: `evt_amt_${Date.now()}`,
+          type: "checkout.session.completed",
+          data: {
+            object: {
+              id: "cs_wrong_amt",
+              client_reference_id: payment?.id ?? "",
+              payment_status: "paid",
+              amount_total: 1000, // Expected 5000
+              currency: "usd",
+            },
+          },
+        });
+
+        const wrongAmtSig = computeStripeSignature(wrongAmountPayload, testWebhookSecret);
+        const wrongAmtRes = await stripeWebhookPost(
+          new NextRequest("http://127.0.0.1:3000/api/webhooks/stripe", {
+            method: "POST",
+            body: wrongAmountPayload,
+            headers: { "stripe-signature": wrongAmtSig, "content-type": "application/json" },
+          }),
+        );
+        expect(wrongAmtRes.status).toBe(400);
+
+        // Clean up temporary payment
+        if (payment?.id) {
+          await serviceClient.from("payments").delete().eq("id", payment.id);
+        }
+      } finally {
+        if (prevSecret) process.env.STRIPE_WEBHOOK_SECRET = prevSecret;
+        else delete process.env.STRIPE_WEBHOOK_SECRET;
+      }
     });
 
     it("processes valid signed webhook with event deduplication and preserves manual approval", async () => {
       const serviceClient = createServiceClient();
+      const prevSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      process.env.STRIPE_WEBHOOK_SECRET = testWebhookSecret;
 
-      const { data: term } = await serviceClient
-        .from("membership_terms")
-        .select("id")
-        .limit(1)
-        .single();
-      expect(term).toBeDefined();
-      const termId = term?.id as string;
+      try {
+        const { data: term } = await serviceClient
+          .from("membership_terms")
+          .select("id")
+          .limit(1)
+          .single();
+        expect(term).toBeDefined();
+        const termId = term?.id as string;
 
-      const { data: profile } = await serviceClient.from("profiles").select("id").limit(1).single();
-      expect(profile).toBeDefined();
-      const userId = profile?.id as string;
+        const { data: profile } = await serviceClient
+          .from("profiles")
+          .select("id")
+          .limit(1)
+          .single();
+        expect(profile).toBeDefined();
+        const userId = profile?.id as string;
 
-      const { data: membership } = await serviceClient
-        .from("memberships")
-        .upsert(
-          {
+        const { data: membership } = await serviceClient
+          .from("memberships")
+          .upsert(
+            {
+              user_id: userId,
+              term_id: termId,
+              status: "pending",
+            },
+            { onConflict: "user_id,term_id" },
+          )
+          .select("id, status")
+          .single();
+        expect(membership).toBeDefined();
+        const membershipId = membership?.id as string;
+
+        const { data: payment } = await serviceClient
+          .from("payments")
+          .insert({
             user_id: userId,
+            membership_id: membershipId,
             term_id: termId,
+            amount_cents: 5000,
+            currency: "USD",
+            payment_method: "credit_card",
+            provider: "stripe",
             status: "pending",
-          },
-          { onConflict: "user_id,term_id" },
-        )
-        .select("id, status")
-        .single();
-      expect(membership).toBeDefined();
-      const membershipId = membership?.id as string;
+          })
+          .select("id, status")
+          .single();
+        expect(payment).toBeDefined();
+        const paymentId = payment?.id as string;
 
-      const { data: payment } = await serviceClient
-        .from("payments")
-        .insert({
-          user_id: userId,
-          membership_id: membershipId,
-          term_id: termId,
-          amount_cents: 5000,
-          currency: "USD",
-          payment_method: "credit_card",
-          provider: "stripe",
-          status: "pending",
-        })
-        .select("id, status")
-        .single();
-      expect(payment).toBeDefined();
-      const paymentId = payment?.id as string;
+        // 2. Construct signed webhook event payload
+        const eventId = `evt_test_${crypto.randomBytes(8).toString("hex")}`;
+        const sessionId = `cs_test_${crypto.randomBytes(8).toString("hex")}`;
 
-      // 2. Construct signed webhook event payload
-      const eventId = `evt_test_${crypto.randomBytes(8).toString("hex")}`;
-      const sessionId = `cs_test_${crypto.randomBytes(8).toString("hex")}`;
-
-      const webhookPayload = JSON.stringify({
-        id: eventId,
-        type: "checkout.session.completed",
-        data: {
-          object: {
-            id: sessionId,
-            client_reference_id: paymentId,
-            amount_total: 5000,
-            currency: "usd",
-            metadata: {
-              paymentId,
-              membershipId,
+        const webhookPayload = JSON.stringify({
+          id: eventId,
+          type: "checkout.session.completed",
+          data: {
+            object: {
+              id: sessionId,
+              client_reference_id: paymentId,
+              payment_status: "paid",
+              amount_total: 5000,
+              currency: "usd",
+              metadata: {
+                paymentId,
+                membershipId,
+              },
             },
           },
-        },
-      });
+        });
 
-      // Valid test signature header format
-      const signatureHeader = `t=${Math.floor(Date.now() / 1000)},v1=valid_test_signature_hex_digest_123456789`;
+        // Compute valid HMAC-SHA256 signature
+        const signatureHeader = computeStripeSignature(webhookPayload, testWebhookSecret);
 
-      const request = new NextRequest("http://127.0.0.1:3000/api/webhooks/stripe", {
-        method: "POST",
-        body: webhookPayload,
-        headers: {
-          "stripe-signature": signatureHeader,
-          "content-type": "application/json",
-        },
-      });
+        const request = new NextRequest("http://127.0.0.1:3000/api/webhooks/stripe", {
+          method: "POST",
+          body: webhookPayload,
+          headers: {
+            "stripe-signature": signatureHeader,
+            "content-type": "application/json",
+          },
+        });
 
-      const response = await stripeWebhookPost(request);
-      expect(response.status).toBe(200);
-      const resJson = await response.json();
-      expect(resJson.received).toBe(true);
+        const response = await stripeWebhookPost(request);
+        expect(response.status).toBe(200);
+        const resJson = await response.json();
+        expect(resJson.received).toBe(true);
 
-      // Verify payment was confirmed in database
-      const { data: updatedPayment } = await serviceClient
-        .from("payments")
-        .select("status, provider_event_id, provider_transaction_id")
-        .eq("id", paymentId)
-        .single();
+        // Verify payment was confirmed in database
+        const { data: updatedPayment } = await serviceClient
+          .from("payments")
+          .select("status, provider_event_id, provider_transaction_id, provider_session_id")
+          .eq("id", paymentId)
+          .single();
 
-      expect(updatedPayment?.status).toBe("confirmed");
-      expect(updatedPayment?.provider_event_id).toBe(eventId);
-      expect(updatedPayment?.provider_transaction_id).toBe(sessionId);
+        expect(updatedPayment?.status).toBe("confirmed");
+        expect(updatedPayment?.provider_event_id).toBe(eventId);
+        expect(updatedPayment?.provider_session_id).toBe(sessionId);
 
-      // STRICT BYLAW ASSERTION: Membership must remain 'pending' awaiting manual staff approval!
-      const { data: checkedMembership } = await serviceClient
-        .from("memberships")
-        .select("status")
-        .eq("id", membershipId)
-        .single();
+        // STRICT BYLAW ASSERTION: Membership must remain 'pending' awaiting manual staff approval!
+        const { data: checkedMembership } = await serviceClient
+          .from("memberships")
+          .select("status")
+          .eq("id", membershipId)
+          .single();
 
-      expect(checkedMembership?.status).toBe("pending");
+        expect(checkedMembership?.status).toBe("pending");
 
-      // 3. Test Deduplication: Replay the identical webhook event
-      const replayRequest = new NextRequest("http://127.0.0.1:3000/api/webhooks/stripe", {
-        method: "POST",
-        body: webhookPayload,
-        headers: {
-          "stripe-signature": signatureHeader,
-          "content-type": "application/json",
-        },
-      });
+        // 3. Test Deduplication: Replay the identical webhook event
+        const replayRequest = new NextRequest("http://127.0.0.1:3000/api/webhooks/stripe", {
+          method: "POST",
+          body: webhookPayload,
+          headers: {
+            "stripe-signature": signatureHeader,
+            "content-type": "application/json",
+          },
+        });
 
-      const replayResponse = await stripeWebhookPost(replayRequest);
-      expect(replayResponse.status).toBe(200);
-      const replayJson = await replayResponse.json();
-      expect(replayJson.deduplicated).toBe(true);
+        const replayResponse = await stripeWebhookPost(replayRequest);
+        expect(replayResponse.status).toBe(200);
+        const replayJson = await replayResponse.json();
+        expect(replayJson.deduplicated).toBe(true);
+      } finally {
+        if (prevSecret) process.env.STRIPE_WEBHOOK_SECRET = prevSecret;
+        else delete process.env.STRIPE_WEBHOOK_SECRET;
+      }
     });
   });
 
@@ -311,6 +484,110 @@ describe("Remediation Package R6 — Integrations, Accessibility & Calendar Feed
           expect(content).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
           expect(content).not.toContain("service_role");
         }
+      }
+    });
+  });
+
+  describe("R6.5: V11-06 Persistent Media Library & Staff/Public Boundaries", () => {
+    it("strictly isolates public media from hidden media between staff and anonymous queries", async () => {
+      const publicMedia = await listGalleryMedia();
+      const staffMedia = await listStaffMedia();
+
+      // All public media items must have isPublic: true
+      for (const item of publicMedia) {
+        expect(item.isPublic).toBe(true);
+      }
+
+      // Staff query returns all media items
+      expect(staffMedia.length).toBeGreaterThanOrEqual(publicMedia.length);
+      expect(staffMedia.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("R6.6: V11-07 Dynamic Content & Bounded Calendar Overlap Semantics", () => {
+    it("dynamically loads home page title and content from published pages table", async () => {
+      const homeContent = await getHomePageContent();
+      expect(homeContent).not.toBeNull();
+      expect(homeContent?.title).toBeDefined();
+      expect(homeContent?.sections.length).toBeGreaterThan(0);
+    });
+
+    it("evaluates multi-day overlap queries correctly without historical row truncation", async () => {
+      // Query bounded July 2026 range in Detroit
+      const result = await listEvents({
+        view: "month",
+        from: "2026-07-01T00:00:00Z",
+        to: "2026-07-31T23:59:59Z",
+      });
+
+      expect(result.events.length).toBeGreaterThan(0);
+      const gardenWalk = result.events.find((e) => e.slug.includes("garden-walk"));
+      expect(gardenWalk).toBeDefined();
+    });
+  });
+
+  describe("R6.7: V11-10 Contact Durable Rate Limiting & Notification Retry Reliability", () => {
+    it("enforces durable rate limits atomically via check_contact_rate_limit RPC", async () => {
+      const serviceClient = createServiceClient();
+      const testIp = `192.168.99.${Math.floor(Math.random() * 200 + 10)}`;
+
+      // First 5 submissions within window succeed
+      for (let i = 0; i < 5; i++) {
+        const { data: allowed } = await serviceClient.rpc("check_contact_rate_limit", {
+          p_client_ip: testIp,
+          p_max_submissions: 5,
+          p_window_seconds: 300,
+        });
+        expect(allowed).toBe(true);
+      }
+
+      // 6th submission within same window must be rejected
+      const { data: rejected } = await serviceClient.rpc("check_contact_rate_limit", {
+        p_client_ip: testIp,
+        p_max_submissions: 5,
+        p_window_seconds: 300,
+      });
+      expect(rejected).toBe(false);
+    });
+
+    it("permits retry when notification capture fails and avoids premature deduplication marking", async () => {
+      clearProcessedNotifications();
+
+      // Temporarily override MAILPIT_API_URL to an unreachable port to simulate outage
+      const originalUrl = process.env.MAILPIT_API_URL;
+      process.env.MAILPIT_API_URL = "http://127.0.0.1:59999";
+
+      try {
+        const payload = {
+          messageId: "retry-test-msg-001",
+          reference: "SDGC-MSG-RETRY001",
+          senderName: "Retry Tester",
+          senderEmail: "retry@example.com",
+          senderPhone: null,
+          messageBody: "Testing failure retry without premature deduplication",
+          submittedAt: new Date().toISOString(),
+        };
+
+        // First attempt during outage -> must report failed, NOT deduplicated
+        const firstAttempt = await dispatchContactNotification(payload);
+        expect(firstAttempt.success).toBe(false);
+        expect(firstAttempt.deliveryMethod).toBe("failed");
+
+        // Restore Mailpit URL
+        process.env.MAILPIT_API_URL = originalUrl || "http://127.0.0.1:54324";
+
+        // Second attempt after recovery -> must be able to retry and succeed, NOT skipped as deduplicated!
+        const secondAttempt = await dispatchContactNotification(payload);
+        expect(secondAttempt.success).toBe(true);
+        expect(secondAttempt.deliveryMethod).toBe("local_capture");
+
+        // Third attempt with same message ID -> now acknowledged, must be recognized as deduplicated!
+        const thirdAttempt = await dispatchContactNotification(payload);
+        expect(thirdAttempt.success).toBe(true);
+        expect(thirdAttempt.deliveryMethod).toBe("deduplicated");
+      } finally {
+        process.env.MAILPIT_API_URL = originalUrl;
+        clearProcessedNotifications();
       }
     });
   });

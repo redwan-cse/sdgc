@@ -17,7 +17,6 @@ const NAV_LINKS = [
   { href: "/garden-walk", label: "Garden Walk" },
   { href: "/events", label: "Events" },
   { href: "/gallery", label: "Gallery" },
-  { href: "/join", label: "Become A Member" },
   { href: "/contact", label: "Contact Us" },
 ];
 
@@ -176,7 +175,7 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
                 href="/join"
                 className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors"
               >
-                Join
+                Become a Member
               </Link>
             </div>
           )}

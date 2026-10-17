@@ -6,18 +6,7 @@ import type { ActionResult } from "@/features/auth/types";
 import type { TicketCheckoutInput, TicketEvent, TicketOrder } from "./types";
 import { createClient } from "@/lib/supabase/server";
 
-const DEFAULT_GARDEN_WALK_EVENT: TicketEvent = {
-  id: "gw-2026",
-  slug: "2026-garden-walk-fundraiser",
-  title: "Annual Garden Walk Fundraiser",
-  date: "Saturday, July 11, 2026",
-  time: "10:00 AM - 4:00 PM EDT",
-  location: "Saugatuck City Hall & Coastal Garden Sites, Saugatuck, MI",
-  advancePriceCents: 2000, // $20.00
-  dayOfPriceCents: 2500, // $25.00
-  description:
-    "Self-guided tour of exceptional private and public gardens across Saugatuck and Douglas. Advance tickets $20; day of tour $25. All proceeds fund club civic plantings and local student scholarships.",
-};
+import { isSimulationAllowed } from "@/features/payments/local-provider";
 
 const ticketCheckoutSchema = z.object({
   eventId: z.string().min(1, "Please select an event."),
@@ -41,46 +30,50 @@ const ticketCheckoutSchema = z.object({
 });
 
 export async function getTicketEvents(): Promise<TicketEvent[]> {
-  const events: TicketEvent[] = [DEFAULT_GARDEN_WALK_EVENT];
+  const events: TicketEvent[] = [];
 
   try {
     const supabase = await createClient();
     const { data } = await supabase
       .from("events")
-      .select("id, slug, title, starts_at, description, ticket_url")
+      .select("id, slug, title, starts_at, description, ticket_url, venues(name, city, state)")
       .not("ticket_url", "is", null)
-      .eq("status", "published");
+      .eq("status", "published")
+      .order("starts_at", { ascending: true });
 
     if (data && data.length > 0) {
       for (const row of data) {
-        if (row.slug !== DEFAULT_GARDEN_WALK_EVENT.slug) {
-          const startDate = new Date(row.starts_at);
-          events.push({
-            id: row.id,
-            slug: row.slug,
-            title: row.title,
-            date: startDate.toLocaleDateString("en-US", {
-              timeZone: "America/Detroit",
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            }),
-            time: startDate.toLocaleTimeString("en-US", {
-              timeZone: "America/Detroit",
-              hour: "numeric",
-              minute: "2-digit",
-            }),
-            location: "Saugatuck & Douglas, MI",
-            advancePriceCents: 2000,
-            dayOfPriceCents: 2500,
-            description: row.description,
-          });
-        }
+        const startDate = new Date(row.starts_at);
+        const venueInfo = row.venues as { name?: string; city?: string; state?: string } | null;
+        const location = venueInfo?.name
+          ? `${venueInfo.name}, ${venueInfo.city || "Saugatuck"}, ${venueInfo.state || "MI"}`
+          : "Saugatuck & Douglas, MI";
+
+        events.push({
+          id: row.id,
+          slug: row.slug,
+          title: row.title,
+          date: startDate.toLocaleDateString("en-US", {
+            timeZone: "America/Detroit",
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+          time: startDate.toLocaleTimeString("en-US", {
+            timeZone: "America/Detroit",
+            hour: "numeric",
+            minute: "2-digit",
+          }),
+          location,
+          advancePriceCents: 2000,
+          dayOfPriceCents: 2500,
+          description: row.description || "",
+        });
       }
     }
   } catch {
-    // Return default ticket event if query fails
+    // Return empty events on query failure
   }
 
   return events;
@@ -89,6 +82,14 @@ export async function getTicketEvents(): Promise<TicketEvent[]> {
 export async function processTicketOrderAction(
   rawInput: TicketCheckoutInput,
 ): Promise<ActionResult<TicketOrder>> {
+  if (!isSimulationAllowed()) {
+    return {
+      success: false,
+      error:
+        "Online ticket orders are currently in simulated preview mode. Ticket sales simulation is only allowed in local test environments with LOCAL_PAYMENTS_SIMULATION=true.",
+    };
+  }
+
   const parsed = ticketCheckoutSchema.safeParse(rawInput);
   if (!parsed.success) {
     return {
@@ -99,7 +100,12 @@ export async function processTicketOrderAction(
 
   const input = parsed.data;
   const events = await getTicketEvents();
-  const selectedEvent = events.find((e) => e.id === input.eventId || e.slug === input.eventId);
+  const selectedEvent = events.find(
+    (e) =>
+      e.id === input.eventId ||
+      e.slug === input.eventId ||
+      (input.eventId === "gw-2026" && e.slug.includes("garden-walk")),
+  );
 
   if (!selectedEvent) {
     return {
@@ -129,7 +135,7 @@ export async function processTicketOrderAction(
     status: "confirmed",
     createdAt: new Date().toISOString(),
     checkInInstructions:
-      "Please bring this confirmation order receipt (printed or on your mobile device) to the Tour Check-In Table at Saugatuck City Hall on the morning of the event to collect your wristbands and tour guide maps.",
+      "SIMULATED ORDER ONLY (No Payment Collected). Please bring this simulated confirmation receipt to the Tour Check-In Table at Saugatuck City Hall on the morning of the event.",
   };
 
   return {

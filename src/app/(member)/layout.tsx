@@ -1,5 +1,4 @@
-import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
+import { MemberShell } from "@/features/membership/components/member-shell";
 import { getCurrentUser } from "@/features/auth/authorization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,12 +16,8 @@ export default async function MemberLayout({ children }: { children: React.React
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <SiteHeader initialUser={user ? { email: user.email, isStaff } : null} />
-      <main id="main-content" className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
-        {children}
-      </main>
-      <SiteFooter />
-    </div>
+    <MemberShell userEmail={user?.email ?? undefined} isStaff={isStaff}>
+      {children}
+    </MemberShell>
   );
 }

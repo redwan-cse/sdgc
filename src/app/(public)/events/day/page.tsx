@@ -22,9 +22,14 @@ export default async function EventsDayPage(props: EventsDayPageProps) {
   const date =
     searchParams.date && dateRegex.test(searchParams.date) ? searchParams.date : todayDetroit;
 
+  const startOfDay = new Date(`${date}T00:00:00Z`).toISOString();
+  const endOfDay = new Date(`${date}T23:59:59.999Z`).toISOString();
+
   const { events, error } = await listEvents({
     view: "day",
     date,
+    from: startOfDay,
+    to: endOfDay,
     query: searchParams.query,
   });
 

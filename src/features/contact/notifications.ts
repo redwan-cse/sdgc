@@ -12,7 +12,7 @@ export interface ContactNotificationPayload {
 
 export interface NotificationDeliveryResult {
   success: boolean;
-  deliveryMethod: "local_capture" | "simulated" | "deduplicated";
+  deliveryMethod: "local_capture" | "simulated" | "deduplicated" | "failed";
   deduplicationKey: string;
   recipient: string;
   subject: string;
@@ -21,12 +21,16 @@ export interface NotificationDeliveryResult {
 // In-process deduplication cache to prevent duplicate email transmissions for the same message ID
 const processedNotifications = new Set<string>();
 
+export function clearProcessedNotifications() {
+  processedNotifications.clear();
+}
+
 /**
  * Dispatches staff notification for new contact submissions.
- * In accordance with project instructions and Work Package R6:
+ * In accordance with project instructions and Work Package R6 / V11-10:
  * - Delivers to local capture (Mailpit) in development/testing.
- * - Does NOT send real external emails to live internet domains during tests.
- * - Enforces retry deduplication via unique message reference keys.
+ * - Enforces retry deduplication ONLY after successful acknowledgment.
+ * - On capture failure, reports failure without marking as deduplicated, permitting bounded retry.
  */
 export async function dispatchContactNotification(
   payload: ContactNotificationPayload,
@@ -51,8 +55,6 @@ export async function dispatchContactNotification(
   // In our local Docker environment, Mailpit provides local mail capture on port 54324
   const mailpitApiUrl = process.env.MAILPIT_API_URL || "http://127.0.0.1:54324";
 
-  let deliveryMethod: "local_capture" | "simulated" = "simulated";
-
   try {
     const res = await fetch(`${mailpitApiUrl}/api/v1/send`, {
       method: "POST",
@@ -67,21 +69,33 @@ export async function dispatchContactNotification(
     });
 
     if (res.ok) {
-      deliveryMethod = "local_capture";
+      // Mark as processed only upon real acknowledgment
+      processedNotifications.add(deduplicationKey);
+      return {
+        success: true,
+        deliveryMethod: "local_capture",
+        deduplicationKey,
+        recipient,
+        subject,
+      };
     }
+
+    return {
+      success: false,
+      deliveryMethod: "failed",
+      deduplicationKey,
+      recipient,
+      subject,
+    };
   } catch {
-    // If Mailpit HTTP send API is unavailable, fallback to simulated capture without throwing
-    deliveryMethod = "simulated";
+    // If Mailpit HTTP send API is unreachable, do not record in processedNotifications
+    // so retry is allowed once connectivity is restored
+    return {
+      success: false,
+      deliveryMethod: "failed",
+      deduplicationKey,
+      recipient,
+      subject,
+    };
   }
-
-  // Mark as processed for deduplication
-  processedNotifications.add(deduplicationKey);
-
-  return {
-    success: true,
-    deliveryMethod,
-    deduplicationKey,
-    recipient,
-    subject,
-  };
 }

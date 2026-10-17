@@ -72,6 +72,20 @@ isOneToOne: false
                   Relationships: [
 
                   ]
+                },"contact_rate_limits": {
+                  Row: {
+                    "ip": string,"last_submitted_at": string,"submission_count": number,"window_start": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "ip": string,"last_submitted_at"?: string,"submission_count"?: number,"window_start"?: string
+                  }
+                  Update: {
+                    "ip"?: string,"last_submitted_at"?: string,"submission_count"?: number,"window_start"?: string
+                  }
+                  Relationships: [
+
+                  ]
                 },"events": {
                   Row: {
                     "all_day": boolean,"created_at": string,"description": string,"ends_at": string,"excerpt": string | null,"featured_image": string | null,"id": string,"slug": string,"starts_at": string,"status": string,"ticket_url": string | null,"timezone": string,"title": string,"updated_at": string,"venue_id": string | null
@@ -182,14 +196,14 @@ isOneToOne: false
                   ]
                 },"payments": {
                   Row: {
-                    "amount_cents": number,"created_at": string,"currency": string,"id": string,"membership_id": string,"notes": string | null,"payment_method": string,"provider": string,"provider_event_id": string | null,"provider_transaction_id": string | null,"reconciled_at": string | null,"reconciled_by": string | null,"status": string,"term_id": string,"updated_at": string,"user_id": string
+                    "amount_cents": number,"created_at": string,"currency": string,"id": string,"membership_id": string,"notes": string | null,"payment_method": string,"provider": string,"provider_event_id": string | null,"provider_session_id": string | null,"provider_transaction_id": string | null,"reconciled_at": string | null,"reconciled_by": string | null,"status": string,"term_id": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount_cents": number,"created_at"?: string,"currency"?: string,"id"?: string,"membership_id": string,"notes"?: string | null,"payment_method": string,"provider"?: string,"provider_event_id"?: string | null,"provider_transaction_id"?: string | null,"reconciled_at"?: string | null,"reconciled_by"?: string | null,"status"?: string,"term_id": string,"updated_at"?: string,"user_id": string
+                    "amount_cents": number,"created_at"?: string,"currency"?: string,"id"?: string,"membership_id": string,"notes"?: string | null,"payment_method": string,"provider"?: string,"provider_event_id"?: string | null,"provider_session_id"?: string | null,"provider_transaction_id"?: string | null,"reconciled_at"?: string | null,"reconciled_by"?: string | null,"status"?: string,"term_id": string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "amount_cents"?: number,"created_at"?: string,"currency"?: string,"id"?: string,"membership_id"?: string,"notes"?: string | null,"payment_method"?: string,"provider"?: string,"provider_event_id"?: string | null,"provider_transaction_id"?: string | null,"reconciled_at"?: string | null,"reconciled_by"?: string | null,"status"?: string,"term_id"?: string,"updated_at"?: string,"user_id"?: string
+                    "amount_cents"?: number,"created_at"?: string,"currency"?: string,"id"?: string,"membership_id"?: string,"notes"?: string | null,"payment_method"?: string,"provider"?: string,"provider_event_id"?: string | null,"provider_session_id"?: string | null,"provider_transaction_id"?: string | null,"reconciled_at"?: string | null,"reconciled_by"?: string | null,"status"?: string,"term_id"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -346,6 +360,9 @@ isOneToOne: false
 "approve_membership":
 { Args: { "p_expected_version"?: number,"p_membership_id": string }; Returns: Json
                            },
+"check_contact_rate_limit":
+{ Args: { "p_client_ip": string,"p_max_submissions"?: number,"p_window_seconds"?: number }; Returns: boolean
+                           },
 "get_admin_member_roster":
 { Args: Record<PropertyKey, never>; Returns: {
               "address_line1": string,"address_line2": string,"alt_phone": string,"applied_at": string,"birth_day": number,"birth_month": number,"city": string,"directory_opt_out": boolean,"dues_cents": number,"email": string,"first_name": string,"gardening_interests": string,"id": string,"is_master_gardener": boolean,"last_name": string,"payment_amount_cents": number,"payment_method": string,"payment_status": string,"phone": string,"postal_code": string,"spouse_first_name": string,"state": string,"status": string,"term_year": number,"updated_at": string,"user_id": string,"username": string,"version": number,"work_experience": string
@@ -360,11 +377,17 @@ isOneToOne: false
 "is_active_member":
 { Args: { "check_user_id"?: string }; Returns: boolean
                            },
+"is_media_object_public":
+{ Args: { "object_name": string }; Returns: boolean
+                           },
 "log_audit_event":
 { Args: { "p_action": string,"p_details"?: Json,"p_entity_id"?: string,"p_entity_type": string }; Returns: string
                            },
 "reconcile_payment":
 { Args: { "p_notes"?: string,"p_payment_id": string }; Returns: Json
+                           },
+"set_user_roles":
+{ Args: { "p_new_roles": (string)[],"p_target_user_id": string }; Returns: undefined
                            },
 "update_dues_rate":
 { Args: { "p_dues_cents": number,"p_term_year": number }; Returns: {

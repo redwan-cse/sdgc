@@ -108,10 +108,12 @@ export async function getHomePageContent(): Promise<PageContent | null> {
       {
         id: "civic-landscaping",
         heading: "Civic Beautification & Public Gardens",
-        body: [
-          "For more than 40 years, the Saugatuck Douglas Garden Club has planned, planted, and maintained vibrant public floral displays throughout Saugatuck and Douglas, Michigan.",
-          "Our dedicated volunteer members cultivate sidewalk pots, corner bump-outs, civic plazas, and library gardens that welcome residents and visitors across the lakeshore.",
-        ],
+        body: data.content
+          ? [data.content]
+          : [
+              "For more than 40 years, the Saugatuck Douglas Garden Club has planned, planted, and maintained vibrant public floral displays throughout Saugatuck and Douglas, Michigan.",
+              "Our dedicated volunteer members cultivate sidewalk pots, corner bump-outs, civic plazas, and library gardens that welcome residents and visitors across the lakeshore.",
+            ],
         callToAction: {
           label: "Explore Community Beautification",
           href: "/about#community-beautification",

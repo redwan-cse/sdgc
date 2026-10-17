@@ -212,7 +212,7 @@ async function provision() {
     }
   }
 
-  // Ensure storage sample files
+  // Ensure storage sample files and seeded images
   try {
     const publicContent = Buffer.from("Public sample test image data");
     const privateContent = Buffer.from("Private sample board document data");
@@ -226,6 +226,34 @@ async function provision() {
       upsert: true,
       contentType: "text/plain",
     });
+
+    const imageUploads = [
+      { path: "public/sdgc-logo.jpg", file: "public/images/brand/sdgc-logo.jpg" },
+      {
+        path: "public/garden-walk-2025-1.jpg",
+        file: "public/images/gallery/garden-walk-2025.jpeg",
+      },
+      {
+        path: "public/civic-beautification-1.jpg",
+        file: "public/images/gallery/community-beautification-pots.jpeg",
+      },
+      {
+        path: "gallery/garden-walk-2026.jpg",
+        file: "public/images/gallery/garden-walk/2O8A8017-scaled.jpeg",
+      },
+      { path: "gallery/spring-meeting.jpg", file: "public/images/gallery/new-members-party.jpeg" },
+    ];
+
+    for (const item of imageUploads) {
+      const fullPath = path.join(process.cwd(), item.file);
+      if (fs.existsSync(fullPath)) {
+        const fileBuf = fs.readFileSync(fullPath);
+        await adminClient.storage.from("club-media").upload(item.path, fileBuf, {
+          upsert: true,
+          contentType: "image/jpeg",
+        });
+      }
+    }
   } catch (err) {
     console.warn("Storage upload note:", err.message);
   }

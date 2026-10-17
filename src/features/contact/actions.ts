@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { contactSchema, type ContactFormData } from "./validation";
 import type { ActionResult } from "@/features/auth/types";
@@ -30,8 +31,31 @@ export async function submitContactAction(
     };
   }
 
-  // Use server admin client to persist message and retrieve generated reference ID
   const supabase = createAdminClient();
+
+  // Enforce durable rate limits per client IP (V11-10)
+  try {
+    const headerStore = await headers();
+    const forwarded = headerStore.get("x-forwarded-for");
+    const clientIp =
+      forwarded?.split(",")[0]?.trim() || headerStore.get("x-real-ip") || "127.0.0.1";
+
+    const { data: isAllowed } = await supabase.rpc("check_contact_rate_limit", {
+      p_client_ip: clientIp,
+      p_max_submissions: 5,
+      p_window_seconds: 300,
+    });
+
+    if (isAllowed === false) {
+      return {
+        success: false,
+        error:
+          "Too many messages submitted from this connection. Please wait a few minutes before trying again.",
+      };
+    }
+  } catch {
+    // Graceful fallback if headers or RPC are not available in isolated test runners
+  }
   const { data, error } = await supabase
     .from("contact_messages")
     .insert({

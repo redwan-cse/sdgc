@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Route } from "next";
@@ -28,8 +29,12 @@ export function MobileNavigation({
 }: MobileNavigationProps) {
   const pathname = usePathname();
   const navRef = React.useRef<HTMLDivElement>(null);
-
+  const [mounted, setMounted] = React.useState(false);
   const lastPathname = React.useRef(pathname);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close when pathname changes
   React.useEffect(() => {
@@ -93,18 +98,18 @@ export function MobileNavigation({
     };
   }, [isOpen, onClose, toggleRef]);
 
-  if (!isOpen) return null;
+  if (!mounted || !isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       id="mobile-navigation"
       role="dialog"
       aria-modal="true"
       aria-label="Site Navigation"
       ref={navRef}
-      className="fixed inset-0 z-50 flex flex-col bg-background/98 backdrop-blur-md px-6 py-6 md:hidden overflow-y-auto"
+      className="fixed inset-0 z-[100] flex flex-col bg-background text-foreground px-6 py-6 md:hidden overflow-y-auto"
     >
-      <div className="flex items-center justify-between pb-6 border-b border-border">
+      <div className="flex items-center justify-between pb-6 border-b border-border shrink-0">
         <span className="font-serif text-xl font-bold text-primary">SDGC Navigation</span>
         <div className="flex items-center space-x-2">
           <ThemeToggle />
@@ -114,7 +119,7 @@ export function MobileNavigation({
               onClose();
               toggleRef.current?.focus();
             }}
-            className="rounded-md p-2 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="rounded-md p-2 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
             aria-label="Close navigation menu"
           >
             <svg
@@ -131,14 +136,15 @@ export function MobileNavigation({
         </div>
       </div>
 
-      <nav className="flex flex-col space-y-4 pt-6" aria-label="Mobile Main Navigation">
+      <nav className="flex flex-col space-y-2 pt-6" aria-label="Mobile Main Navigation">
         {links.map((link) => {
           const isActive = pathname === link.href;
           return (
             <Link
               key={link.href}
               href={link.href as Route}
-              className={`text-lg font-medium transition-colors py-2 px-3 rounded-md ${
+              onClick={onClose}
+              className={`text-lg font-medium transition-colors py-3 px-4 rounded-lg ${
                 isActive
                   ? "bg-primary text-primary-foreground font-semibold"
                   : "text-foreground hover:bg-muted"
@@ -150,20 +156,22 @@ export function MobileNavigation({
         })}
       </nav>
 
-      <div className="mt-auto border-t border-border pt-6 flex flex-col space-y-3">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+      <div className="mt-8 border-t border-border pt-6 flex flex-col space-y-2 pb-6">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold px-4 pb-1">
           Member & Admin Area
         </span>
         {authLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href as Route}
-            className="text-base font-medium text-foreground py-2 px-3 rounded-md hover:bg-muted"
+            onClick={onClose}
+            className="text-base font-medium text-foreground py-2.5 px-4 rounded-lg hover:bg-muted transition-colors"
           >
             {link.label}
           </Link>
         ))}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

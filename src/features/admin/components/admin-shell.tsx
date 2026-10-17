@@ -1,78 +1,331 @@
 "use client";
 
 import type * as React from "react";
-import type { Route } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
+import type { Route } from "next";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { logoutAction } from "@/features/auth/actions";
 
 interface AdminShellProps {
   children: React.ReactNode;
   activeRole?: string;
+  userEmail?: string;
 }
 
-const ADMIN_NAV = [
-  { href: "/admin", label: "Overview", icon: "dashboard" },
-  { href: "/admin/members", label: "Members & Approvals", icon: "users" },
-  { href: "/admin/dues", label: "Dues & Reconciliation", icon: "credit-card" },
-  { href: "/admin/events", label: "Events & Scheduling", icon: "calendar" },
-  { href: "/admin/media", label: "Media & Albums", icon: "photograph" },
-  { href: "/admin/content", label: "Pages & Copy", icon: "document-text" },
-  { href: "/admin/messages", label: "Contact Inbox", icon: "inbox" },
+interface NavItem {
+  href: Route | string;
+  label: string;
+  icon: (props: { className?: string }) => React.ReactNode;
+}
+
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+function DashboardIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <rect width="7" height="9" x="3" y="3" rx="1" />
+      <rect width="7" height="5" x="14" y="3" rx="1" />
+      <rect width="7" height="9" x="14" y="12" rx="1" />
+      <rect width="7" height="5" x="3" y="16" rx="1" />
+    </svg>
+  );
+}
+
+function UsersIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+      />
+      <circle cx="9" cy="7" r="4" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function CreditCardIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <rect width="20" height="14" x="2" y="5" rx="2" />
+      <line x1="2" x2="22" y1="10" y2="10" />
+    </svg>
+  );
+}
+
+function CalendarIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <rect width="18" height="18" x="3" y="4" rx="2" />
+      <line x1="16" x2="16" y1="2" y2="6" />
+      <line x1="8" x2="8" y1="2" y2="6" />
+      <line x1="3" x2="21" y1="10" y2="10" />
+    </svg>
+  );
+}
+
+function MediaIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="m21 15-5-5L5 21" />
+    </svg>
+  );
+}
+
+function DocumentIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+      />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" x2="8" y1="13" y2="13" />
+      <line x1="16" x2="8" y1="17" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
+
+function InboxIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+      />
+    </svg>
+  );
+}
+
+function LogoutIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+      />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" x2="9" y1="12" y2="12" />
+    </svg>
+  );
+}
+
+const ADMIN_GROUPS: NavGroup[] = [
+  {
+    title: "OVERVIEW",
+    items: [{ href: "/admin", label: "Overview", icon: DashboardIcon }],
+  },
+  {
+    title: "MEMBERSHIP",
+    items: [
+      { href: "/admin/members", label: "Members & Approvals", icon: UsersIcon },
+      { href: "/admin/dues", label: "Dues & Reconciliation", icon: CreditCardIcon },
+    ],
+  },
+  {
+    title: "CONTENT",
+    items: [
+      { href: "/admin/events", label: "Events & Scheduling", icon: CalendarIcon },
+      { href: "/admin/media", label: "Media & Albums", icon: MediaIcon },
+      { href: "/admin/content", label: "Pages & Copy", icon: DocumentIcon },
+    ],
+  },
+  {
+    title: "COMMUNICATION",
+    items: [{ href: "/admin/messages", label: "Contact Inbox", icon: InboxIcon }],
+  },
 ];
 
-export function AdminShell({ children, activeRole = "Administrator" }: AdminShellProps) {
+export function AdminShell({ children, activeRole = "Administrator", userEmail }: AdminShellProps) {
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col md:flex-row border-t border-border">
+    <div className="flex min-h-screen flex-col md:flex-row bg-background text-foreground antialiased">
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 shrink-0 border-r border-border bg-sidebar p-4 space-y-6">
-        <div>
-          <div className="flex items-center justify-between pb-3 border-b border-sidebar-border">
-            <span className="font-serif text-lg font-bold text-sidebar-primary">
-              Club Administration
-            </span>
-            <Badge variant="secondary">{activeRole}</Badge>
-          </div>
-          <p className="mt-2 text-xs text-sidebar-foreground/70">
-            RBAC Protected Portal &bull; SDGC
-          </p>
+      <aside className="w-full md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-border bg-card flex flex-col">
+        {/* Brand Header */}
+        <div className="flex h-16 items-center justify-between border-b border-border px-5">
+          <Link href="/admin" className="flex items-center space-x-3">
+            <Image
+              src="/images/brand/sdgc-logo.jpg"
+              alt="SDGC Logo"
+              width={36}
+              height={36}
+              className="h-9 w-9 rounded-full object-cover border border-border"
+            />
+            <div className="flex flex-col">
+              <span className="font-serif text-base font-bold leading-tight text-foreground">
+                SDGC
+              </span>
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Operator Workspace
+              </span>
+            </div>
+          </Link>
+          <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+            {activeRole}
+          </span>
         </div>
 
-        <nav aria-label="Admin Navigation" className="space-y-1">
-          {ADMIN_NAV.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href as Route}
-                className={`flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                }`}
-              >
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Navigation Categories */}
+        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6">
+          {ADMIN_GROUPS.map((group) => (
+            <div key={group.title} className="space-y-1">
+              <h2 className="px-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                {group.title}
+              </h2>
+              <div className="space-y-0.5 pt-1">
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href as Route}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        isActive
+                          ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                          : "text-foreground/80 hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
 
-        <div className="border-t border-sidebar-border pt-4 text-xs text-sidebar-foreground/60 space-y-2">
-          <p className="font-semibold text-sidebar-foreground">Parity Requirement:</p>
-          <p>
-            Replaces legacy WordPress admin panel with real local RBAC, content management, member
-            approval, and payment reconciliation.
-          </p>
-          <Link href="/" className="block pt-2 text-primary hover:underline font-medium">
-            &larr; View Public Site
+        {/* Sidebar Footer */}
+        <div className="border-t border-border p-4 space-y-2 text-xs">
+          <Link
+            href="/profile"
+            className="flex items-center justify-between rounded-md px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <span>Member Portal</span>
+            <span className="text-[10px]">&rarr;</span>
+          </Link>
+          <Link
+            href="/"
+            className="flex items-center justify-between rounded-md px-3 py-2 text-primary font-medium hover:bg-primary/5 transition-colors"
+          >
+            <span>View public site</span>
+            <span>&nearr;</span>
           </Link>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-8 lg:p-10 bg-background overflow-y-auto">{children}</main>
+      {/* Main Container Area */}
+      <div className="flex flex-1 flex-col min-w-0">
+        {/* Workspace Top Bar */}
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-border bg-card/80 px-4 sm:px-6 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-foreground">
+                SDGC &bull; Operator Workspace
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Staff administration &bull; Real RBAC audit enabled
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {userEmail && (
+              <span className="hidden sm:inline-flex items-center text-xs text-muted-foreground bg-muted/50 border border-border px-2.5 py-1 rounded-md font-mono">
+                {userEmail}
+              </span>
+            )}
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                <LogoutIcon className="h-3.5 w-3.5" />
+                <span>Logout</span>
+              </button>
+            </form>
+            <ThemeToggle />
+          </div>
+        </header>
+
+        {/* Content Body */}
+        <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

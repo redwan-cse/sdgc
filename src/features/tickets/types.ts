@@ -33,7 +33,7 @@ export interface TicketOrder {
   purchaserName: string;
   purchaserEmail: string;
   purchaserPhone: string | null;
-  status: "confirmed";
+  status: "confirmed" | "simulated_reservation";
   createdAt: string;
   checkInInstructions: string;
 }

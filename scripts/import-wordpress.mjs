@@ -543,27 +543,6 @@ export async function runImport({
 
   // E. Process Users & Memberships
   // STRICT CONSTRAINT: WordPress phpass password hashes must NEVER be imported into Supabase passwords.
-  let activeTermId = null;
-  if (!dryRun && supabase) {
-    const currentYear = new Date().getFullYear();
-    const { data: term } = await supabase
-      .from("membership_terms")
-      .select("id")
-      .eq("year", currentYear)
-      .maybeSingle();
-
-    if (term) {
-      activeTermId = term.id;
-    } else {
-      const { data: fallbackTerm } = await supabase
-        .from("membership_terms")
-        .select("id")
-        .order("year", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      activeTermId = fallbackTerm?.id || null;
-    }
-  }
 
   for (let idx = 0; idx < usersData.length; idx++) {
     const user = usersData[idx];
@@ -585,23 +564,74 @@ export async function runImport({
     if (!dryRun && supabase) {
       const normalizedUsername = user.username.trim().toLowerCase();
 
-      // Find existing auth user or profile
-      const { data: existingProfile } = await supabase
+      // 1. Lookup profile by username
+      const { data: profileByUsername } = await supabase
         .from("profiles")
         .select("id, username")
         .eq("username", normalizedUsername)
         .maybeSingle();
 
-      let existingAuthUser = null;
-      if (existingProfile) {
-        const { data: authData } = await supabase.auth.admin.getUserById(existingProfile.id);
-        existingAuthUser = authData?.user || null;
-      } else {
-        const { data: authLookup } = await supabase.auth.admin.listUsers();
-        existingAuthUser =
-          authLookup?.users?.find((u) => u.email?.toLowerCase() === user.email.toLowerCase()) ||
-          null;
+      let authByUsername = null;
+      if (profileByUsername) {
+        const { data: authData } = await supabase.auth.admin.getUserById(profileByUsername.id);
+        authByUsername = authData?.user || null;
       }
+
+      // 2. Lookup auth user by email (with pagination)
+      let authByEmail = null;
+      let authPageNum = 1;
+      while (!authByEmail) {
+        const { data: authLookup, error: listErr } = await supabase.auth.admin.listUsers({
+          page: authPageNum,
+          perPage: 50,
+        });
+        if (listErr || !authLookup?.users?.length) break;
+        authByEmail =
+          authLookup.users.find((u) => u.email?.toLowerCase() === user.email.toLowerCase()) || null;
+        if (authLookup.users.length < 50) break;
+        authPageNum++;
+      }
+
+      let profileByEmail = null;
+      if (authByEmail) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .eq("id", authByEmail.id)
+          .maybeSingle();
+        profileByEmail = prof || null;
+      }
+
+      // 3. Resolve identity conflicts
+      // Conflict Case A: Username exists for User A, but email exists for User B
+      if (profileByUsername && authByEmail && profileByUsername.id !== authByEmail.id) {
+        report.counts.users.rejected++;
+        report.warnings.push(
+          `User ${recordLabel}: Identity conflict — username belongs to account ${profileByUsername.id} while email belongs to account ${authByEmail.id}.`,
+        );
+        continue;
+      }
+
+      // Conflict Case B: Same email exists, but existing profile has a different username
+      if (profileByEmail && profileByEmail.username.toLowerCase() !== normalizedUsername) {
+        report.counts.users.rejected++;
+        report.warnings.push(
+          `User ${recordLabel}: Identity conflict for email — existing account has username "${profileByEmail.username}", conflicting with imported "${normalizedUsername}".`,
+        );
+        continue;
+      }
+
+      // Conflict Case C: Same username exists, but existing auth user has different email
+      if (authByUsername && authByUsername.email?.toLowerCase() !== user.email.toLowerCase()) {
+        report.counts.users.rejected++;
+        report.warnings.push(
+          `User ${recordLabel}: Identity conflict for username — existing account has email "${authByUsername.email}", conflicting with imported "${user.email}".`,
+        );
+        continue;
+      }
+
+      const existingProfile = profileByUsername || profileByEmail;
+      const existingAuthUser = authByUsername || authByEmail;
 
       const reconciliation = reconcileLegacyUserIdentity({
         existingProfile,
@@ -668,6 +698,8 @@ export async function runImport({
       if (profileErr) {
         report.counts.users.rejected++;
         report.errors.push(`Profile upsert failed for ${recordLabel}: ${profileErr.message}`);
+        // STRICT GUARD: Stop dependent writes on profile failure!
+        continue;
       } else if (existingProfile) {
         report.counts.users.updated++;
       } else {
@@ -689,20 +721,45 @@ export async function runImport({
         }
       }
 
-      // Membership
-      if (user.membership && activeTermId) {
-        const { error: memErr } = await supabase.from("memberships").upsert(
-          {
-            user_id: targetUserId,
-            term_id: activeTermId,
-            status: user.membership.status || "pending",
-            notes: user.membership.notes || "Migrated from legacy membership register",
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id,term_id" },
+      // Membership (Strict term year preservation and approval separation)
+      if (user.membership) {
+        const detroitYear = Number(
+          new Intl.DateTimeFormat("en-US", { timeZone: "America/Detroit", year: "numeric" }).format(
+            new Date(),
+          ),
         );
-        if (memErr) {
-          report.errors.push(`Membership upsert failed for ${recordLabel}: ${memErr.message}`);
+        const targetYear = user.membership.year ? Number(user.membership.year) : detroitYear;
+
+        const { data: termRow } = await supabase
+          .from("membership_terms")
+          .select("id")
+          .eq("year", targetYear)
+          .maybeSingle();
+
+        if (!termRow) {
+          report.errors.push(
+            `Membership term year ${targetYear} not found for ${recordLabel}. Unknown term rejected.`,
+          );
+        } else {
+          const isApproved = user.membership.status === "approved";
+          const approvedAt = isApproved
+            ? user.membership.approved_at || new Date().toISOString()
+            : null;
+
+          const { error: memErr } = await supabase.from("memberships").upsert(
+            {
+              user_id: targetUserId,
+              term_id: termRow.id,
+              status: user.membership.status || "pending",
+              approved_at: approvedAt,
+              notes: user.membership.notes || "Migrated from legacy membership register",
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id,term_id" },
+          );
+          if (memErr) {
+            report.errors.push(`Membership upsert failed for ${recordLabel}: ${memErr.message}`);
+          }
         }
       }
     } else {
@@ -733,12 +790,16 @@ if (
     .then((report) => {
       console.log("\nMigration Summary (Zero-PII Report):");
       console.log(JSON.stringify(report, null, 2));
+      if (report.errors.length > 0) {
+        console.error(`\n[FAILED] Migration completed with ${report.errors.length} error(s).`);
+        process.exit(1);
+      }
       if (report.dryRun) {
         console.log(
           "\n[INFO] Dry-run completed successfully. Pass --apply to execute database writes.",
         );
       } else {
-        console.log("\n[SUCCESS] Migration completed.");
+        console.log("\n[SUCCESS] Migration completed without errors.");
       }
     })
     .catch((err) => {

@@ -62,7 +62,8 @@ export class StripePaymentProvider {
     }
 
     const sessionRef = `cs_test_${crypto.randomBytes(12).toString("hex")}`;
-    const checkoutUrl = `https://checkout.stripe.com/c/pay/${sessionRef}`;
+    // Local simulation contract: returns visibly simulated path rather than fake checkout.stripe.com
+    const checkoutUrl = `${input.returnPath}?session_id=${sessionRef}&provider=stripe_simulated`;
 
     return {
       checkoutUrl,
@@ -72,8 +73,8 @@ export class StripePaymentProvider {
 
   /**
    * Validates Stripe webhook signatures.
-   * In sandbox testing, verifies HMAC-SHA256 signature when secret is available,
-   * or validates payload structure.
+   * In sandbox testing, verifies HMAC-SHA256 signature when secret is available.
+   * Strictly fails closed if STRIPE_WEBHOOK_SECRET is not configured or signature is invalid.
    */
   verifyWebhookSignature(payload: string, signatureHeader: string | null): boolean {
     if (!signatureHeader?.includes("t=") || !signatureHeader.includes("v1=")) {
@@ -82,8 +83,8 @@ export class StripePaymentProvider {
 
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      // In local environments without configured webhook secret, check presence of structured signature
-      return signatureHeader.length > 20;
+      // Strictly fail closed if STRIPE_WEBHOOK_SECRET is not configured
+      return false;
     }
 
     try {

@@ -2,7 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { formatEventDateTime } from "@/features/events/calendar";
+import {
+  formatDetroitDateTimeLocal,
+  formatEventDateTime,
+  parseDetroitDateTimeLocal,
+} from "@/features/events/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,17 +43,19 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
   const [editStatus, setEditStatus] = React.useState<"published" | "draft">("published");
   const [editDescription, setEditDescription] = React.useState("");
   const [editVenueName, setEditVenueName] = React.useState("");
+  const [editVenueId, setEditVenueId] = React.useState<string | undefined>(undefined);
 
   const handleOpenEdit = (e: AdminEventRecord) => {
     setEditingEvent(e);
     setEditTitle(e.title);
     setEditSlug(e.slug);
-    setEditStartsAt(e.startsAt ? e.startsAt.slice(0, 16) : "");
-    setEditEndsAt(e.endsAt ? e.endsAt.slice(0, 16) : "");
+    setEditStartsAt(formatDetroitDateTimeLocal(e.startsAt));
+    setEditEndsAt(e.endsAt ? formatDetroitDateTimeLocal(e.endsAt) : "");
     setEditCategory(e.category || "Workshops & Presentations");
     setEditStatus((e.status as "published" | "draft") || "published");
     setEditDescription(e.description || "");
     setEditVenueName(e.venueName || "");
+    setEditVenueId(e.venueId);
   };
 
   const handleUpdate = async (ev: React.FormEvent) => {
@@ -58,15 +64,18 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
     setIsSubmitting(true);
     setIsError(false);
     try {
+      const startsAtIso = parseDetroitDateTimeLocal(editStartsAt);
+      const endsAtIso = editEndsAt ? parseDetroitDateTimeLocal(editEndsAt) : undefined;
       const res = await updateEventAction({
         id: editingEvent.id,
         title: editTitle.trim(),
         slug: editSlug.trim(),
-        startsAt: new Date(editStartsAt).toISOString(),
-        endsAt: editEndsAt ? new Date(editEndsAt).toISOString() : undefined,
+        startsAt: startsAtIso,
+        endsAt: endsAtIso,
         category: editCategory,
         status: editStatus,
         description: editDescription.trim() || undefined,
+        venueId: editVenueId ?? editingEvent.venueId,
         venueName: editVenueName.trim() || undefined,
       });
 
@@ -78,11 +87,12 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
                   ...item,
                   title: editTitle.trim(),
                   slug: editSlug.trim(),
-                  startsAt: new Date(editStartsAt).toISOString(),
-                  endsAt: editEndsAt ? new Date(editEndsAt).toISOString() : undefined,
+                  startsAt: startsAtIso,
+                  endsAt: endsAtIso,
                   category: editCategory,
                   status: editStatus,
                   description: editDescription.trim() || undefined,
+                  venueId: editVenueId ?? editingEvent.venueId,
                   venueName: editVenueName.trim() || undefined,
                 }
               : item,
@@ -126,11 +136,13 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
     setIsSubmitting(true);
     setIsError(false);
     try {
+      const startsAtIso = parseDetroitDateTimeLocal(newStartsAt);
+      const endsAtIso = newEndsAt ? parseDetroitDateTimeLocal(newEndsAt) : undefined;
       const res = await createEventAction({
         title: newTitle.trim(),
         slug: sanitizedSlug,
-        startsAt: new Date(newStartsAt).toISOString(),
-        endsAt: newEndsAt ? new Date(newEndsAt).toISOString() : undefined,
+        startsAt: startsAtIso,
+        endsAt: endsAtIso,
         category: newCategory,
         status: newStatus,
         description: newDescription.trim() || undefined,
@@ -144,8 +156,8 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
             id: createdId,
             title: newTitle.trim(),
             slug: sanitizedSlug,
-            startsAt: new Date(newStartsAt).toISOString(),
-            endsAt: newEndsAt ? new Date(newEndsAt).toISOString() : undefined,
+            startsAt: startsAtIso,
+            endsAt: endsAtIso,
             category: newCategory,
             status: newStatus,
             description: newDescription.trim() || undefined,
@@ -226,7 +238,7 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
                 <th className="p-4">Event Title</th>
                 <th className="p-4">Date & Time (America/Detroit)</th>
                 <th className="p-4">Venue</th>
-                <th className="p-4">Category</th>
+                <th className="p-4">Category / Excerpt</th>
                 <th className="p-4">Status</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
@@ -249,16 +261,20 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
                         {e.title}
                       </Link>
                     </td>
-                    <td className="p-4 text-xs text-muted-foreground">
+                    <td className="p-4 text-xs text-muted-foreground whitespace-nowrap">
                       {formatEventDateTime(e.startsAt)}
                     </td>
                     <td className="p-4 text-xs text-muted-foreground">
                       {e.venueName || "Location Announced Upon Registration"}
                     </td>
-                    <td className="p-4">
-                      {e.category && <Badge variant="secondary">{e.category}</Badge>}
+                    <td className="p-4 max-w-xs">
+                      {e.category && (
+                        <span className="text-xs text-muted-foreground line-clamp-2 block leading-snug">
+                          {e.category}
+                        </span>
+                      )}
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 whitespace-nowrap">
                       {e.status === "published" ? (
                         <Badge variant="success">Published</Badge>
                       ) : (

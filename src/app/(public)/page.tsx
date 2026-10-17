@@ -28,7 +28,7 @@ export default async function HomePage() {
       {/* Hero Section */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card via-card to-muted/40 p-8 sm:p-14 shadow-sm">
-          <div className="flex flex-col md:flex-row items-center gap-8 lg:gap-12">
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
             <Image
               src="/images/brand/sdgc-logo.jpg"
               alt="Saugatuck Douglas Garden Club logo"
@@ -37,18 +37,17 @@ export default async function HomePage() {
               priority
               className="h-32 w-32 sm:h-40 sm:w-40 rounded-2xl object-cover shadow-sm border border-border shrink-0"
             />
-            <div className="text-center md:text-left space-y-4">
+            <div className="text-center lg:text-left space-y-4">
               <span className="inline-block rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
                 Growing Together Since 1980
               </span>
               <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-primary">
-                {siteConfig.name}
+                {homeData.title || siteConfig.name}
               </h1>
               <p className="max-w-2xl text-lg sm:text-xl text-muted-foreground leading-relaxed">
-                {homeData.subtitle}. Cultivating civic landscaping, horticultural education, and
-                lakeshore community spirit.
+                {homeData.subtitle}
               </p>
-              <div className="pt-2 flex flex-wrap justify-center md:justify-start gap-4">
+              <div className="pt-2 flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4">
                 <Link
                   href="/join"
                   className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"

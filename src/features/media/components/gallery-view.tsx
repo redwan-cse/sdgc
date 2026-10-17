@@ -192,6 +192,7 @@ export function GalleryView({ albums, media }: GalleryViewProps) {
                       alt={item.alt}
                       width={item.width || 600}
                       height={item.height || 450}
+                      unoptimized={item.src.includes("127.0.0.1") || item.src.includes("localhost")}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
@@ -301,6 +302,9 @@ export function GalleryView({ albums, media }: GalleryViewProps) {
                   alt={activeImage.alt}
                   width={activeImage.width || 800}
                   height={activeImage.height || 600}
+                  unoptimized={
+                    activeImage.src.includes("127.0.0.1") || activeImage.src.includes("localhost")
+                  }
                   priority
                   className="max-h-[70vh] w-auto max-w-full object-contain select-none"
                 />

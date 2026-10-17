@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireCapability } from "@/features/auth/authorization";
+import type { Database } from "@/types/database";
 import type { ActionResult } from "./types";
 
 export async function approveMembershipAction(input: {
@@ -65,7 +66,7 @@ export async function setUserRolesAction(input: {
   userId: string;
   roles: ("admin" | "editor" | "treasurer")[];
 }): Promise<ActionResult> {
-  const adminUser = await requireCapability("roles.manage");
+  await requireCapability("roles.manage");
   const supabase = await createClient();
 
   const VALID_ROLES = new Set(["admin", "editor", "treasurer"]);
@@ -88,46 +89,14 @@ export async function setUserRolesAction(input: {
     }
   }
 
-  // Get current roles
-  const { data: currentRoles } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", input.userId);
-
-  const existing = new Set((currentRoles ?? []).map((r) => r.role));
-  const desired = new Set(input.roles);
-
-  // Roles to remove
-  const toRemove = [...existing].filter((r) => !desired.has(r as "admin" | "editor" | "treasurer"));
-  // Roles to add
-  const toAdd = [...desired].filter((r) => !existing.has(r));
-
-  for (const r of toRemove) {
-    const { error } = await supabase
-      .from("user_roles")
-      .delete()
-      .eq("user_id", input.userId)
-      .eq("role", r);
-    if (error) return { success: false, error: error.message };
-  }
-
-  for (const r of toAdd) {
-    const { error } = await supabase.from("user_roles").insert({
-      user_id: input.userId,
-      role: r,
-      granted_by: adminUser.id,
-    });
-    if (error) return { success: false, error: error.message };
-  }
-
-  // Record audit log
-  await supabase.from("audit_events").insert({
-    actor_id: adminUser.id,
-    action: "roles.updated",
-    entity_type: "user",
-    entity_id: input.userId,
-    details: { roles: input.roles, removed: toRemove, added: toAdd },
+  const { error: rpcError } = await supabase.rpc("set_user_roles", {
+    p_target_user_id: input.userId,
+    p_new_roles: input.roles,
   });
+
+  if (rpcError) {
+    return { success: false, error: rpcError.message };
+  }
 
   revalidatePath("/admin/members");
   return { success: true, message: "User roles updated successfully" };
@@ -288,20 +257,35 @@ export async function updateEventAction(input: {
   const endsAt =
     input.endsAt || new Date(new Date(input.startsAt).getTime() + 2 * 3600000).toISOString();
 
-  const { error } = await supabase
-    .from("events")
-    .update({
-      title: input.title,
-      slug: input.slug,
-      starts_at: input.startsAt,
-      ends_at: endsAt,
-      excerpt: input.category || null,
-      status: input.status,
-      venue_id: input.venueId || null,
-      description: input.description || input.title,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", input.id);
+  let targetVenueId: string | null | undefined = input.venueId;
+  if (targetVenueId === undefined && input.venueName) {
+    const { data: matchedVenue } = await supabase
+      .from("venues")
+      .select("id")
+      .ilike("name", input.venueName.trim())
+      .limit(1)
+      .maybeSingle();
+    if (matchedVenue) {
+      targetVenueId = matchedVenue.id;
+    }
+  }
+
+  const updatePayload: Database["public"]["Tables"]["events"]["Update"] = {
+    title: input.title,
+    slug: input.slug,
+    starts_at: input.startsAt,
+    ends_at: endsAt,
+    excerpt: input.category || null,
+    status: input.status,
+    description: input.description || input.title,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (targetVenueId !== undefined) {
+    updatePayload.venue_id = targetVenueId;
+  }
+
+  const { error } = await supabase.from("events").update(updatePayload).eq("id", input.id);
 
   if (error) {
     return { success: false, error: error.message };
