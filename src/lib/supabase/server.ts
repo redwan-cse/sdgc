@@ -15,7 +15,16 @@ export async function createClient() {
 
   try {
     cookieStore = await cookies();
-  } catch {
+  } catch (err: unknown) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "digest" in err &&
+      typeof (err as { digest?: unknown }).digest === "string" &&
+      (err as { digest: string }).digest.startsWith("DYNAMIC_SERVER_USAGE")
+    ) {
+      throw err;
+    }
     // Outside a Next.js request scope (e.g. Vitest test runner or CLI context)
     cookieStore = null;
   }
