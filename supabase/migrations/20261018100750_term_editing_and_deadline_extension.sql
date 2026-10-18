@@ -35,7 +35,7 @@ begin
       using errcode = '42501';
   end if;
 
-  select * into old_rec from public.membership_terms where id = p_term_id;
+  select * into old_rec from public.membership_terms t where t.id = p_term_id;
   if not found then
     raise exception 'Membership term % not found', p_term_id
       using errcode = 'P0002';
