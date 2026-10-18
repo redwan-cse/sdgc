@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 
 export interface ContactNotificationPayload {
   messageId: string;
@@ -6,6 +6,10 @@ export interface ContactNotificationPayload {
   senderName: string;
   senderEmail: string;
   senderPhone: string | null;
+  senderType?: string | null;
+  category?: string | null;
+  subject?: string | null;
+  attachmentUrl?: string | null;
   messageBody: string;
   submittedAt: string;
 }
@@ -48,7 +52,9 @@ export async function dispatchContactNotification(
     };
   }
 
-  const subject = `New Contact Inquiry from ${payload.senderName} [${payload.reference}]`;
+  const emailSubject = payload.subject
+    ? `[${payload.category || "Inquiry"}] ${payload.subject} — ${payload.senderName} [${payload.reference}]`
+    : `New Contact Inquiry from ${payload.senderName} [${payload.reference}]`;
   const recipient = "staff@sdgc.local";
 
   // 2. Local capture delivery
@@ -62,8 +68,8 @@ export async function dispatchContactNotification(
       body: JSON.stringify({
         From: { Email: "inquiries@sdgc.local", Name: "SDGC Website" },
         To: [{ Email: recipient, Name: "SDGC Staff Inbox" }],
-        Subject: subject,
-        Text: `New Contact Submission:\n\nReference: ${payload.reference}\nFrom: ${payload.senderName} <${payload.senderEmail}>\nPhone: ${payload.senderPhone || "None"}\nDate: ${payload.submittedAt}\n\nMessage:\n${payload.messageBody}\n`,
+        Subject: emailSubject,
+        Text: `New Contact Submission:\n\nReference: ${payload.reference}\nFrom: ${payload.senderName} <${payload.senderEmail}>\nPhone: ${payload.senderPhone || "None"}\nSender Type: ${payload.senderType || "Not specified"}\nCategory: ${payload.category || "General"}\nSubject: ${payload.subject || "No Subject"}\nAttachment: ${payload.attachmentUrl || "None"}\nDate: ${payload.submittedAt}\n\nMessage:\n${payload.messageBody}\n`,
       }),
       signal: AbortSignal.timeout(1000), // Fast timeout so tests never hang if Mailpit API is not listening
     });
@@ -76,7 +82,7 @@ export async function dispatchContactNotification(
         deliveryMethod: "local_capture",
         deduplicationKey,
         recipient,
-        subject,
+        subject: emailSubject,
       };
     }
 
@@ -85,7 +91,7 @@ export async function dispatchContactNotification(
       deliveryMethod: "failed",
       deduplicationKey,
       recipient,
-      subject,
+      subject: emailSubject,
     };
   } catch {
     // If Mailpit HTTP send API is unreachable, do not record in processedNotifications
@@ -95,7 +101,7 @@ export async function dispatchContactNotification(
       deliveryMethod: "failed",
       deduplicationKey,
       recipient,
-      subject,
+      subject: emailSubject,
     };
   }
 }

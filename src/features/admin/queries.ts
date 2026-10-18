@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { requireCapability } from "@/features/auth/authorization";
@@ -266,7 +266,9 @@ export async function getAdminMessages(): Promise<AdminMessageRecord[]> {
 
   const { data: messages, error } = await supabase
     .from("contact_messages")
-    .select("id, name, email, phone, message, status, created_at")
+    .select(
+      "id, name, email, phone, sender_type, category, subject, attachment_url, message, status, created_at",
+    )
     .order("created_at", { ascending: false });
 
   if (error || !messages) {
@@ -278,6 +280,10 @@ export async function getAdminMessages(): Promise<AdminMessageRecord[]> {
     name: m.name,
     email: m.email,
     phone: m.phone ?? undefined,
+    senderType: m.sender_type ?? undefined,
+    category: m.category ?? undefined,
+    subject: m.subject ?? undefined,
+    attachmentUrl: m.attachment_url ?? undefined,
     message: m.message,
     status: m.status as "unread" | "read" | "archived",
     createdAt: m.created_at,

@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { forgotPasswordSchema, loginSchema, registerSchema } from "./validation";
+﻿import { describe, expect, it } from "vitest";
+import {
+  changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+} from "./validation";
 
 describe("loginSchema", () => {
   it("accepts valid identifier and password", () => {
@@ -16,6 +21,61 @@ describe("loginSchema", () => {
       password: "",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("changePasswordSchema", () => {
+  it("accepts valid password change with distinct old and new passwords", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "OldPassword123!",
+      newPassword: "BrandNewSecurePassword456!",
+      confirmPassword: "BrandNewSecurePassword456!",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects empty current password", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "",
+      newPassword: "BrandNewSecurePassword456!",
+      confirmPassword: "BrandNewSecurePassword456!",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects new password under 8 characters", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "OldPassword123!",
+      newPassword: "short",
+      confirmPassword: "short",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects mismatched confirm password", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "OldPassword123!",
+      newPassword: "BrandNewSecurePassword456!",
+      confirmPassword: "DifferentPassword789!",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("New passwords do not match");
+    }
+  });
+
+  it("rejects setting new password identical to current password", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "SamePassword123!",
+      newPassword: "SamePassword123!",
+      confirmPassword: "SamePassword123!",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        "New password must be different from your current password",
+      );
+    }
   });
 });
 

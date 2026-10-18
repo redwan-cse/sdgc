@@ -1,4 +1,4 @@
-import type { ApplicationStatus, PaymentStatus } from "@/features/membership/types";
+﻿import type { ApplicationStatus, PaymentStatus } from "@/features/membership/types";
 
 export interface ActionResult<T = unknown> {
   success: boolean;
@@ -108,6 +108,10 @@ export interface AdminMessageRecord {
   name: string;
   email: string;
   phone?: string;
+  senderType?: string;
+  category?: string;
+  subject?: string;
+  attachmentUrl?: string;
   message: string;
   status: "unread" | "read" | "archived";
   createdAt: string;

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -762,7 +762,7 @@ export async function uploadMediaAssetAction(
 export async function updateSiteContactAction(
   input: Partial<SiteContactSettings>,
 ): Promise<ActionResult> {
-  const user = await requireCapability(["settings.manage", "content.manage"]);
+  const user = await requireCapability("settings.manage");
   const supabase = await createClient();
 
   const { data: existing } = await supabase
@@ -809,7 +809,7 @@ export async function updateHomePageContentAction(input: {
   story?: Partial<HomePageStory>;
   sections?: PageSection[];
 }): Promise<ActionResult> {
-  const user = await requireCapability(["content.manage", "settings.manage"]);
+  const user = await requireCapability("settings.manage");
   const supabase = await createClient();
 
   const { data: existing } = await supabase
