@@ -7,7 +7,8 @@ import type { Database } from "@/types/database";
 export let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
 export let publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
 export let anonKey = publishableKey;
-export let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+export let serviceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "";
 
 if (fs.existsSync(".env.local")) {
   const envContent = fs.readFileSync(".env.local", "utf8");
@@ -23,7 +24,9 @@ if (fs.existsSync(".env.local")) {
           publishableKey = val;
           anonKey = val;
         }
-        if (key === "SUPABASE_SERVICE_ROLE_KEY") serviceRoleKey = val;
+        if (key === "SUPABASE_SERVICE_ROLE_KEY" || key === "SUPABASE_SECRET_KEY") {
+          serviceRoleKey = val;
+        }
       }
     }
   }
