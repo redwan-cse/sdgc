@@ -22,6 +22,13 @@ update public.events
 set category = 'Workshops & Presentations'
 where category is null;
 
+-- 2.5 Ensure venues exist for event foreign keys
+insert into public.venues (id, name, address, city, state, postal_code, url) values
+  ('d1111111-1111-1111-1111-111111111111', 'Saugatuck Woman''s Club', '303 Butler St', 'Saugatuck', 'MI', '49453', 'https://saugatuck.com/'),
+  ('d2222222-2222-2222-2222-222222222222', 'Old School House Douglas', '130 Center St', 'Douglas', 'MI', '49406', 'https://sdhistoricalsociety.org/'),
+  ('d3333333-3333-3333-3333-333333333333', 'Wick''s Park Gazebo', '449 Water St', 'Saugatuck', 'MI', '49453', null)
+on conflict (id) do nothing;
+
 -- 3. Seed realistic upcoming events for late 2026 and 2027
 insert into public.events (
   id, slug, title, excerpt, description, starts_at, ends_at, timezone, all_day, venue_id, status, ticket_url, featured_image, category
