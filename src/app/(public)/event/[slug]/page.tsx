@@ -59,7 +59,11 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
         addressCountry: "US",
       },
     },
-    image: [`${siteUrl}/images/brand/sdgc-logo.jpg`],
+    image: [
+      event.featuredImage
+        ? `${siteUrl}${event.featuredImage}`
+        : `${siteUrl}/images/brand/sdgc-logo.jpg`,
+    ],
     url: eventUrl,
     ...(event.ticketUrl
       ? {
@@ -80,12 +84,42 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     },
   };
 
+  const breadcrumbsJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Events",
+        item: `${siteUrl}/events`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: event.title,
+        item: eventUrl,
+      },
+    ],
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <script
         type="application/ld+json"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data is safely serialized
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data is safely serialized
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbsJsonLd) }}
       />
       <EventDetailCard event={event} prevEvent={prevEvent} nextEvent={nextEvent} />
     </div>

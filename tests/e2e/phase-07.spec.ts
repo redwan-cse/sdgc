@@ -110,7 +110,7 @@ test.describe("Phase P7 — Migration Tooling, SEO Metadata & Cutover Evidence",
     const isMobile = testInfo.project.name === "mobile";
     const suffix = isMobile ? "-mobile" : "";
 
-    await page.goto("/event/2026-garden-walk-fundraiser");
+    await page.goto("/event/47th-annual-garden-walk-fundraiser");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     // Verify Open Graph & Twitter metadata in document head
@@ -120,11 +120,11 @@ test.describe("Phase P7 — Migration Tooling, SEO Metadata & Cutover Evidence",
     const ogSiteName = await page.locator('meta[property="og:site_name"]').getAttribute("content");
     expect(ogSiteName).toBe("Saugatuck Douglas Garden Club");
 
-    // Extract and validate schema.org/Event JSON-LD
+    // Extract and validate schema.org/Event and BreadcrumbList JSON-LD
     const ldScript = page.locator('script[type="application/ld+json"]');
-    await expect(ldScript).toHaveCount(1);
+    await expect(ldScript).toHaveCount(2);
 
-    const ldJsonText = await ldScript.textContent();
+    const ldJsonText = await ldScript.first().textContent();
     expect(ldJsonText).toBeTruthy();
 
     const ld = JSON.parse(ldJsonText as string);
@@ -139,6 +139,11 @@ test.describe("Phase P7 — Migration Tooling, SEO Metadata & Cutover Evidence",
     expect(ld.location.name).toBeTruthy();
     expect(ld.location.address["@type"]).toBe("PostalAddress");
     expect(ld.location.address.addressRegion).toBe("MI");
+
+    // Verify breadcrumb schema
+    const breadcrumbJsonText = await ldScript.nth(1).textContent();
+    const breadcrumbLd = JSON.parse(breadcrumbJsonText as string);
+    expect(breadcrumbLd["@type"]).toBe("BreadcrumbList");
 
     await page.screenshot({
       path: path.join(artifactsDir, `01-seo-event-ld${suffix}.png`),

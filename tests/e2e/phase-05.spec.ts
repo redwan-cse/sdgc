@@ -99,9 +99,9 @@ test.describe("Phase P5 — Public Data, Contact & Financial Workflows", () => {
     });
 
     // Event Detail Page
-    await page.goto("/event/2026-garden-walk-fundraiser");
+    await page.goto("/event/47th-annual-garden-walk-fundraiser");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Garden Walk Fundraiser/);
-    await expect(page.getByText("Saugatuck Woman's Club")).toBeVisible();
+    await expect(page.getByText("Old School House Douglas")).toBeVisible();
 
     await page.screenshot({
       path: path.join(artifactsDir, `05-event-detail-garden-walk${suffix}.png`),

@@ -23,6 +23,7 @@ interface EventRowWithVenue {
   status: string;
   category: string | null;
   ticket_url: string | null;
+  featured_image: string | null;
   venues: {
     name: string;
     address: string | null;
@@ -53,6 +54,7 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
       status,
       category,
       ticket_url,
+      featured_image,
       venues (
         name,
         address,
@@ -131,6 +133,7 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
       venueName: venue?.name || "TBD Saugatuck / Douglas",
       venueAddress: fullAddress,
       ticketUrl: item.ticket_url || undefined,
+      featuredImage: item.featured_image || undefined,
       isPast: endsDate < now,
     };
   });
@@ -160,6 +163,7 @@ export async function getEventBySlug(slug: string): Promise<EventSummary | null>
       status,
       category,
       ticket_url,
+      featured_image,
       venues (
         name,
         address,
@@ -201,6 +205,7 @@ export async function getEventBySlug(slug: string): Promise<EventSummary | null>
     venueName: venue?.name || "TBD Saugatuck / Douglas",
     venueAddress: fullAddress,
     ticketUrl: item.ticket_url || undefined,
+    featuredImage: item.featured_image || undefined,
     isPast: endsDate < now,
   };
 }
@@ -225,6 +230,7 @@ export async function listUpcomingEvents(limit: number = 3): Promise<EventSummar
       status,
       category,
       ticket_url,
+      featured_image,
       venues (
         name,
         address,
@@ -259,6 +265,7 @@ export async function listUpcomingEvents(limit: number = 3): Promise<EventSummar
         status,
         category,
         ticket_url,
+        featured_image,
         venues (
           name,
           address,
@@ -300,6 +307,7 @@ export async function listUpcomingEvents(limit: number = 3): Promise<EventSummar
       venueName: venue?.name || "TBD Saugatuck / Douglas",
       venueAddress: fullAddress,
       ticketUrl: item.ticket_url || undefined,
+      featuredImage: item.featured_image || undefined,
       isPast: endsDate < nowDate,
     };
   });

@@ -15,6 +15,7 @@ export interface EventSummary {
   isPast?: boolean;
   isCancelled?: boolean;
   category?: string;
+  featuredImage?: string;
 }
 
 export interface EventPage {

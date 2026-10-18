@@ -1,7 +1,88 @@
 import { createClient } from "@/lib/supabase/server";
 import { CLUB_TIMEZONE } from "@/features/events/calendar";
 import type { EventSummary } from "@/features/events/types";
-import type { PageContent } from "./types";
+import {
+  DEFAULT_HOMEPAGE_SECTIONS,
+  DEFAULT_HOMEPAGE_STORY,
+  DEFAULT_SITE_CONTACT,
+  type HomePageStory,
+  type PageContent,
+  type PageSection,
+  type SiteContactSettings,
+} from "./types";
+
+export {
+  DEFAULT_HOMEPAGE_SECTIONS,
+  DEFAULT_HOMEPAGE_STORY,
+  DEFAULT_SITE_CONTACT,
+  type SiteContactSettings,
+};
+
+export async function getHomePageContent(): Promise<PageContent | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("pages")
+    .select("slug, title, content, meta_description")
+    .eq("slug", "home")
+    .eq("status", "published")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  // Load motto and contact info from site_settings if available
+  const { data: contactSetting } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", "site_contact")
+    .maybeSingle();
+
+  // Load custom homepage content (sections & story) if saved by admin
+  const { data: homeSetting } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", "homepage_content")
+    .maybeSingle();
+
+  const customHome = homeSetting?.value as {
+    story?: Partial<HomePageStory>;
+    sections?: PageSection[];
+    motto?: string;
+  } | null;
+
+  const motto =
+    customHome?.motto ||
+    (contactSetting?.value as { motto?: string } | null)?.motto ||
+    data.meta_description ||
+    "We promote, encourage and support the use of flora to enrich and beautify Saugatuck and Douglas, Michigan, and surrounding areas.";
+
+  const story: HomePageStory = {
+    ...DEFAULT_HOMEPAGE_STORY,
+    ...(customHome?.story || {}),
+  };
+
+  const sections: PageSection[] =
+    customHome?.sections && Array.isArray(customHome.sections) && customHome.sections.length > 0
+      ? customHome.sections
+      : DEFAULT_HOMEPAGE_SECTIONS;
+
+  return {
+    slug: "home",
+    title: data.title || "Saugatuck Douglas Garden Club",
+    subtitle: motto,
+    heroImage: "/images/wordpress/DSC_2808-scaled-1.jpg",
+    story,
+    sections,
+  };
+}
+
+function cleanHtmlParagraphs(raw: string): string[] {
+  return raw
+    .split(/<\/p>\s*<p\b[^>]*>|<br\s*\/?>|\n\n+/)
+    .map((p) => p.replace(/<[^>]+>/g, "").trim())
+    .filter(Boolean);
+}
 
 export async function getAboutPageContent(): Promise<PageContent | null> {
   const supabase = await createClient();
@@ -16,6 +97,16 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
     return null;
   }
 
+  const parsedStoryBody = data.content ? cleanHtmlParagraphs(data.content) : [];
+
+  const storyBody =
+    parsedStoryBody.length > 0
+      ? parsedStoryBody
+      : [
+          "For nearly a century, since 1928, the Saugatuck Douglas Garden Club has united plant lovers, Master Gardeners, and community volunteers dedicated to enhancing our shared public spaces.",
+          "We operate as an active 501(c)(3) nonprofit organization welcoming gardeners of all experience levels to foster horticultural education and civic pride.",
+        ];
+
   return {
     slug: "about",
     title: data.title || "About Our Club",
@@ -26,11 +117,7 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
       {
         id: "our-story",
         heading: "Our Story & Purpose",
-        body: [
-          data.content ||
-            "For nearly a century, since 1928, the Saugatuck Douglas Garden Club has united plant lovers, Master Gardeners, and community volunteers dedicated to enhancing our shared public spaces.",
-          "We operate as an active 501(c)(3) nonprofit organization welcoming gardeners of all experience levels to foster horticultural education and civic pride.",
-        ],
+        body: storyBody,
         image: "/images/content/executive-committee.jpeg",
         imageAlt: "Saugatuck Douglas Garden Club Executive Committee",
       },
@@ -53,7 +140,7 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
           "Douglas Downtown Bump-Outs: The club adopted three prominent corner garden plots in Douglas — in front of City Hall, across Center Street, and at the police station — planting and weeding them all season long.",
           "Saugatuck-Douglas Library Flowers: Beginning every June, club volunteers deliver fresh floral arrangements and potted plants bi-weekly to brighten the library circulation desk.",
         ],
-        image: "/images/content/saugatuck-beautification.jpeg",
+        image: "/images/wordpress/DSC_7044-651x651-1.jpg",
         imageAlt: "Community beautification planters in downtown Saugatuck",
       },
       {
@@ -64,8 +151,8 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
           "Winners receive a commemorative lawn sign for the month and a $25 gift certificate to Huntree Nursery to encourage ongoing horticultural excellence.",
           "Annual Member Garden Award: Each year our Club President recognizes one outstanding club member's garden sanctuary with a special achievement award.",
         ],
-        image: "/images/content/garden-awards-plaque.jpeg",
-        imageAlt: "Garden Recognition Award winners plaque",
+        image: "/images/wordpress/DSC_0553-1349x1349-1.jpg",
+        imageAlt: "Garden Recognition Award winners plaque and residential garden",
       },
       {
         id: "annual-programs",
@@ -76,61 +163,11 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
           "Charitable Outreach: Our annual Christmas drive provides holiday gifts for families through Christian Neighbors, returning 98% of funding back into Allegan County.",
           "Welcome Back Tea & Spring Programs: Monthly educational lectures, guest speakers, demonstrations, and Arbor Day swags keep our community engaged throughout the gardening year.",
         ],
-        image: "/images/content/new-member-gathering.jpeg",
+        image: "/images/wordpress/2O8A6596-1000x1000-1.jpg",
         imageAlt: "Garden Club new member gathering and social program",
         callToAction: {
           label: "Become A Member Today",
           href: "/join",
-        },
-      },
-    ],
-  };
-}
-
-export async function getHomePageContent(): Promise<PageContent | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("pages")
-    .select("slug, title, content, meta_description")
-    .eq("slug", "home")
-    .eq("status", "published")
-    .maybeSingle();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return {
-    slug: "home",
-    title: data.title || "Saugatuck Douglas Garden Club",
-    subtitle:
-      data.meta_description ||
-      "Cultivating civic landscaping, horticultural education, and lakeshore community spirit.",
-    sections: [
-      {
-        id: "civic-landscaping",
-        heading: "Civic Beautification & Public Gardens",
-        body: data.content
-          ? [data.content]
-          : [
-              "For nearly a century since 1928, the Saugatuck Douglas Garden Club has planned, planted, and maintained vibrant public floral displays throughout Saugatuck and Douglas, Michigan.",
-              "Our dedicated volunteer members cultivate sidewalk pots, corner bump-outs, civic plazas, and library gardens that welcome residents and visitors across the lakeshore.",
-            ],
-        callToAction: {
-          label: "Explore Community Beautification",
-          href: "/about#community-beautification",
-        },
-      },
-      {
-        id: "garden-walk-feature",
-        heading: "The Annual Garden Walk Fundraiser",
-        body: [
-          "Every summer, our signature Garden Walk invites the public to tour exquisite private sanctuaries and innovative coastal gardens throughout our historic twin cities.",
-          "Proceeds directly fund academic scholarships for local Allegan County graduating high school seniors and community beautification plantings.",
-        ],
-        callToAction: {
-          label: "Discover the Garden Walk",
-          href: "/garden-walk",
         },
       },
     ],
@@ -274,4 +311,22 @@ export async function getGardenWalkPageContent(): Promise<PageContent | null> {
       },
     ],
   };
+}
+
+export async function getSiteContactSettings(): Promise<SiteContactSettings> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", "site_contact")
+    .maybeSingle();
+
+  if (data?.value && typeof data.value === "object" && !Array.isArray(data.value)) {
+    return {
+      ...DEFAULT_SITE_CONTACT,
+      ...(data.value as Partial<SiteContactSettings>),
+    };
+  }
+
+  return DEFAULT_SITE_CONTACT;
 }

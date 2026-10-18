@@ -214,7 +214,7 @@ export function MemberShell({ children, userEmail, isStaff = false }: MemberShel
               className="flex items-center justify-between rounded-md px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <span>Admin Workspace</span>
-              <span className="text-[10px]">&rarr;</span>
+              <span className="text-xs">→</span>
             </Link>
           )}
           <Link
@@ -222,7 +222,7 @@ export function MemberShell({ children, userEmail, isStaff = false }: MemberShel
             className="flex items-center justify-between rounded-md px-3 py-2 text-primary font-medium hover:bg-primary/5 transition-colors"
           >
             <span>View public site</span>
-            <span>&nearr;</span>
+            <span className="text-xs">↗</span>
           </Link>
         </div>
       </aside>

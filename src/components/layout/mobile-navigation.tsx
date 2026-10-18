@@ -55,7 +55,7 @@ export function MobileNavigation({
   // Cleanly close when viewport expands to tablet/desktop
   React.useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768 && isOpen) {
+      if (window.innerWidth >= 1024 && isOpen) {
         onClose();
       }
     };

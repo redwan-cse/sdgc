@@ -182,6 +182,58 @@ function LogoutIcon({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
+function SettingsIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+      />
+    </svg>
+  );
+}
+
+function MenuIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
 const ADMIN_GROUPS: NavGroup[] = [
   {
     title: "OVERVIEW",
@@ -245,7 +297,110 @@ const ADMIN_GROUPS: NavGroup[] = [
       },
     ],
   },
+  {
+    title: "SETTINGS",
+    items: [
+      {
+        href: "/admin/settings",
+        label: "Site Settings",
+        icon: SettingsIcon,
+        allowedRoles: ["admin"],
+      },
+    ],
+  },
 ];
+
+function SidebarNavigation({
+  visibleGroups,
+  pathname,
+  activeRole,
+  onNavigate,
+}: {
+  visibleGroups: NavGroup[];
+  pathname: string;
+  activeRole: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col bg-card">
+      {/* Brand Header */}
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
+        <Link href="/admin" onClick={onNavigate} className="flex items-center space-x-3">
+          <Image
+            src="/images/brand/sdgc-logo.jpg"
+            alt="SDGC Logo"
+            width={36}
+            height={36}
+            className="h-9 w-9 rounded-full object-cover border border-border"
+          />
+          <div className="flex flex-col">
+            <span className="font-serif text-base font-bold leading-tight text-foreground">
+              SDGC
+            </span>
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Operator Workspace
+            </span>
+          </div>
+        </Link>
+        <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+          {activeRole}
+        </span>
+      </div>
+
+      {/* Navigation Categories */}
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6">
+        {visibleGroups.map((group) => (
+          <div key={group.title} className="space-y-1">
+            <h2 className="px-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              {group.title}
+            </h2>
+            <div className="space-y-0.5 pt-1">
+              {group.items.map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href as Route}
+                    onClick={onNavigate}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                        : "text-foreground/80 hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Sidebar Footer */}
+      <div className="shrink-0 border-t border-border p-4 space-y-2 text-xs">
+        <Link
+          href="/profile"
+          onClick={onNavigate}
+          className="flex items-center justify-between rounded-md px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
+          <span>Member Portal</span>
+          <span className="text-xs">→</span>
+        </Link>
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="flex items-center justify-between rounded-md px-3 py-2 text-primary font-medium hover:bg-primary/5 transition-colors"
+        >
+          <span>View public site</span>
+          <span className="text-xs">↗</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export function AdminShell({
   children,
@@ -254,6 +409,7 @@ export function AdminShell({
   userEmail,
 }: AdminShellProps) {
   const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   const userRoles = roles && roles.length > 0 ? roles : ["admin"];
   const visibleGroups = React.useMemo(() => {
@@ -269,89 +425,83 @@ export function AdminShell({
     }).filter((group) => group.items.length > 0);
   }, [userRoles]);
 
+  // Close sidebar on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isSidebarOpen) {
+        setIsSidebarOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSidebarOpen]);
+
+  // Lock body scroll when mobile/tablet drawer is open
+  React.useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isSidebarOpen]);
+
   return (
-    <div className="flex min-h-screen flex-col md:flex-row bg-background text-foreground antialiased">
-      {/* Sidebar Navigation */}
-      <aside className="w-full md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-border bg-card flex flex-col">
-        {/* Brand Header */}
-        <div className="flex h-16 items-center justify-between border-b border-border px-5">
-          <Link href="/admin" className="flex items-center space-x-3">
-            <Image
-              src="/images/brand/sdgc-logo.jpg"
-              alt="SDGC Logo"
-              width={36}
-              height={36}
-              className="h-9 w-9 rounded-full object-cover border border-border"
-            />
-            <div className="flex flex-col">
-              <span className="font-serif text-base font-bold leading-tight text-foreground">
-                SDGC
-              </span>
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Operator Workspace
-              </span>
-            </div>
-          </Link>
-          <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-            {activeRole}
-          </span>
-        </div>
-
-        {/* Navigation Categories */}
-        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6">
-          {visibleGroups.map((group) => (
-            <div key={group.title} className="space-y-1">
-              <h2 className="px-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                {group.title}
-              </h2>
-              <div className="space-y-0.5 pt-1">
-                {group.items.map((item) => {
-                  const isActive = pathname === item.href;
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href as Route}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                        isActive
-                          ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
-                          : "text-foreground/80 hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Sidebar Footer */}
-        <div className="border-t border-border p-4 space-y-2 text-xs">
-          <Link
-            href="/profile"
-            className="flex items-center justify-between rounded-md px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            <span>Member Portal</span>
-            <span className="text-[10px]">&rarr;</span>
-          </Link>
-          <Link
-            href="/"
-            className="flex items-center justify-between rounded-md px-3 py-2 text-primary font-medium hover:bg-primary/5 transition-colors"
-          >
-            <span>View public site</span>
-            <span>&nearr;</span>
-          </Link>
-        </div>
+    <div className="flex min-h-screen bg-background text-foreground antialiased">
+      {/* Desktop Sticky Sidebar (Visible only on lg: 1024px+) */}
+      <aside className="hidden lg:flex w-64 xl:w-72 shrink-0 border-r border-border bg-card flex-col sticky top-0 h-screen">
+        <SidebarNavigation
+          visibleGroups={visibleGroups}
+          pathname={pathname}
+          activeRole={activeRole}
+        />
       </aside>
+
+      {/* Mobile & Tablet Slide-over Drawer (Visible on < lg when open) */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+          <div
+            className="fixed inset-0 bg-background/80 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] border-r border-border bg-card shadow-2xl flex flex-col z-10">
+            <div className="absolute top-4 right-3 z-20">
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(false)}
+                className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                aria-label="Close navigation"
+              >
+                <CloseIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <SidebarNavigation
+              visibleGroups={visibleGroups}
+              pathname={pathname}
+              activeRole={activeRole}
+              onNavigate={() => setIsSidebarOpen(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Main Container Area */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Workspace Top Bar */}
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-border bg-card/80 px-4 sm:px-6 backdrop-blur-sm">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-border bg-card/90 px-4 sm:px-6 backdrop-blur-sm">
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden flex items-center justify-center p-2 rounded-lg border border-border text-foreground hover:bg-muted transition-colors cursor-pointer shadow-2xs"
+              aria-label="Open administration navigation"
+              aria-expanded={isSidebarOpen}
+            >
+              <MenuIcon className="h-5 w-5" />
+            </button>
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-foreground">
                 SDGC &bull; Operator Workspace
@@ -362,9 +512,9 @@ export function AdminShell({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {userEmail && (
-              <span className="hidden sm:inline-flex items-center text-xs text-muted-foreground bg-muted/50 border border-border px-2.5 py-1 rounded-md font-mono">
+              <span className="hidden md:inline-flex items-center text-xs text-muted-foreground bg-muted/50 border border-border px-2.5 py-1 rounded-md font-mono">
                 {userEmail}
               </span>
             )}
@@ -374,7 +524,7 @@ export function AdminShell({
                 className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
                 <LogoutIcon className="h-3.5 w-3.5" />
-                <span>Logout</span>
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </form>
             <ThemeToggle />

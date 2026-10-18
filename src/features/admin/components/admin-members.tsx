@@ -288,15 +288,15 @@ export function AdminMembers({ initialMembers, initialStatusFilter }: AdminMembe
 
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[820px]">
             <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="p-4">Member Name</th>
-                <th className="p-4">Username & Email</th>
-                <th className="p-4">Payment</th>
-                <th className="p-4">Approval Status</th>
-                <th className="p-4">Roles</th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="p-4 min-w-[140px]">Member Name</th>
+                <th className="p-4 min-w-[180px]">Username & Email</th>
+                <th className="p-4 min-w-[100px]">Payment</th>
+                <th className="p-4 min-w-[140px]">Approval Status</th>
+                <th className="p-4 min-w-[120px]">Roles</th>
+                <th className="p-4 text-right min-w-[210px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -347,25 +347,29 @@ export function AdminMembers({ initialMembers, initialStatusFilter }: AdminMembe
                       </button>
                     </div>
                   </td>
-                  <td className="p-4 text-right space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleOpenEditProfile(member)}
-                    >
-                      Details / Edit
-                    </Button>
-                    {!member.isApproved ? (
+                  <td className="p-4 text-right whitespace-nowrap">
+                    <div className="inline-flex items-center justify-end gap-2">
                       <Button
                         size="sm"
-                        disabled={isSubmitting}
-                        onClick={() => handleApprove(member.id, member.name, member.version)}
+                        variant="outline"
+                        onClick={() => handleOpenEditProfile(member)}
                       >
-                        Approve Membership
+                        Details / Edit
                       </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground font-medium">Approved</span>
-                    )}
+                      {!member.isApproved ? (
+                        <Button
+                          size="sm"
+                          disabled={isSubmitting}
+                          onClick={() => handleApprove(member.id, member.name, member.version)}
+                        >
+                          Approve Membership
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground font-medium px-2">
+                          Approved
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

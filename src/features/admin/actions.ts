@@ -3,8 +3,128 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireCapability } from "@/features/auth/authorization";
-import type { Database } from "@/types/database";
-import type { ActionResult } from "./types";
+import type { Database, Json } from "@/types/database";
+import { optimizeImage } from "@/lib/media/optimizer";
+import { getStorageProvider } from "@/lib/storage/provider";
+import {
+  DEFAULT_HOMEPAGE_SECTIONS,
+  DEFAULT_HOMEPAGE_STORY,
+  DEFAULT_SITE_CONTACT,
+  type SiteContactSettings,
+} from "@/features/content/queries";
+import type { HomePageStory, PageSection } from "@/features/content/types";
+import type { ActionResult, AdminVenueRecord } from "./types";
+
+export async function createVenueAction(input: {
+  name: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  url?: string;
+}): Promise<ActionResult<AdminVenueRecord>> {
+  const user = await requireCapability("events.manage");
+  const supabase = await createClient();
+
+  if (!input.name?.trim()) {
+    return { success: false, error: "Venue name is required" };
+  }
+
+  const { data, error } = await supabase
+    .from("venues")
+    .insert({
+      name: input.name.trim(),
+      address: input.address?.trim() || null,
+      city: input.city?.trim() || "Saugatuck",
+      state: input.state?.trim() || "MI",
+      postal_code: input.postalCode?.trim() || "49453",
+      url: input.url?.trim() || null,
+    })
+    .select("id, name, address, city, state, postal_code, url")
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "venue.created",
+    entity_type: "venue",
+    entity_id: data.id,
+    details: { name: input.name.trim(), city: input.city },
+  });
+
+  revalidatePath("/admin/events");
+  revalidatePath("/events");
+  return {
+    success: true,
+    message: "Venue created successfully",
+    data: {
+      id: data.id,
+      name: data.name,
+      address: data.address ?? undefined,
+      city: data.city ?? undefined,
+      state: data.state ?? undefined,
+      postalCode: data.postal_code ?? undefined,
+      url: data.url ?? undefined,
+    },
+  };
+}
+
+export async function createEventAction(input: {
+  title: string;
+  slug: string;
+  startsAt: string;
+  endsAt?: string;
+  category?: string;
+  status: "published" | "draft" | "cancelled";
+  venueId?: string;
+  description?: string;
+  featuredImage?: string;
+}): Promise<ActionResult> {
+  const user = await requireCapability("events.manage");
+  const supabase = await createClient();
+
+  const endsAt =
+    input.endsAt || new Date(new Date(input.startsAt).getTime() + 2 * 3600000).toISOString();
+  const description = input.description || input.title;
+
+  const { data, error } = await supabase
+    .from("events")
+    .insert({
+      title: input.title,
+      slug: input.slug,
+      starts_at: input.startsAt,
+      ends_at: endsAt,
+      excerpt: input.category || null,
+      category: input.category || null,
+      status: input.status,
+      venue_id: input.venueId || null,
+      description,
+      featured_image: input.featuredImage?.trim() || null,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  // Audit event
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "event.created",
+    entity_type: "event",
+    entity_id: data.id,
+    details: { title: input.title, slug: input.slug, status: input.status },
+  });
+
+  revalidatePath("/events");
+  revalidatePath("/admin/events");
+  revalidatePath("/admin");
+  return { success: true, message: "Event created successfully", data };
+}
 
 export async function approveMembershipAction(input: {
   membershipId: string;
@@ -104,58 +224,6 @@ export async function setUserRolesAction(input: {
 
   revalidatePath("/admin/members");
   return { success: true, message: "User roles updated successfully" };
-}
-
-export async function createEventAction(input: {
-  title: string;
-  slug: string;
-  startsAt: string;
-  endsAt?: string;
-  category?: string;
-  status: "published" | "draft" | "cancelled";
-  venueId?: string;
-  description?: string;
-}): Promise<ActionResult> {
-  const user = await requireCapability("events.manage");
-  const supabase = await createClient();
-
-  const endsAt =
-    input.endsAt || new Date(new Date(input.startsAt).getTime() + 2 * 3600000).toISOString();
-  const description = input.description || input.title;
-
-  const { data, error } = await supabase
-    .from("events")
-    .insert({
-      title: input.title,
-      slug: input.slug,
-      starts_at: input.startsAt,
-      ends_at: endsAt,
-      excerpt: input.category || null,
-      category: input.category || null,
-      status: input.status,
-      venue_id: input.venueId || null,
-      description,
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  // Audit event
-  await supabase.from("audit_events").insert({
-    actor_id: user.id,
-    action: "event.created",
-    entity_type: "event",
-    entity_id: data.id,
-    details: { title: input.title, slug: input.slug, status: input.status },
-  });
-
-  revalidatePath("/events");
-  revalidatePath("/admin/events");
-  revalidatePath("/admin");
-  return { success: true, message: "Event created successfully", data };
 }
 
 export async function deleteEventAction(id: string): Promise<ActionResult> {
@@ -265,6 +333,7 @@ export async function updateEventAction(input: {
   description?: string;
   venueId?: string;
   venueName?: string;
+  featuredImage?: string | null;
 }): Promise<ActionResult> {
   const user = await requireCapability("events.manage");
   const supabase = await createClient();
@@ -299,6 +368,10 @@ export async function updateEventAction(input: {
 
   if (targetVenueId !== undefined) {
     updatePayload.venue_id = targetVenueId;
+  }
+
+  if (input.featuredImage !== undefined) {
+    updatePayload.featured_image = input.featuredImage?.trim() || null;
   }
 
   const { error } = await supabase.from("events").update(updatePayload).eq("id", input.id);
@@ -342,6 +415,62 @@ export async function updateDuesRateAction(input: {
   revalidatePath("/membership");
   revalidatePath("/join");
   return { success: true, message: "Annual dues rate updated successfully", data };
+}
+
+export async function updateMembershipTermAction(input: {
+  termId: string;
+  duesCents?: number;
+  opensAt?: string;
+  closesAt?: string;
+}): Promise<ActionResult> {
+  await requireCapability(["dues.reconcile", "members.manage"]);
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("update_membership_term", {
+    p_term_id: input.termId,
+    p_dues_cents: input.duesCents,
+    p_opens_at: input.opensAt,
+    p_closes_at: input.closesAt,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/admin/dues");
+  revalidatePath("/admin");
+  revalidatePath("/membership");
+  revalidatePath("/join");
+  return { success: true, message: "Membership term updated successfully", data };
+}
+
+export async function createMembershipTermAction(input: {
+  year: number;
+  duesCents: number;
+  opensAt: string;
+  closesAt: string;
+  currency?: string;
+}): Promise<ActionResult> {
+  await requireCapability(["dues.reconcile", "members.manage"]);
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("create_membership_term", {
+    p_year: input.year,
+    p_dues_cents: input.duesCents,
+    p_opens_at: input.opensAt,
+    p_closes_at: input.closesAt,
+    p_currency: input.currency ?? "USD",
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/admin/dues");
+  revalidatePath("/admin");
+  revalidatePath("/membership");
+  revalidatePath("/join");
+  return { success: true, message: "New membership term created successfully", data };
 }
 
 export async function adminUpdateMemberProfileAction(input: {
@@ -553,38 +682,62 @@ export async function uploadMediaAssetAction(
   }
 
   const supabase = await createClient();
-  const fileExt = file.name.split(".").pop() || "jpg";
-  const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+  const rawBuffer = Buffer.from(await file.arrayBuffer());
+  let uploadBuffer: Buffer | Uint8Array = rawBuffer;
+  let mimeType = file.type || "image/jpeg";
+  let width = 1200;
+  let height = 800;
+  let sizeBytes = file.size;
+
+  try {
+    const optimized = await optimizeImage(rawBuffer);
+    uploadBuffer = optimized.optimizedBuffer;
+    mimeType = optimized.mimeType;
+    width = optimized.width;
+    height = optimized.height;
+    sizeBytes = optimized.sizeBytes;
+  } catch (optErr) {
+    // If not a standard raster image or optimization fails, fall back to rawBuffer
+    console.warn("Image auto-optimization skipped/failed:", optErr);
+  }
+
+  const fileName = `${Date.now()}-${crypto.randomUUID()}.webp`;
   const storagePath = `gallery/${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("club-media")
-    .upload(storagePath, file, {
-      contentType: file.type || "image/jpeg",
-      upsert: false,
-    });
+  const storage = getStorageProvider();
+  let uploadResult: { storagePath: string; url: string; provider: string };
 
-  if (uploadError) {
-    return { success: false, error: `Upload to storage failed: ${uploadError.message}` };
+  try {
+    uploadResult = await storage.upload({
+      bucket: "club-media",
+      path: storagePath,
+      buffer: uploadBuffer,
+      contentType: mimeType,
+    });
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: `Storage upload failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+    };
   }
 
   const { data, error: dbError } = await supabase
     .from("media_assets")
     .insert({
-      storage_path: storagePath,
-      mime_type: file.type || "image/jpeg",
-      size_bytes: file.size,
+      storage_path: uploadResult.storagePath,
+      mime_type: mimeType,
+      size_bytes: sizeBytes,
       alt_text: altText.trim(),
       caption: caption.trim() || null,
       is_public: isPublic,
-      width: 1200,
-      height: 800,
+      width,
+      height,
     })
     .select("id")
     .single();
 
   if (dbError) {
-    await supabase.storage.from("club-media").remove([storagePath]);
+    await storage.delete("club-media", uploadResult.storagePath).catch(() => {});
     return { success: false, error: `Database record creation failed: ${dbError.message}` };
   }
 
@@ -593,17 +746,139 @@ export async function uploadMediaAssetAction(
     action: "media.uploaded",
     entity_type: "media_asset",
     entity_id: data.id,
-    details: { storagePath, altText },
+    details: { storagePath: uploadResult.storagePath, altText, provider: uploadResult.provider },
   });
-
-  const { data: publicUrlData } = supabase.storage.from("club-media").getPublicUrl(storagePath);
 
   revalidatePath("/gallery");
   revalidatePath("/admin/media");
   revalidatePath("/admin");
   return {
     success: true,
-    message: "Photo uploaded successfully",
-    data: { id: data.id, storagePath, url: publicUrlData.publicUrl },
+    message: "Photo uploaded and auto-optimized successfully",
+    data: { id: data.id, storagePath: uploadResult.storagePath, url: uploadResult.url },
   };
+}
+
+export async function updateSiteContactAction(
+  input: Partial<SiteContactSettings>,
+): Promise<ActionResult> {
+  const user = await requireCapability(["settings.manage", "content.manage"]);
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", "site_contact")
+    .maybeSingle();
+
+  const merged: SiteContactSettings = {
+    ...DEFAULT_SITE_CONTACT,
+    ...((existing?.value as Partial<SiteContactSettings>) || {}),
+    ...input,
+  };
+
+  const { error } = await supabase.from("site_settings").upsert({
+    key: "site_contact",
+    value: merged as unknown as Database["public"]["Tables"]["site_settings"]["Insert"]["value"],
+    description: "Primary contact details, mailing address, meeting location, and club motto",
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "settings.updated",
+    entity_type: "site_settings",
+    entity_id: "site_contact",
+    details: input as unknown as NonNullable<Json>,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/about");
+  revalidatePath("/contact");
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin");
+  return { success: true, message: "Site contact settings updated successfully" };
+}
+
+export async function updateHomePageContentAction(input: {
+  motto?: string;
+  story?: Partial<HomePageStory>;
+  sections?: PageSection[];
+}): Promise<ActionResult> {
+  const user = await requireCapability(["content.manage", "settings.manage"]);
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", "homepage_content")
+    .maybeSingle();
+
+  const currentVal =
+    (existing?.value as {
+      story?: Partial<HomePageStory>;
+      sections?: PageSection[];
+      motto?: string;
+    } | null) || {};
+
+  const newVal = {
+    motto: input.motto !== undefined ? input.motto : currentVal.motto,
+    story: {
+      ...DEFAULT_HOMEPAGE_STORY,
+      ...(currentVal.story || {}),
+      ...(input.story || {}),
+    },
+    sections: input.sections || currentVal.sections || DEFAULT_HOMEPAGE_SECTIONS,
+  };
+
+  const { error } = await supabase.from("site_settings").upsert({
+    key: "homepage_content",
+    value: newVal as unknown as Database["public"]["Tables"]["site_settings"]["Insert"]["value"],
+    description: "Homepage motto, 4 core pillars, and community story",
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  // Also sync motto to site_contact if motto was modified
+  if (input.motto) {
+    const { data: contactData } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "site_contact")
+      .maybeSingle();
+
+    if (contactData?.value && typeof contactData.value === "object") {
+      await supabase
+        .from("site_settings")
+        .update({
+          value: {
+            ...contactData.value,
+            motto: input.motto,
+          } as unknown as Database["public"]["Tables"]["site_settings"]["Insert"]["value"],
+          updated_at: new Date().toISOString(),
+        })
+        .eq("key", "site_contact");
+    }
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "content.updated",
+    entity_type: "site_settings",
+    entity_id: "homepage_content",
+    details: input as unknown as NonNullable<Json>,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin/content");
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin");
+  return { success: true, message: "Homepage copy & pillars updated successfully" };
 }

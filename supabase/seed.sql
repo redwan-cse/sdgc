@@ -18,34 +18,29 @@ on conflict (year) do update set dues_cents = excluded.dues_cents;
 insert into public.venues (id, name, address, city, state, postal_code, url) values
   ('d1111111-1111-1111-1111-111111111111', 'Saugatuck Woman''s Club', '303 Butler St', 'Saugatuck', 'MI', '49453', 'https://saugatuck.com/'),
   ('d2222222-2222-2222-2222-222222222222', 'Old School House Douglas', '130 Center St', 'Douglas', 'MI', '49406', 'https://sdhistoricalsociety.org/'),
-  ('d3333333-3333-3333-3333-333333333333', 'Wick''s Park Gazebo', '449 Water St', 'Saugatuck', 'MI', '49453', null)
-on conflict (id) do nothing;
+  ('d3333333-3333-3333-3333-333333333333', 'Wick''s Park Gazebo', '449 Water St', 'Saugatuck', 'MI', '49453', null),
+  ('d4444444-4444-4444-4444-444444444444', 'Fenn Valley Vineyards', '6130 122nd Ave', 'Fennville', 'MI', '49408', 'https://www.fennvalley.com/'),
+  ('d5555555-5555-5555-5555-555555555555', 'Saugatuck Middle School', '401 Elizabeth St', 'Saugatuck', 'MI', '49453', null),
+  ('d6666666-6666-6666-6666-666666666666', 'Huntree Nursery', '2315 Blue Star Hwy', 'Fennville', 'MI', '49408', 'https://huntree.com/')
+on conflict (id) do update set
+  name = excluded.name,
+  address = excluded.address,
+  city = excluded.city,
+  state = excluded.state,
+  postal_code = excluded.postal_code,
+  url = excluded.url;
 
 -- Events
-insert into public.events (id, slug, title, excerpt, description, starts_at, ends_at, timezone, all_day, venue_id, status, ticket_url, featured_image) values
+insert into public.events (id, slug, title, category, excerpt, description, starts_at, ends_at, timezone, all_day, venue_id, status, ticket_url, featured_image) values
   (
-    'e1111111-1111-1111-1111-111111111111',
-    '2026-garden-walk-fundraiser',
-    '46th Annual Garden Walk Fundraiser',
-    'Tour private, architect-designed coastal gardens in Saugatuck and Douglas. Proceeds support community beautification.',
-    'Join us for our signature annual fundraiser. Experience diverse landscapes, native pollinators, and water conservation practices across five private coastal gardens. Self-guided walking and driving tour with local docents.',
-    '2026-07-11 10:00:00-04',
-    '2026-07-11 16:00:00-04',
-    'America/Detroit',
-    false,
-    'd1111111-1111-1111-1111-111111111111',
-    'published',
-    'https://saugatuck-douglas-garden-club.ticketleap.com/46th-annual-garden-walk/',
-    '/images/brand/sdgc-logo.jpg'
-  ),
-  (
-    'e2222222-2222-2222-2222-222222222222',
-    'spring-perennial-seedling-swap',
-    'Spring Perennial & Seedling Swap',
-    'Bring divisions, heirloom seedlings, and garden supplies to swap with fellow community gardeners.',
-    'Annual member and community exchange of divided hardy perennials, organic vegetable seedlings, and gardening tools. Master Gardeners will be on site answering plant health and soil preparation questions.',
-    '2026-05-16 09:30:00-04',
-    '2026-05-16 12:30:00-04',
+    'e5555555-5555-5555-5555-555555555555',
+    'monthly-board-meeting-nov-2026',
+    'Monthly Board Meeting',
+    'Executive Committee',
+    'Monthly board of directors meeting discussing upcoming club activities, budget reviews, and civic plantings.',
+    'The SDGC Board meets on the second Monday of each month. Members are welcome to observe and learn about upcoming projects, civic beautification plans, and committee updates.',
+    '2026-11-09 09:30:00-05',
+    '2026-11-09 11:30:00-05',
     'America/Detroit',
     false,
     'd2222222-2222-2222-2222-222222222222',
@@ -54,36 +49,82 @@ insert into public.events (id, slug, title, excerpt, description, starts_at, end
     '/images/brand/sdgc-logo.jpg'
   ),
   (
-    'e3333333-3333-3333-3333-333333333333',
-    'community-planters-civic-beautification',
-    'Civic Planters Summer Planting Day',
-    'Annual planting day for Downtown Saugatuck and Douglas municipal flower containers.',
-    'Volunteers unite to prepare, plant, and mulch decorative planters along Butler and Center Streets. Tools, soil, and nursery annuals provided by the club.',
-    '2026-06-06 08:30:00-04',
-    '2026-06-06 13:00:00-04',
+    'e6666666-6666-6666-6666-666666666666',
+    'holiday-swag-and-senior-workshop-2026',
+    'Holiday Swag & Senior Floral Arrangement Workshop',
+    'Workshops & Presentations',
+    'Volunteers and local 6th graders create fresh evergreen centerpieces for residents at Grace of Douglas and Golden Orchards.',
+    'Each December, SDGC volunteers collaborate with local students to design festive evergreen arrangements and decorative door swags. These handmade floral gifts are delivered directly to area nursing facilities and senior centers across Allegan County to bring warmth and holiday cheer.',
+    '2026-12-05 10:00:00-05',
+    '2026-12-05 13:00:00-05',
     'America/Detroit',
     false,
-    'd3333333-3333-3333-3333-333333333333',
+    'd5555555-5555-5555-5555-555555555555',
     'published',
     null,
-    '/images/brand/sdgc-logo.jpg'
+    '/images/wordpress/kids-activity-1600x1600-circle.png'
   ),
   (
-    'e4444444-4444-4444-4444-444444444444',
-    'draft-fall-native-plant-symposium',
-    'Draft: Fall Native Plant Symposium',
-    'Preview of our upcoming autumn symposium on Great Lakes coastal dune preservation.',
-    'Internal draft event for committee review and scheduling.',
-    '2026-09-19 13:00:00-04',
-    '2026-09-19 16:30:00-04',
+    'e7777777-7777-7777-7777-777777777777',
+    'annual-club-holiday-dinner-2026',
+    'Annual Club Holiday Dinner & Social Celebration',
+    'Social Gatherings',
+    'Celebrate the close of a wonderful gardening season with good food, friendship, and local wine.',
+    'Join fellow Garden Club members, spouses, and guests for our annual celebratory year-end gathering. Enjoy seasonal appetizers, catered dinner, and dessert alongside Fenn Valley wines. Annual recognition awards and holiday toasts will be presented by our Club President.',
+    '2026-12-10 18:00:00-05',
+    '2026-12-10 21:00:00-05',
+    'America/Detroit',
+    false,
+    'd4444444-4444-4444-4444-444444444444',
+    'published',
+    null,
+    '/images/wordpress/2O8A5979-scaled-e1746814119349.jpeg'
+  ),
+  (
+    'e8888888-8888-8888-8888-888888888888',
+    'welcome-back-tea-2027',
+    'Welcome Back Tea & Annual Season Kickoff',
+    'Social Gatherings',
+    'Our annual Tea is the festive opening of our Garden Club season. Renew friendships and sign up for volunteer activities.',
+    'The annual Welcome Back Tea marks the official opening of the Garden Club season! Renew friendships, meet our newest members, preview the year''s educational calendar, and volunteer for upcoming civic planting days and the Garden Walk committee. Delectable refreshments, herbal teas, and baked treats provided.',
+    '2027-04-19 14:00:00-04',
+    '2027-04-19 16:00:00-04',
     'America/Detroit',
     false,
     'd1111111-1111-1111-1111-111111111111',
-    'draft',
+    'published',
     null,
-    null
+    '/images/wordpress/2O8A6596-1000x1000-1.jpg'
+  ),
+  (
+    'e9999999-9999-9999-9999-999999999999',
+    '47th-annual-garden-walk-fundraiser',
+    '47th Annual Garden Walk Fundraiser & Perennial Plant Sale',
+    'Annual Fundraiser',
+    'Tour 6 spectacular private coastal gardens. Features the member perennial plant sale and garden treasures at the Old School House.',
+    'Our signature annual event and premier community fundraiser! Tour six extraordinary private residential gardens across Saugatuck and Douglas, starting from the historic Old School House (130 W Center St). Enjoy the member-divided perennial plant sale ($5 each or 6 for $25) and "hidden garden treasures" sale. 100% of proceeds fund college scholarships for local high school seniors and civic streetscape planters.',
+    '2027-07-17 10:00:00-04',
+    '2027-07-17 16:00:00-04',
+    'America/Detroit',
+    false,
+    'd2222222-2222-2222-2222-222222222222',
+    'published',
+    'https://saugatuckdouglasgardenclub.com/garden-walk',
+    '/images/wordpress/DSC_2808-scaled-1.jpg'
   )
-on conflict (id) do nothing;
+on conflict (id) do update set
+  slug = excluded.slug,
+  title = excluded.title,
+  category = excluded.category,
+  excerpt = excluded.excerpt,
+  description = excluded.description,
+  starts_at = excluded.starts_at,
+  ends_at = excluded.ends_at,
+  timezone = excluded.timezone,
+  venue_id = excluded.venue_id,
+  status = excluded.status,
+  ticket_url = excluded.ticket_url,
+  featured_image = excluded.featured_image;
 
 -- Pages
 insert into public.pages (slug, title, content, status, published_at, meta_description) values

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   formatDetroitDateTimeLocal,
@@ -10,32 +11,82 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import type { AdminEventRecord, AdminVenueRecord } from "../types";
-import { createEventAction, deleteEventAction, updateEventAction } from "../actions";
+import {
+  createEventAction,
+  createVenueAction,
+  deleteEventAction,
+  updateEventAction,
+} from "../actions";
 
 interface AdminEventsProps {
   initialEvents: AdminEventRecord[];
   initialVenues?: AdminVenueRecord[];
 }
 
+const PRESET_EVENT_BANNERS = [
+  { label: "Garden Walk & Flowers", url: "/images/wordpress/2O8A6013-653x653-1.jpg" },
+  { label: "Holiday Swag Workshop", url: "/images/wordpress/DSC_7044-651x651-1.jpg" },
+  { label: "Member Tea & Luncheon", url: "/images/wordpress/DSC_0553-1349x1349-1.jpg" },
+  { label: "Gardening & Landscape", url: "/images/wordpress/2O8A6596-1000x1000-1.jpg" },
+  { label: "Waterfront & Civic", url: "/images/wordpress/2O8A5979-scaled-e1746814119349.jpeg" },
+];
+
+function insertFormatting(
+  textarea: HTMLTextAreaElement | null,
+  before: string,
+  after: string,
+  setValue: (val: string) => void,
+) {
+  if (!textarea) return;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+  const selected = text.substring(start, end);
+  const replacement = before + (selected || "sample text") + after;
+  const newValue = text.substring(0, start) + replacement + text.substring(end);
+  setValue(newValue);
+  setTimeout(() => {
+    textarea.focus();
+    const cursorStart = start + before.length;
+    const cursorEnd = cursorStart + (selected ? selected.length : 11);
+    textarea.setSelectionRange(cursorStart, cursorEnd);
+  }, 10);
+}
+
 export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsProps) {
   const [events, setEvents] = React.useState<AdminEventRecord[]>(initialEvents);
+  const [venues, setVenues] = React.useState<AdminVenueRecord[]>(initialVenues);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [isError, setIsError] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const [venues] = React.useState<AdminVenueRecord[]>(initialVenues);
+  // New Event Form State
   const [newTitle, setNewTitle] = React.useState("");
   const [newSlug, setNewSlug] = React.useState("");
-  const [newStartsAt, setNewStartsAt] = React.useState("2026-08-15T10:00");
-  const [newEndsAt, setNewEndsAt] = React.useState("2026-08-15T12:00");
+  const [newStartsAt, setNewStartsAt] = React.useState("2026-11-15T10:00");
+  const [newEndsAt, setNewEndsAt] = React.useState("2026-11-15T12:00");
   const [newCategory, setNewCategory] = React.useState("Workshops & Presentations");
   const [newStatus, setNewStatus] = React.useState<"published" | "draft" | "cancelled">(
     "published",
   );
   const [newVenueId, setNewVenueId] = React.useState<string>("");
   const [newDescription, setNewDescription] = React.useState("");
+  const [newFeaturedImage, setNewFeaturedImage] = React.useState("");
+  const [newDescriptionTab, setNewDescriptionTab] = React.useState<"write" | "preview">("write");
+  const newTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // Inline Venue Creator State
+  const [showVenueCreator, setShowVenueCreator] = React.useState(false);
+  const [venueName, setVenueName] = React.useState("");
+  const [venueAddress, setVenueAddress] = React.useState("");
+  const [venueCity, setVenueCity] = React.useState("Saugatuck");
+  const [venueState, setVenueState] = React.useState("MI");
+  const [venuePostalCode, setVenuePostalCode] = React.useState("49453");
+  const [venueUrl, setVenueUrl] = React.useState("");
+  const [isSubmittingVenue, setIsSubmittingVenue] = React.useState(false);
 
   // Edit Event Form State
   const [editingEvent, setEditingEvent] = React.useState<AdminEventRecord | null>(null);
@@ -50,6 +101,9 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
   const [editDescription, setEditDescription] = React.useState("");
   const [editVenueName, setEditVenueName] = React.useState("");
   const [editVenueId, setEditVenueId] = React.useState<string | undefined>(undefined);
+  const [editFeaturedImage, setEditFeaturedImage] = React.useState("");
+  const [editDescriptionTab, setEditDescriptionTab] = React.useState<"write" | "preview">("write");
+  const editTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   const handleOpenEdit = (e: AdminEventRecord) => {
     setEditingEvent(e);
@@ -62,6 +116,9 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
     setEditDescription(e.description || "");
     setEditVenueName(e.venueName || "");
     setEditVenueId(e.venueId);
+    setEditFeaturedImage(e.featuredImage || "");
+    setEditDescriptionTab("write");
+    setShowVenueCreator(false);
   };
 
   React.useEffect(() => {
@@ -69,69 +126,61 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
       if (e.key === "Escape") {
         if (isModalOpen) setIsModalOpen(false);
         if (editingEvent) setEditingEvent(null);
+        setShowVenueCreator(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isModalOpen, editingEvent]);
 
-  const handleUpdate = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    if (!editingEvent) return;
-    setIsSubmitting(true);
-    setIsError(false);
-    try {
-      const startsAtIso = parseDetroitDateTimeLocal(editStartsAt);
-      const endsAtIso = editEndsAt ? parseDetroitDateTimeLocal(editEndsAt) : undefined;
-      const res = await updateEventAction({
-        id: editingEvent.id,
-        title: editTitle.trim(),
-        slug: editSlug.trim(),
-        startsAt: startsAtIso,
-        endsAt: endsAtIso,
-        category: editCategory,
-        status: editStatus,
-        description: editDescription.trim() || undefined,
-        venueId: editVenueId ?? editingEvent.venueId,
-        venueName: editVenueName.trim() || undefined,
-      });
-
-      if (res.success) {
-        setEvents((prev) =>
-          prev.map((item) =>
-            item.id === editingEvent.id
-              ? {
-                  ...item,
-                  title: editTitle.trim(),
-                  slug: editSlug.trim(),
-                  startsAt: startsAtIso,
-                  endsAt: endsAtIso,
-                  category: editCategory,
-                  status: editStatus,
-                  description: editDescription.trim() || undefined,
-                  venueId: editVenueId ?? editingEvent.venueId,
-                  venueName: editVenueName.trim() || undefined,
-                }
-              : item,
-          ),
-        );
-        setNotice(`Event "${editTitle}" updated successfully.`);
-        setEditingEvent(null);
-      } else {
-        setIsError(true);
-        setNotice(`Failed to update event: ${res.error}`);
-      }
-    } catch (err: unknown) {
-      setIsError(true);
-      setNotice(err instanceof Error ? err.message : "An unexpected error occurred");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   React.useEffect(() => {
     setEvents(initialEvents);
   }, [initialEvents]);
+
+  React.useEffect(() => {
+    if (initialVenues) {
+      setVenues(initialVenues);
+    }
+  }, [initialVenues]);
+
+  const handleCreateVenue = async (targetMode: "new" | "edit") => {
+    if (!venueName.trim()) return;
+    setIsSubmittingVenue(true);
+    try {
+      const res = await createVenueAction({
+        name: venueName.trim(),
+        address: venueAddress.trim() || undefined,
+        city: venueCity.trim() || undefined,
+        state: venueState.trim() || undefined,
+        postalCode: venuePostalCode.trim() || undefined,
+        url: venueUrl.trim() || undefined,
+      });
+
+      if (res.success && res.data) {
+        const createdVenue = res.data;
+        setVenues((prev) => [...prev, createdVenue]);
+        if (targetMode === "new") {
+          setNewVenueId(createdVenue.id);
+        } else {
+          setEditVenueId(createdVenue.id);
+          setEditVenueName(createdVenue.name);
+        }
+        setShowVenueCreator(false);
+        setVenueName("");
+        setVenueAddress("");
+        setVenueUrl("");
+        setNotice(`Venue "${createdVenue.name}" created and selected.`);
+      } else {
+        setIsError(true);
+        setNotice(`Failed to create venue: ${res.error}`);
+      }
+    } catch (err: unknown) {
+      setIsError(true);
+      setNotice(err instanceof Error ? err.message : "An unexpected error occurred creating venue");
+    } finally {
+      setIsSubmittingVenue(false);
+    }
+  };
 
   const handleTitleChange = (val: string) => {
     setNewTitle(val);
@@ -165,6 +214,7 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
         status: newStatus,
         venueId: newVenueId || undefined,
         description: newDescription.trim() || undefined,
+        featuredImage: newFeaturedImage.trim() || undefined,
       });
 
       if (res.success && res.data) {
@@ -182,6 +232,7 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
             venueId: newVenueId || undefined,
             venueName: matchedVenue ? matchedVenue.name : undefined,
             description: newDescription.trim() || undefined,
+            featuredImage: newFeaturedImage.trim() || undefined,
           },
         ]);
         setNotice(`Event "${newTitle}" created and saved successfully.`);
@@ -190,9 +241,68 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
         setNewSlug("");
         setNewVenueId("");
         setNewDescription("");
+        setNewFeaturedImage("");
+        setShowVenueCreator(false);
       } else {
         setIsError(true);
         setNotice(`Failed to create event: ${res.error}`);
+      }
+    } catch (err: unknown) {
+      setIsError(true);
+      setNotice(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!editingEvent) return;
+    setIsSubmitting(true);
+    setIsError(false);
+    try {
+      const startsAtIso = parseDetroitDateTimeLocal(editStartsAt);
+      const endsAtIso = editEndsAt ? parseDetroitDateTimeLocal(editEndsAt) : undefined;
+      const res = await updateEventAction({
+        id: editingEvent.id,
+        title: editTitle.trim(),
+        slug: editSlug.trim(),
+        startsAt: startsAtIso,
+        endsAt: endsAtIso,
+        category: editCategory,
+        status: editStatus,
+        description: editDescription.trim() || undefined,
+        venueId: editVenueId ?? editingEvent.venueId,
+        venueName: editVenueName.trim() || undefined,
+        featuredImage: editFeaturedImage.trim() || null,
+      });
+
+      if (res.success) {
+        setEvents((prev) =>
+          prev.map((item) =>
+            item.id === editingEvent.id
+              ? {
+                  ...item,
+                  title: editTitle.trim(),
+                  slug: editSlug.trim(),
+                  startsAt: startsAtIso,
+                  endsAt: endsAtIso,
+                  category: editCategory,
+                  status: editStatus,
+                  description: editDescription.trim() || undefined,
+                  venueId: editVenueId ?? editingEvent.venueId,
+                  venueName: editVenueName.trim() || undefined,
+                  featuredImage: editFeaturedImage.trim() || null,
+                }
+              : item,
+          ),
+        );
+        setNotice(`Event "${editTitle}" updated successfully.`);
+        setEditingEvent(null);
+        setShowVenueCreator(false);
+      } else {
+        setIsError(true);
+        setNotice(`Failed to update event: ${res.error}`);
       }
     } catch (err: unknown) {
       setIsError(true);
@@ -232,7 +342,8 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
             Events & Calendar Scheduling
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Schedule club meetings, plant sales, work days, and the annual Garden Walk fundraiser.
+            Schedule club meetings, workshops, presentations, plant sales, and the annual Garden
+            Walk.
           </p>
         </div>
 
@@ -254,11 +365,11 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
 
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="p-4">Event Title</th>
-                <th className="p-4">Date & Time (America/Detroit)</th>
+                <th className="p-4">Date & Time (Detroit)</th>
                 <th className="p-4">Venue</th>
                 <th className="p-4">Category / Excerpt</th>
                 <th className="p-4">Status</th>
@@ -276,12 +387,24 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                 events.map((e) => (
                   <tr key={e.id} className="hover:bg-muted/30 transition-colors">
                     <td className="p-4 font-semibold text-foreground">
-                      <Link
-                        href={`/event/${encodeURIComponent(e.slug.replace(/[^a-zA-Z0-9_-]/g, ""))}`}
-                        className="hover:underline"
-                      >
-                        {e.title}
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        {e.featuredImage && (
+                          <Image
+                            src={e.featuredImage}
+                            alt=""
+                            width={40}
+                            height={40}
+                            unoptimized
+                            className="h-10 w-10 shrink-0 rounded-md object-cover border border-border"
+                          />
+                        )}
+                        <Link
+                          href={`/event/${encodeURIComponent(e.slug.replace(/[^a-zA-Z0-9_-]/g, ""))}`}
+                          className="hover:underline"
+                        >
+                          {e.title}
+                        </Link>
+                      </div>
                     </td>
                     <td className="p-4 text-xs text-muted-foreground whitespace-nowrap">
                       {formatEventDateTime(e.startsAt)}
@@ -338,7 +461,7 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-event-modal-title"
-            className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto"
           >
             <h2
               id="create-event-modal-title"
@@ -347,7 +470,8 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
               Create New Club Event
             </h2>
             <p className="text-xs text-muted-foreground">
-              Published events will appear on the public /events calendar and RSS feeds.
+              Published events will appear on the public /events calendar, homepage spotlight, and
+              RSS feeds.
             </p>
 
             <form onSubmit={handleCreate} className="space-y-4 pt-2">
@@ -361,7 +485,7 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                 <Input
                   id="new-event-title"
                   required
-                  placeholder="e.g. Summer Garden Tour Workbee"
+                  placeholder="e.g. Annual Holiday Swag Workshop"
                   value={newTitle}
                   onChange={(e) => handleTitleChange(e.target.value)}
                 />
@@ -377,7 +501,7 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                 <Input
                   id="new-event-slug"
                   required
-                  placeholder="summer-garden-tour-workbee"
+                  placeholder="annual-holiday-swag-workshop"
                   value={newSlug}
                   onChange={(e) =>
                     setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
@@ -460,13 +584,78 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                 </div>
               </div>
 
-              <div>
-                <label
-                  htmlFor="new-event-venue"
-                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
-                >
-                  Venue Location
-                </label>
+              {/* Venue Selector with Inline Creator */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="new-event-venue"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    Venue Location
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowVenueCreator((prev) => !prev)}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    {showVenueCreator ? "Cancel Inline Venue" : "+ Add New Venue"}
+                  </button>
+                </div>
+
+                {showVenueCreator && (
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+                    <p className="text-xs font-bold text-foreground">Create and Link New Venue</p>
+                    <Input
+                      placeholder="Venue Name * (e.g. Huntree Nursery)"
+                      value={venueName}
+                      onChange={(e) => setVenueName(e.target.value)}
+                      className="text-xs"
+                    />
+                    <Input
+                      placeholder="Street Address (e.g. 12656 60th St)"
+                      value={venueAddress}
+                      onChange={(e) => setVenueAddress(e.target.value)}
+                      className="text-xs"
+                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      <Input
+                        placeholder="City"
+                        value={venueCity}
+                        onChange={(e) => setVenueCity(e.target.value)}
+                        className="text-xs"
+                      />
+                      <Input
+                        placeholder="State"
+                        value={venueState}
+                        onChange={(e) => setVenueState(e.target.value)}
+                        className="text-xs"
+                      />
+                      <Input
+                        placeholder="Zip"
+                        value={venuePostalCode}
+                        onChange={(e) => setVenuePostalCode(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                    <Input
+                      placeholder="Website URL (optional)"
+                      value={venueUrl}
+                      onChange={(e) => setVenueUrl(e.target.value)}
+                      className="text-xs"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={isSubmittingVenue || !venueName.trim()}
+                        onClick={() => handleCreateVenue("new")}
+                      >
+                        {isSubmittingVenue ? "Saving..." : "Save & Select Venue"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <select
                   id="new-event-venue"
                   value={newVenueId}
@@ -483,21 +672,190 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                 </select>
               </div>
 
-              <div>
+              {/* Event Banner / Featured Image Picker */}
+              <div className="space-y-2">
                 <label
-                  htmlFor="new-event-description"
-                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  htmlFor="new-event-image"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                 >
-                  Description
+                  Featured Image / Banner
                 </label>
-                <textarea
-                  id="new-event-description"
-                  rows={3}
-                  placeholder="Event details, what to bring, and schedule..."
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background p-3 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
-                />
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="text-muted-foreground py-1">Quick Presets:</span>
+                  {PRESET_EVENT_BANNERS.map((preset) => (
+                    <button
+                      key={preset.url}
+                      type="button"
+                      onClick={() => setNewFeaturedImage(preset.url)}
+                      className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs hover:bg-muted transition-colors"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="new-event-image"
+                    placeholder="https://... or /images/wordpress/..."
+                    value={newFeaturedImage}
+                    onChange={(e) => setNewFeaturedImage(e.target.value)}
+                    className="text-sm"
+                  />
+                  {newFeaturedImage && (
+                    <button
+                      type="button"
+                      onClick={() => setNewFeaturedImage("")}
+                      className="text-xs text-rose-600 hover:underline shrink-0"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {newFeaturedImage && (
+                  <div className="relative mt-2 h-28 w-full overflow-hidden rounded-lg border border-border bg-muted">
+                    <Image
+                      src={newFeaturedImage}
+                      alt="Banner Preview"
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Rich Markdown Description Editor */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="new-event-description"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    Description & Schedule (Markdown / Rich Formatting)
+                  </label>
+                  <div className="flex items-center space-x-1 rounded-md border border-border bg-muted/30 p-0.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setNewDescriptionTab("write")}
+                      className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                        newDescriptionTab === "write"
+                          ? "bg-card text-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Write
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewDescriptionTab("preview")}
+                      className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                        newDescriptionTab === "preview"
+                          ? "bg-card text-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Preview
+                    </button>
+                  </div>
+                </div>
+
+                {newDescriptionTab === "write" ? (
+                  <div className="space-y-1.5">
+                    {/* Formatting Toolbar */}
+                    <div className="flex flex-wrap items-center gap-1 rounded-t-md border border-b-0 border-input bg-muted/40 p-1.5 text-xs">
+                      <button
+                        type="button"
+                        title="Bold"
+                        onClick={() =>
+                          insertFormatting(newTextareaRef.current, "**", "**", setNewDescription)
+                        }
+                        className="px-2 py-1 font-bold rounded hover:bg-muted text-foreground"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        title="Italic"
+                        onClick={() =>
+                          insertFormatting(newTextareaRef.current, "*", "*", setNewDescription)
+                        }
+                        className="px-2 py-1 italic rounded hover:bg-muted text-foreground"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        title="Heading 3"
+                        onClick={() =>
+                          insertFormatting(newTextareaRef.current, "### ", "", setNewDescription)
+                        }
+                        className="px-2 py-1 font-bold rounded hover:bg-muted text-foreground"
+                      >
+                        H3
+                      </button>
+                      <button
+                        type="button"
+                        title="Bullet List"
+                        onClick={() =>
+                          insertFormatting(newTextareaRef.current, "- ", "", setNewDescription)
+                        }
+                        className="px-2 py-1 rounded hover:bg-muted text-foreground"
+                      >
+                        • List
+                      </button>
+                      <button
+                        type="button"
+                        title="Numbered List"
+                        onClick={() =>
+                          insertFormatting(newTextareaRef.current, "1. ", "", setNewDescription)
+                        }
+                        className="px-2 py-1 rounded hover:bg-muted text-foreground"
+                      >
+                        1. List
+                      </button>
+                      <button
+                        type="button"
+                        title="Quote"
+                        onClick={() =>
+                          insertFormatting(newTextareaRef.current, "> ", "", setNewDescription)
+                        }
+                        className="px-2 py-1 rounded hover:bg-muted text-foreground"
+                      >
+                        Quote
+                      </button>
+                      <button
+                        type="button"
+                        title="Hyperlink"
+                        onClick={() =>
+                          insertFormatting(
+                            newTextareaRef.current,
+                            "[",
+                            "](https://example.com)",
+                            setNewDescription,
+                          )
+                        }
+                        className="px-2 py-1 underline rounded hover:bg-muted text-primary"
+                      >
+                        Link
+                      </button>
+                    </div>
+                    <textarea
+                      id="new-event-description"
+                      ref={newTextareaRef}
+                      rows={5}
+                      placeholder="Use bold, lists, and headings to detail event activities, requirements, and refreshments..."
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      className="w-full rounded-b-md border border-input bg-background p-3 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
+                    />
+                  </div>
+                ) : (
+                  <div className="min-h-[140px] rounded-md border border-input bg-muted/20 p-4">
+                    <MarkdownContent
+                      content={newDescription || "*No event description written yet.*"}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
@@ -510,7 +868,7 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  Create Event
+                  {isSubmitting ? "Creating..." : "Create Event"}
                 </Button>
               </div>
             </form>
@@ -525,7 +883,7 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-event-modal-title"
-            className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto"
           >
             <h2
               id="edit-event-modal-title"
@@ -534,7 +892,7 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
               Edit Club Event
             </h2>
             <p className="text-xs text-muted-foreground">
-              Modify event details, schedule dates, venue location, or visibility status.
+              Modify event schedule dates, venue location, description formatting, and banner image.
             </p>
 
             <form onSubmit={handleUpdate} className="space-y-4 pt-2">
@@ -615,10 +973,10 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                     className="w-full rounded-md border border-input bg-background p-2 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
                   >
                     <option value="Workshops & Presentations">Workshops & Presentations</option>
-                    <option value="Community Projects">Community Projects</option>
-                    <option value="Club Business">Club Business</option>
-                    <option value="Social & Special Events">Social & Special Events</option>
-                    <option value="Garden Walk">Garden Walk</option>
+                    <option value="Civic Workdays">Civic Workdays</option>
+                    <option value="Social Gatherings">Social Gatherings</option>
+                    <option value="Annual Fundraiser">Annual Fundraiser</option>
+                    <option value="Executive Committee">Executive Committee</option>
                   </select>
                 </div>
                 <div>
@@ -643,13 +1001,78 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                 </div>
               </div>
 
-              <div>
-                <label
-                  htmlFor="edit-event-venue"
-                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
-                >
-                  Venue Location
-                </label>
+              {/* Edit Venue Selector with Inline Creator */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="edit-event-venue"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    Venue Location
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowVenueCreator((prev) => !prev)}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    {showVenueCreator ? "Cancel Inline Venue" : "+ Add New Venue"}
+                  </button>
+                </div>
+
+                {showVenueCreator && (
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+                    <p className="text-xs font-bold text-foreground">Create and Link New Venue</p>
+                    <Input
+                      placeholder="Venue Name * (e.g. Huntree Nursery)"
+                      value={venueName}
+                      onChange={(e) => setVenueName(e.target.value)}
+                      className="text-xs"
+                    />
+                    <Input
+                      placeholder="Street Address (e.g. 12656 60th St)"
+                      value={venueAddress}
+                      onChange={(e) => setVenueAddress(e.target.value)}
+                      className="text-xs"
+                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      <Input
+                        placeholder="City"
+                        value={venueCity}
+                        onChange={(e) => setVenueCity(e.target.value)}
+                        className="text-xs"
+                      />
+                      <Input
+                        placeholder="State"
+                        value={venueState}
+                        onChange={(e) => setVenueState(e.target.value)}
+                        className="text-xs"
+                      />
+                      <Input
+                        placeholder="Zip"
+                        value={venuePostalCode}
+                        onChange={(e) => setVenuePostalCode(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                    <Input
+                      placeholder="Website URL (optional)"
+                      value={venueUrl}
+                      onChange={(e) => setVenueUrl(e.target.value)}
+                      className="text-xs"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={isSubmittingVenue || !venueName.trim()}
+                        onClick={() => handleCreateVenue("edit")}
+                      >
+                        {isSubmittingVenue ? "Saving..." : "Save & Select Venue"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <select
                   id="edit-event-venue"
                   value={editVenueId || ""}
@@ -671,20 +1094,189 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                 </select>
               </div>
 
-              <div>
+              {/* Edit Featured Banner */}
+              <div className="space-y-2">
                 <label
-                  htmlFor="edit-event-description"
-                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  htmlFor="edit-event-image"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                 >
-                  Description
+                  Featured Image / Banner
                 </label>
-                <textarea
-                  id="edit-event-description"
-                  rows={3}
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background p-3 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
-                />
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="text-muted-foreground py-1">Quick Presets:</span>
+                  {PRESET_EVENT_BANNERS.map((preset) => (
+                    <button
+                      key={preset.url}
+                      type="button"
+                      onClick={() => setEditFeaturedImage(preset.url)}
+                      className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs hover:bg-muted transition-colors"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="edit-event-image"
+                    placeholder="https://... or /images/wordpress/..."
+                    value={editFeaturedImage}
+                    onChange={(e) => setEditFeaturedImage(e.target.value)}
+                    className="text-sm"
+                  />
+                  {editFeaturedImage && (
+                    <button
+                      type="button"
+                      onClick={() => setEditFeaturedImage("")}
+                      className="text-xs text-rose-600 hover:underline shrink-0"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {editFeaturedImage && (
+                  <div className="relative mt-2 h-28 w-full overflow-hidden rounded-lg border border-border bg-muted">
+                    <Image
+                      src={editFeaturedImage}
+                      alt="Banner Preview"
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Rich Markdown Description Editor for Edit Modal */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="edit-event-description"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    Description & Schedule (Markdown / Rich Formatting)
+                  </label>
+                  <div className="flex items-center space-x-1 rounded-md border border-border bg-muted/30 p-0.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setEditDescriptionTab("write")}
+                      className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                        editDescriptionTab === "write"
+                          ? "bg-card text-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Write
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditDescriptionTab("preview")}
+                      className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                        editDescriptionTab === "preview"
+                          ? "bg-card text-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Preview
+                    </button>
+                  </div>
+                </div>
+
+                {editDescriptionTab === "write" ? (
+                  <div className="space-y-1.5">
+                    {/* Formatting Toolbar */}
+                    <div className="flex flex-wrap items-center gap-1 rounded-t-md border border-b-0 border-input bg-muted/40 p-1.5 text-xs">
+                      <button
+                        type="button"
+                        title="Bold"
+                        onClick={() =>
+                          insertFormatting(editTextareaRef.current, "**", "**", setEditDescription)
+                        }
+                        className="px-2 py-1 font-bold rounded hover:bg-muted text-foreground"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        title="Italic"
+                        onClick={() =>
+                          insertFormatting(editTextareaRef.current, "*", "*", setEditDescription)
+                        }
+                        className="px-2 py-1 italic rounded hover:bg-muted text-foreground"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        title="Heading 3"
+                        onClick={() =>
+                          insertFormatting(editTextareaRef.current, "### ", "", setEditDescription)
+                        }
+                        className="px-2 py-1 font-bold rounded hover:bg-muted text-foreground"
+                      >
+                        H3
+                      </button>
+                      <button
+                        type="button"
+                        title="Bullet List"
+                        onClick={() =>
+                          insertFormatting(editTextareaRef.current, "- ", "", setEditDescription)
+                        }
+                        className="px-2 py-1 rounded hover:bg-muted text-foreground"
+                      >
+                        • List
+                      </button>
+                      <button
+                        type="button"
+                        title="Numbered List"
+                        onClick={() =>
+                          insertFormatting(editTextareaRef.current, "1. ", "", setEditDescription)
+                        }
+                        className="px-2 py-1 rounded hover:bg-muted text-foreground"
+                      >
+                        1. List
+                      </button>
+                      <button
+                        type="button"
+                        title="Quote"
+                        onClick={() =>
+                          insertFormatting(editTextareaRef.current, "> ", "", setEditDescription)
+                        }
+                        className="px-2 py-1 rounded hover:bg-muted text-foreground"
+                      >
+                        Quote
+                      </button>
+                      <button
+                        type="button"
+                        title="Hyperlink"
+                        onClick={() =>
+                          insertFormatting(
+                            editTextareaRef.current,
+                            "[",
+                            "](https://example.com)",
+                            setEditDescription,
+                          )
+                        }
+                        className="px-2 py-1 underline rounded hover:bg-muted text-primary"
+                      >
+                        Link
+                      </button>
+                    </div>
+                    <textarea
+                      id="edit-event-description"
+                      ref={editTextareaRef}
+                      rows={5}
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      className="w-full rounded-b-md border border-input bg-background p-3 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
+                    />
+                  </div>
+                ) : (
+                  <div className="min-h-[140px] rounded-md border border-input bg-muted/20 p-4">
+                    <MarkdownContent
+                      content={editDescription || "*No event description written yet.*"}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
@@ -697,7 +1289,7 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  Save Changes
+                  {isSubmitting ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </form>

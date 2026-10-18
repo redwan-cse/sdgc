@@ -56,41 +56,52 @@ test.describe("Auth & Panels Surfaces Preview", () => {
     await expect(page).toHaveURL(/\/admin$/, { timeout: 15_000 });
     await expect(page.getByText(/Active Members \((2026|Current Term)\)/)).toBeVisible();
 
+    const navigateTo = async (label: string) => {
+      const isMobile = (page.viewportSize()?.width ?? 1000) < 1024;
+      if (isMobile) {
+        const toggle = page.getByRole("button", { name: "Open administration navigation" });
+        if (await toggle.isVisible()) {
+          await toggle.click();
+        }
+      }
+      await page.getByRole("link", { name: label }).first().click();
+    };
+
     // Navigate to Members & Approvals
-    await page.getByRole("link", { name: "Members & Approvals" }).click();
+    await navigateTo("Members & Approvals");
     await expect(page).toHaveURL("/admin/members");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Member Management & Approvals",
     );
 
     // Navigate to Dues & Reconciliation
-    await page.getByRole("link", { name: "Dues & Reconciliation" }).click();
+    await navigateTo("Dues & Reconciliation");
     await expect(page).toHaveURL("/admin/dues");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Dues Reconciliation & Financials",
     );
 
     // Navigate to Events & Scheduling
-    await page.getByRole("link", { name: "Events & Scheduling" }).click();
+    await navigateTo("Events & Scheduling");
     await expect(page).toHaveURL("/admin/events");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Events & Calendar Scheduling",
     );
 
     // Navigate to Media & Albums
-    await page.getByRole("link", { name: "Media & Albums" }).click();
+    await navigateTo("Media & Albums");
     await expect(page).toHaveURL("/admin/media");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Media Library & Gallery Curation",
     );
 
     // Navigate to Pages & Copy
-    await page.getByRole("link", { name: "Pages & Copy" }).click();
+    await navigateTo("Pages & Copy");
     await expect(page).toHaveURL("/admin/content");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Page Content & Site Copy");
 
     // Navigate to Contact Inbox
-    await page.getByRole("link", { name: "Contact Inbox" }).click();
+    await navigateTo("Contact Inbox");
     await expect(page).toHaveURL("/admin/messages");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Contact Submissions Inbox");
   });

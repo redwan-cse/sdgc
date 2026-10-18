@@ -3,8 +3,14 @@
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { formatDetroitDateTimeLocal, parseDetroitDateTimeLocal } from "@/features/events/calendar";
 import type { AdminDuesRecord, AdminTermRecord } from "../types";
-import { reconcilePaymentAction, updateDuesRateAction } from "../actions";
+import {
+  createMembershipTermAction,
+  reconcilePaymentAction,
+  updateMembershipTermAction,
+} from "../actions";
 
 interface AdminDuesProps {
   initialRecords: AdminDuesRecord[];
@@ -40,15 +46,29 @@ export function AdminDues({
   const [records, setRecords] = React.useState<AdminDuesRecord[]>(initialRecords);
   const [terms, setTerms] = React.useState<AdminTermRecord[]>(initialTerms);
   const [statusFilter, setStatusFilter] = React.useState<string>(initialStatusFilter || "all");
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [notice, setNotice] = React.useState<string | null>(null);
   const [isError, setIsError] = React.useState(false);
   const [reconcilingId, setReconcilingId] = React.useState<string | null>(null);
   const [reconcileNotes, setReconcileNotes] = React.useState<string>("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // Term rate edit modal state
+  // Term editing & deadline extension modal state
   const [editingTerm, setEditingTerm] = React.useState<AdminTermRecord | null>(null);
   const [editAmountDollars, setEditAmountDollars] = React.useState<string>("");
+  const [editOpensAt, setEditOpensAt] = React.useState<string>("");
+  const [editClosesAt, setEditClosesAt] = React.useState<string>("");
+
+  // New Term Modal State
+  const [isCreatingTerm, setIsCreatingTerm] = React.useState(false);
+  const [newTermYear, setNewTermYear] = React.useState<number>(new Date().getFullYear() + 1);
+  const [newTermDollars, setNewTermDollars] = React.useState<string>("25.00");
+  const [newTermOpensAt, setNewTermOpensAt] = React.useState<string>(
+    `${new Date().getFullYear() + 1}-01-01T00:00`,
+  );
+  const [newTermClosesAt, setNewTermClosesAt] = React.useState<string>(
+    `${new Date().getFullYear() + 1}-10-31T23:59`,
+  );
 
   React.useEffect(() => {
     setRecords(initialRecords);
@@ -64,12 +84,30 @@ export function AdminDues({
   const handleOpenEditTerm = (term: AdminTermRecord) => {
     setEditingTerm(term);
     setEditAmountDollars((term.duesCents / 100).toFixed(2));
+    setEditOpensAt(formatDetroitDateTimeLocal(term.opensAt));
+    setEditClosesAt(formatDetroitDateTimeLocal(term.closesAt));
   };
 
-  const handleSaveTermRate = async (e: React.FormEvent) => {
+  const handleExtendClosesAt = (days: number) => {
+    if (!editClosesAt) return;
+    try {
+      const currentIso = parseDetroitDateTimeLocal(editClosesAt);
+      const newTime = new Date(new Date(currentIso).getTime() + days * 86400000);
+      setEditClosesAt(formatDetroitDateTimeLocal(newTime.toISOString()));
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleSetYearEndDeadline = () => {
+    if (!editingTerm) return;
+    setEditClosesAt(`${editingTerm.year}-12-31T23:59`);
+  };
+
+  const handleSaveTerm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTerm) return;
-    const parsedDollars = parseFloat(editAmountDollars);
+    const parsedDollars = Number.parseFloat(editAmountDollars);
     if (Number.isNaN(parsedDollars) || parsedDollars <= 0) {
       setIsError(true);
       setNotice("Please enter a valid dues amount.");
@@ -80,22 +118,85 @@ export function AdminDues({
     setIsSubmitting(true);
     setIsError(false);
     try {
-      const res = await updateDuesRateAction({
-        year: editingTerm.year,
+      const opensAtIso = parseDetroitDateTimeLocal(editOpensAt);
+      const closesAtIso = parseDetroitDateTimeLocal(editClosesAt);
+
+      const res = await updateMembershipTermAction({
+        termId: editingTerm.id,
         duesCents: cents,
+        opensAt: opensAtIso,
+        closesAt: closesAtIso,
       });
 
       if (res.success) {
         setTerms((prev) =>
-          prev.map((t) => (t.year === editingTerm.year ? { ...t, duesCents: cents } : t)),
+          prev.map((t) =>
+            t.id === editingTerm.id
+              ? {
+                  ...t,
+                  duesCents: cents,
+                  opensAt: opensAtIso,
+                  closesAt: closesAtIso,
+                }
+              : t,
+          ),
         );
         setNotice(
-          `Updated dues rate for term ${editingTerm.year} to $${parsedDollars.toFixed(2)}.`,
+          `Updated membership term for ${editingTerm.year}: $${parsedDollars.toFixed(2)}, deadline extended to ${closesAtIso.slice(0, 10)}.`,
         );
         setEditingTerm(null);
       } else {
         setIsError(true);
-        setNotice(`Failed to update dues rate: ${res.error}`);
+        setNotice(`Failed to update term: ${res.error}`);
+      }
+    } catch (err: unknown) {
+      setIsError(true);
+      setNotice(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateNewTerm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsedDollars = Number.parseFloat(newTermDollars);
+    if (Number.isNaN(parsedDollars) || parsedDollars <= 0) {
+      setIsError(true);
+      setNotice("Please enter a valid dues amount.");
+      return;
+    }
+    const cents = Math.round(parsedDollars * 100);
+
+    setIsSubmitting(true);
+    setIsError(false);
+    try {
+      const opensAtIso = parseDetroitDateTimeLocal(newTermOpensAt);
+      const closesAtIso = parseDetroitDateTimeLocal(newTermClosesAt);
+
+      const res = await createMembershipTermAction({
+        year: Number(newTermYear),
+        duesCents: cents,
+        opensAt: opensAtIso,
+        closesAt: closesAtIso,
+      });
+
+      if (res.success && res.data) {
+        const created = (res.data as Array<AdminTermRecord>)[0] || {
+          id: String(Date.now()),
+          year: Number(newTermYear),
+          duesCents: cents,
+          currency: "USD",
+          opensAt: opensAtIso,
+          closesAt: closesAtIso,
+        };
+        setTerms((prev) => [created, ...prev]);
+        setNotice(
+          `Created new membership term for ${newTermYear} at $${parsedDollars.toFixed(2)}.`,
+        );
+        setIsCreatingTerm(false);
+      } else {
+        setIsError(true);
+        setNotice(`Failed to create term: ${res.error}`);
       }
     } catch (err: unknown) {
       setIsError(true);
@@ -143,24 +244,39 @@ export function AdminDues({
   };
 
   const filteredRecords = React.useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return records.filter((r) => {
-      if (statusFilter === "pending") return r.status === "pending";
-      if (statusFilter === "confirmed") return r.status === "confirmed";
-      if (statusFilter === "closed") return r.status === "failed" || r.status === "refunded";
+      if (statusFilter === "pending" && r.status !== "pending") return false;
+      if (statusFilter === "confirmed" && r.status !== "confirmed") return false;
+      if (statusFilter === "closed" && r.status !== "failed" && r.status !== "refunded")
+        return false;
+
+      if (q) {
+        const matchName = r.memberName?.toLowerCase().includes(q);
+        const matchUser = r.memberUsername?.toLowerCase().includes(q);
+        const matchNotes = r.notes?.toLowerCase().includes(q);
+        const matchMethod = r.paymentMethod?.toLowerCase().includes(q);
+        if (!matchName && !matchUser && !matchNotes && !matchMethod) return false;
+      }
+
       return true;
     });
-  }, [records, statusFilter]);
+  }, [records, statusFilter, searchQuery]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl font-bold text-foreground">
-          Dues Reconciliation & Financials
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Reconcile incoming paper checks, audit electronic card payments, and track annual
-          membership dues.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl font-bold text-foreground">
+            Dues Reconciliation & Financials
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Reconcile incoming paper checks, audit electronic card payments, manage membership
+            terms, and extend payment deadlines.
+          </p>
+        </div>
+
+        <Button onClick={() => setIsCreatingTerm(true)}>+ New Term Year</Button>
       </div>
 
       {notice && (
@@ -195,7 +311,7 @@ export function AdminDues({
         </div>
         {activeTerm && (
           <Button size="sm" variant="outline" onClick={() => handleOpenEditTerm(activeTerm)}>
-            Edit Term Rate
+            Edit Term & Extend Deadline
           </Button>
         )}
       </div>
@@ -208,13 +324,13 @@ export function AdminDues({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {terms.map((t) => (
               <div
-                key={t.year}
+                key={t.id || t.year}
                 className="flex items-center justify-between p-3 rounded-lg border border-border bg-background"
               >
                 <div>
                   <span className="font-semibold text-sm text-foreground">Year {t.year}</span>
                   <p className="text-xs text-muted-foreground">
-                    ${(t.duesCents / 100).toFixed(2)} USD
+                    ${(t.duesCents / 100).toFixed(2)} USD • Closes: {t.closesAt.slice(0, 10)}
                   </p>
                 </div>
                 <Button
@@ -231,10 +347,10 @@ export function AdminDues({
         </div>
       )}
 
-      {/* Transactions Table */}
+      {/* Transactions Table & Filters */}
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <div className="p-4 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <span className="font-semibold text-sm">
               Dues Payment Journal ({filteredRecords.length} records)
             </span>
@@ -242,31 +358,44 @@ export function AdminDues({
               (Pending: {records.filter((r) => r.status === "pending").length})
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground mr-1">Status:</span>
-            {[
-              { id: "all", label: "All" },
-              { id: "pending", label: "Pending" },
-              { id: "confirmed", label: "Confirmed" },
-              { id: "closed", label: "Closed" },
-            ].map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setStatusFilter(f.id)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                  statusFilter === f.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {/* Search Input for check # and member name */}
+            <Input
+              type="text"
+              placeholder="Search member, username, check #..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="text-xs h-8 w-full sm:w-56"
+            />
+
+            {/* Status Tabs */}
+            <div className="flex items-center gap-1 text-xs">
+              {[
+                { id: "all", label: "All" },
+                { id: "pending", label: "Pending" },
+                { id: "confirmed", label: "Confirmed" },
+                { id: "closed", label: "Closed" },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setStatusFilter(f.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    statusFilter === f.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="p-4">Member</th>
@@ -274,14 +403,14 @@ export function AdminDues({
                 <th className="p-4">Amount</th>
                 <th className="p-4">Method</th>
                 <th className="p-4">Status</th>
-                <th className="p-4 text-right">Reconciliation</th>
+                <th className="p-4 text-right">Reconciliation & Check Info</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filteredRecords.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">
-                    No payment records found.
+                    No payment records match the current filter.
                   </td>
                 </tr>
               ) : (
@@ -326,7 +455,7 @@ export function AdminDues({
                                 placeholder="Check # or note..."
                                 value={reconcileNotes}
                                 onChange={(e) => setReconcileNotes(e.target.value)}
-                                className="rounded border border-input bg-background px-2 py-1 text-xs text-foreground w-36"
+                                className="rounded border border-input bg-background px-2 py-1 text-xs text-foreground w-40"
                               />
                               <Button
                                 size="sm"
@@ -362,7 +491,7 @@ export function AdminDues({
                         )
                       ) : r.status === "confirmed" ? (
                         <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-                          Reconciled
+                          Reconciled {r.notes ? `(${r.notes})` : ""}
                         </span>
                       ) : (
                         <span className="text-xs text-muted-foreground">Closed</span>
@@ -376,19 +505,19 @@ export function AdminDues({
         </div>
       </div>
 
-      {/* Edit Term Rate Modal */}
+      {/* Edit Term & Extend Deadline Modal */}
       {editingTerm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <h2 className="font-serif text-xl font-bold text-foreground">
-              Configure Dues Rate &bull; Year {editingTerm.year}
+              Configure Term &bull; Year {editingTerm.year}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Update the annual membership fee and grace period. Rates apply to new membership
-              applications and renewal dues.
+              Update dues amounts or extend reconciliation deadlines (`closes_at`). The active term
+              dictates eligibility and dues invoices.
             </p>
 
-            <form onSubmit={handleSaveTermRate} className="space-y-4 pt-2">
+            <form onSubmit={handleSaveTerm} className="space-y-4 pt-2">
               <div>
                 <label
                   htmlFor="edit-dues-amount"
@@ -408,12 +537,170 @@ export function AdminDues({
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="edit-opens-at"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Opens At (Detroit) *
+                  </label>
+                  <Input
+                    id="edit-opens-at"
+                    type="datetime-local"
+                    required
+                    value={editOpensAt}
+                    onChange={(e) => setEditOpensAt(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="edit-closes-at"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Closes At / Deadline (Detroit) *
+                  </label>
+                  <Input
+                    id="edit-closes-at"
+                    type="datetime-local"
+                    required
+                    value={editClosesAt}
+                    onChange={(e) => setEditClosesAt(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Deadline Extension Presets */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                  Quick Deadline Extension
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleExtendClosesAt(30)}
+                    className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:bg-muted transition-colors font-medium text-foreground"
+                  >
+                    +30 Days
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExtendClosesAt(60)}
+                    className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:bg-muted transition-colors font-medium text-foreground"
+                  >
+                    +60 Days
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSetYearEndDeadline}
+                    className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:bg-muted transition-colors font-medium text-foreground"
+                  >
+                    End of Year (Dec 31)
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-border">
                 <Button type="button" variant="outline" onClick={() => setEditingTerm(null)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  Save Dues Rate
+                  {isSubmitting ? "Saving..." : "Save Term Configuration"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create New Term Modal */}
+      {isCreatingTerm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="font-serif text-xl font-bold text-foreground">
+              Create New Membership Term
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Schedule upcoming annual dues cycles and define opening and reconciliation deadlines.
+            </p>
+
+            <form onSubmit={handleCreateNewTerm} className="space-y-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="new-term-year"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Term Year *
+                  </label>
+                  <Input
+                    id="new-term-year"
+                    type="number"
+                    min="2020"
+                    max="2040"
+                    required
+                    value={newTermYear}
+                    onChange={(e) => setNewTermYear(Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="new-term-amount"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Annual Dues Amount ($ USD) *
+                  </label>
+                  <Input
+                    id="new-term-amount"
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    required
+                    value={newTermDollars}
+                    onChange={(e) => setNewTermDollars(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="new-opens-at"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Opens At (Detroit) *
+                  </label>
+                  <Input
+                    id="new-opens-at"
+                    type="datetime-local"
+                    required
+                    value={newTermOpensAt}
+                    onChange={(e) => setNewTermOpensAt(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="new-closes-at"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Closes At / Deadline (Detroit) *
+                  </label>
+                  <Input
+                    id="new-closes-at"
+                    type="datetime-local"
+                    required
+                    value={newTermClosesAt}
+                    onChange={(e) => setNewTermClosesAt(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-border">
+                <Button type="button" variant="outline" onClick={() => setIsCreatingTerm(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Creating..." : "Create Term"}
                 </Button>
               </div>
             </form>

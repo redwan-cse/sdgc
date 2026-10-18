@@ -382,10 +382,24 @@ export function TicketsCheckout({ events }: TicketsCheckoutProps) {
             </div>
           </div>
 
+          {/* Mobile Order Summary Preview */}
+          <div className="block lg:hidden rounded-xl border border-border bg-muted/40 p-4 space-y-2 text-sm shadow-2xs">
+            <div className="flex justify-between items-center font-semibold">
+              <span className="text-foreground truncate max-w-[220px]">{selectedEvent?.title}</span>
+              <span className="text-primary font-bold text-base">${totalPrice.toFixed(2)} USD</span>
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>
+                {quantity} admission{quantity > 1 ? "s" : ""} &bull; ${unitPrice.toFixed(2)} each
+              </span>
+              <span>Advance Simulation</span>
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-xl bg-primary px-6 py-3.5 font-serif text-base font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="w-full rounded-xl bg-primary px-6 py-3.5 font-serif text-base font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting
               ? "Confirming Order..."
@@ -394,7 +408,7 @@ export function TicketsCheckout({ events }: TicketsCheckoutProps) {
         </form>
 
         {/* Order Summary Column */}
-        <div className="lg:col-span-5 rounded-2xl border border-border bg-card p-6 space-y-6 shadow-sm">
+        <div className="lg:col-span-5 lg:sticky lg:top-24 rounded-2xl border border-border bg-card p-6 space-y-6 shadow-sm">
           <h3 className="font-serif text-xl font-bold text-foreground">Order Summary</h3>
 
           {selectedEvent && (

@@ -73,9 +73,9 @@ test.describe("Public Site Navigation & Experiences", () => {
     );
 
     // Open an event detail
-    await page.goto("/event/2026-garden-walk-fundraiser");
+    await page.goto("/event/47th-annual-garden-walk-fundraiser");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Garden Walk Fundraiser/);
-    await expect(page.getByText("Saugatuck Woman's Club")).toBeVisible();
+    await expect(page.getByText("Old School House Douglas")).toBeVisible();
   });
 
   test("gallery view opens and navigates keyboard lightbox", async ({ page }) => {

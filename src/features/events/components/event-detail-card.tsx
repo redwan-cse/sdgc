@@ -1,8 +1,10 @@
+import Image from "next/image";
 import type { Route } from "next";
 import Link from "next/link";
 import { formatEventDate, formatEventTime } from "../calendar";
 import type { EventSummary } from "../types";
 import { Badge } from "@/components/ui/badge";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 
 interface EventDetailCardProps {
   event: EventSummary;
@@ -38,6 +40,18 @@ export function EventDetailCard({ event, prevEvent, nextEvent }: EventDetailCard
             Club Timezone: <span className="font-semibold">{event.timezone}</span>
           </div>
         </div>
+
+        {event.featuredImage && (
+          <div className="relative mt-6 aspect-video max-h-80 w-full overflow-hidden rounded-xl border border-border bg-muted shadow-xs">
+            <Image
+              src={event.featuredImage}
+              alt={event.title}
+              fill
+              sizes="(max-width: 768px) 100vw, 800px"
+              className="object-cover"
+            />
+          </div>
+        )}
 
         <h1 className="mt-6 font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
           {event.title}
@@ -107,8 +121,8 @@ export function EventDetailCard({ event, prevEvent, nextEvent }: EventDetailCard
         </div>
 
         {/* Description Body */}
-        <div className="mt-8 prose prose-neutral max-w-none text-foreground leading-relaxed">
-          <p className="text-base sm:text-lg text-muted-foreground">{event.description}</p>
+        <div className="mt-8 border-t border-border pt-6">
+          <MarkdownContent content={event.description} />
         </div>
 
         {/* Ticket / Action Section */}

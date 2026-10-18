@@ -1,4 +1,5 @@
 import { ContactForm } from "@/features/contact/components/contact-form";
+import { getSiteContactSettings } from "@/features/content/queries";
 
 export const metadata = {
   title: "Contact Us",
@@ -6,7 +7,9 @@ export const metadata = {
     "Send a message to Saugatuck Douglas Garden Club leadership regarding membership, Garden Walk tickets, or community plantings.",
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const contact = await getSiteContactSettings();
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8 space-y-10">
       <div className="text-center space-y-3">
@@ -25,13 +28,38 @@ export default function ContactPage() {
           <div>
             <h3 className="font-serif text-lg font-bold text-foreground">Mailing Address</h3>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Saugatuck Douglas Garden Club
+              {contact.name}
               <br />
-              P.O. Box 1011
+              {contact.address}
               <br />
-              Douglas, MI 49406
+              {contact.city}, {contact.state} {contact.postalCode}
             </p>
+            {contact.phone && (
+              <p className="text-xs text-muted-foreground mt-2">
+                <span className="font-semibold text-foreground">Phone: </span>
+                <a href={`tel:${contact.phone}`} className="text-primary hover:underline">
+                  {contact.phone}
+                </a>
+              </p>
+            )}
+            {contact.email && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="font-semibold text-foreground">Email: </span>
+                <a href={`mailto:${contact.email}`} className="text-primary hover:underline">
+                  {contact.email}
+                </a>
+              </p>
+            )}
           </div>
+
+          {contact.meetingLocation && (
+            <div>
+              <h3 className="font-serif text-lg font-bold text-foreground">Meeting Location</h3>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                {contact.meetingLocation}
+              </p>
+            </div>
+          )}
 
           <div>
             <h3 className="font-serif text-lg font-bold text-foreground">Connect Online</h3>
@@ -39,18 +67,34 @@ export default function ContactPage() {
               Follow our community garden updates, blooming highlights, and volunteer workbee
               announcements:
             </p>
-            <a
-              href="https://www.facebook.com/profile.php?id=100064728277239"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center space-x-1 text-xs text-primary font-semibold hover:underline mt-2"
-            >
-              <span>Facebook Page &rarr;</span>
-            </a>
+            <div className="flex flex-col gap-1.5 mt-2">
+              {contact.facebookUrl && (
+                <a
+                  href={contact.facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-1 text-xs text-primary font-semibold hover:underline"
+                >
+                  <span>Facebook Page &rarr;</span>
+                </a>
+              )}
+              {contact.instagramUrl && (
+                <a
+                  href={contact.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-1 text-xs text-primary font-semibold hover:underline"
+                >
+                  <span>Instagram &rarr;</span>
+                </a>
+              )}
+            </div>
           </div>
 
           <div className="border-t border-border pt-4 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">501(c)(3) Nonprofit</p>
+            <p className="font-medium text-foreground">
+              {contact.taxExemptNotice || "501(c)(3) Nonprofit"}
+            </p>
             <p className="mt-1">
               All donations and Garden Walk ticket proceeds support community beautification and
               youth horticultural scholarships.

@@ -10,7 +10,8 @@ interface AdminOverviewProps {
 export function AdminOverview({ metrics }: AdminOverviewProps) {
   const stats = [
     {
-      label: "Active Members (Current Term)",
+      label: "Active Members",
+      sublabel: "Current Term",
       value: metrics ? String(metrics.totalMembers) : "—",
       href: "/admin/members?status=approved",
     },
@@ -49,17 +50,28 @@ export function AdminOverview({ metrics }: AdminOverviewProps) {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {stats.map((stat) => (
           <Link
             key={stat.label}
             href={stat.href as Route}
-            className="rounded-xl border border-border bg-card p-4 shadow-xs hover:border-primary/50 transition-colors"
+            className="flex flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-xs hover:border-primary/50 transition-colors"
           >
-            <span className="text-xs text-muted-foreground block truncate">{stat.label}</span>
-            <div className="mt-2 flex items-baseline justify-between">
+            <div className="flex items-center justify-between gap-1.5 min-h-[22px]">
+              <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
+              {stat.alert && (
+                <Badge variant="warning" className="shrink-0 text-[10px] px-1.5 py-0.5">
+                  Action Needed
+                </Badge>
+              )}
+            </div>
+            <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-bold text-foreground">{stat.value}</span>
-              {stat.alert && <Badge variant="warning">Action Needed</Badge>}
+              {stat.sublabel && (
+                <span className="text-[11px] text-muted-foreground font-medium">
+                  ({stat.sublabel})
+                </span>
+              )}
             </div>
           </Link>
         ))}

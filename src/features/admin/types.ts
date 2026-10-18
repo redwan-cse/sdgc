@@ -75,6 +75,8 @@ export interface AdminVenueRecord {
   address?: string;
   city?: string;
   state?: string;
+  postalCode?: string;
+  url?: string;
 }
 
 export interface AdminEventRecord {
@@ -88,6 +90,7 @@ export interface AdminEventRecord {
   venueName?: string;
   venueId?: string;
   description?: string;
+  featuredImage?: string | null;
 }
 
 export interface AdminPageRecord {

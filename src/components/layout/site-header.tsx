@@ -92,7 +92,7 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex items-center space-x-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex items-center space-x-2 sm:space-x-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
         >
           <Image
             src="/images/brand/sdgc-logo.jpg"
@@ -100,13 +100,13 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
             width={56}
             height={56}
             priority
-            className="h-12 w-12 rounded-full object-cover shadow-xs border border-border"
+            className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover shadow-xs border border-border"
           />
           <div className="flex flex-col">
-            <span className="font-serif text-lg font-bold leading-tight text-primary sm:text-xl">
+            <span className="font-serif text-base font-bold leading-tight text-primary sm:text-xl">
               Saugatuck Douglas
             </span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Garden Club
             </span>
           </div>
@@ -114,7 +114,7 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
 
         {/* Desktop Navigation */}
         <nav
-          className="hidden md:flex items-center space-x-0.5 lg:space-x-2"
+          className="hidden lg:flex items-center space-x-1 lg:space-x-1.5 xl:space-x-2 shrink-0"
           aria-label="Main Site Navigation"
         >
           {NAV_LINKS.map((link) => {
@@ -124,7 +124,7 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
                 key={link.href}
                 href={link.href as Route}
                 aria-current={isActive ? "page" : undefined}
-                className={`rounded-md px-2.5 py-1.5 text-xs lg:px-3 lg:py-2 lg:text-sm font-medium transition-colors ${
+                className={`rounded-md px-2.5 py-1.5 text-xs lg:px-3 lg:py-2 lg:text-sm font-medium transition-colors whitespace-nowrap ${
                   isActive
                     ? "bg-primary/10 text-primary font-semibold"
                     : "text-foreground hover:bg-muted"
@@ -137,28 +137,28 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
         </nav>
 
         {/* Desktop Member / Admin quick actions */}
-        <div className="hidden md:flex items-center space-x-1.5 lg:space-x-2 border-l border-border pl-3 lg:pl-4">
+        <div className="hidden lg:flex items-center space-x-1.5 lg:space-x-2 border-l border-border pl-2 sm:pl-3 lg:pl-4 shrink-0">
           <ThemeToggle />
           {currentUser ? (
             <div className="flex items-center space-x-1.5 lg:space-x-2">
               {currentUser.isStaff && (
                 <Link
                   href="/admin"
-                  className="rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors"
+                  className="rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors whitespace-nowrap"
                 >
                   Admin
                 </Link>
               )}
               <Link
                 href="/profile"
-                className="rounded-md px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors"
+                className="rounded-md px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors whitespace-nowrap"
               >
                 Profile
               </Link>
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  className="rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer whitespace-nowrap"
                 >
                   Sign Out
                 </button>
@@ -168,7 +168,7 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
             <div className="flex items-center space-x-1.5 lg:space-x-2">
               <Link
                 href="/login"
-                className="rounded-md px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors"
+                className="rounded-md px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors whitespace-nowrap"
               >
                 Login
               </Link>
@@ -183,7 +183,7 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
         </div>
 
         {/* Mobile menu button and theme toggle */}
-        <div className="flex md:hidden items-center space-x-2">
+        <div className="flex lg:hidden items-center space-x-2">
           <ThemeToggle />
           <button
             ref={toggleRef}

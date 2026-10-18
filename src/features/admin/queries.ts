@@ -209,6 +209,7 @@ export async function getAdminEvents(): Promise<AdminEventRecord[]> {
       status,
       description,
       venue_id,
+      featured_image,
       venues (
         name
       )
@@ -231,6 +232,7 @@ export async function getAdminEvents(): Promise<AdminEventRecord[]> {
     venueName: e.venues?.name ?? undefined,
     venueId: e.venue_id ?? undefined,
     description: e.description,
+    featuredImage: e.featured_image ?? undefined,
   }));
 }
 
@@ -314,7 +316,7 @@ export async function getAdminVenues(): Promise<import("./types").AdminVenueReco
   const supabase = await createClient();
   const { data: venues } = await supabase
     .from("venues")
-    .select("id, name, address, city, state")
+    .select("id, name, address, city, state, postal_code, url")
     .order("name", { ascending: true });
 
   return (venues ?? []).map((v) => ({
@@ -323,5 +325,7 @@ export async function getAdminVenues(): Promise<import("./types").AdminVenueReco
     address: v.address ?? undefined,
     city: v.city ?? undefined,
     state: v.state ?? undefined,
+    postalCode: v.postal_code ?? undefined,
+    url: v.url ?? undefined,
   }));
 }

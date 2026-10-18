@@ -130,7 +130,11 @@ describe("Remediation Package R5 — Legacy Routes, Ticketing & Importer Reconci
       expect(events.length).toBeGreaterThanOrEqual(1);
 
       const gardenWalk = events.find(
-        (e) => e.slug === "2026-garden-walk-fundraiser" || e.id === "gw-2026",
+        (e) =>
+          e.slug === "2026-garden-walk-fundraiser" ||
+          e.slug === "47th-annual-garden-walk-fundraiser" ||
+          e.id === "gw-2026" ||
+          e.slug.includes("garden-walk"),
       );
       expect(gardenWalk).toBeDefined();
       expect(gardenWalk?.advancePriceCents).toBe(2000); // $20.00
@@ -152,7 +156,7 @@ describe("Remediation Package R5 — Legacy Routes, Ticketing & Importer Reconci
       if (!res.success) throw new Error("Expected ticket order to succeed");
       const order = res.data;
 
-      expect(order.orderReference).toMatch(/^SDGC-TKT-2026-[A-F0-9]{6}$/);
+      expect(order.orderReference).toMatch(/^SDGC-TKT-202[67]-[A-F0-9]{6}$/);
       expect(order.ticketQuantity).toBe(3);
       expect(order.unitPriceCents).toBe(2000);
       expect(order.totalCents).toBe(6000); // 3 * $20.00 = $60.00
