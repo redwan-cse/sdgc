@@ -1,4 +1,4 @@
-import { AdminShell } from "@/features/admin/components/admin-shell";
+﻿import { AdminShell } from "@/features/admin/components/admin-shell";
 import { requireUser } from "@/features/auth/authorization";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -20,7 +20,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq("user_id", user.id);
 
   const roles = (userRoles || []).map((r) => r.role);
-  if (roles.length === 0) {
+  const isStaff = roles.some((r) => ["admin", "editor", "treasurer"].includes(r));
+  if (!isStaff) {
     redirect("/profile?error=unauthorized");
   }
 

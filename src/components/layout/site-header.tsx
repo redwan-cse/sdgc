@@ -74,9 +74,8 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
     ? currentUser.isStaff
       ? [
           { href: "/admin", label: "Admin Dashboard" },
-          { href: "/profile", label: "My Profile" },
-          { href: "/directory", label: "Directory" },
-          { href: "/membership", label: "Annual Dues" },
+          { href: "/admin/settings/profile", label: "Admin Profile" },
+          { href: "/admin/settings/security", label: "Security & MFA" },
         ]
       : [
           { href: "/profile", label: "My Profile" },
@@ -144,20 +143,29 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
           <ThemeToggle />
           {currentUser ? (
             <div className="flex items-center gap-2">
-              {currentUser.isStaff && (
+              {currentUser.isStaff ? (
+                <>
+                  <Link
+                    href="/admin"
+                    className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 whitespace-nowrap"
+                  >
+                    Admin
+                  </Link>
+                  <Link
+                    href="/admin/settings/profile"
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-border/80 bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted whitespace-nowrap"
+                  >
+                    Profile
+                  </Link>
+                </>
+              ) : (
                 <Link
-                  href="/admin"
-                  className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 whitespace-nowrap"
+                  href="/profile"
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-border/80 bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted whitespace-nowrap"
                 >
-                  Admin
+                  Profile
                 </Link>
               )}
-              <Link
-                href="/profile"
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-border/80 bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted whitespace-nowrap"
-              >
-                Profile
-              </Link>
               <form action={logoutAction} className="inline-flex">
                 <button
                   type="submit"

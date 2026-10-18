@@ -129,10 +129,15 @@ export function MemberShell({ children, userEmail, isStaff = false }: MemberShel
   const memberGroups: NavGroup[] = [
     {
       title: "MY ACCOUNT",
-      items: [
-        { href: "/profile", label: "My Profile", icon: UserIcon },
-        { href: "/dues", label: "Annual Dues", icon: CreditCardIcon },
-      ],
+      items: isStaff
+        ? [
+            { href: "/admin/settings/profile", label: "Admin Profile", icon: UserIcon },
+            { href: "/admin/settings/security", label: "Security & MFA", icon: UserIcon },
+          ]
+        : [
+            { href: "/profile", label: "My Profile", icon: UserIcon },
+            { href: "/dues", label: "Annual Dues", icon: CreditCardIcon },
+          ],
     },
     {
       title: "COMMUNITY",
@@ -215,7 +220,7 @@ export function MemberShell({ children, userEmail, isStaff = false }: MemberShel
               className="flex items-center justify-between rounded-md px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <span>Admin Workspace</span>
-              <span className="text-xs">→</span>
+              <span className="text-xs">&rarr;</span>
             </Link>
           )}
           <Link
@@ -223,7 +228,7 @@ export function MemberShell({ children, userEmail, isStaff = false }: MemberShel
             className="flex items-center justify-between rounded-md px-3 py-2 text-primary font-medium hover:bg-primary/5 transition-colors"
           >
             <span>View public site</span>
-            <span className="text-xs">↗</span>
+            <span className="text-xs">&rarr;</span>
           </Link>
         </div>
       </aside>
