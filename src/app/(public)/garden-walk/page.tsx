@@ -2,12 +2,13 @@ import Link from "next/link";
 import type { Route } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { formatEventDateTime } from "@/features/events/calendar";
 import { getGardenWalkPageContent } from "@/features/content/queries";
 
 export const metadata = {
   title: "Annual Garden Walk",
   description:
-    "Explore the 2026 Saugatuck Douglas Garden Walk: tour exquisite private gardens and support local community beautification and scholarships.",
+    "Explore the Saugatuck Douglas Garden Walk: tour exquisite private coastal gardens and support local community beautification and scholarships.",
 };
 
 const FEATURED_GARDEN_WALK_PHOTOS = [
@@ -67,6 +68,14 @@ export default async function GardenWalkPage() {
     notFound();
   }
 
+  const event = walk.event;
+  const eventTitle = event?.title || "Annual Garden Walk Fundraiser Tour";
+  const eventDateStr = event
+    ? formatEventDateTime(event.startsAt)
+    : "Saturday, July 10, 2027 • 10:00 AM – 4:00 PM";
+  const eventSlug = event?.slug || "2027-47th-annual-garden-walk";
+  const ticketUrl = (event?.ticketUrl || "/tickets-checkout") as Route;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-12">
       <div className="space-y-4 text-center max-w-3xl mx-auto">
@@ -82,38 +91,39 @@ export default async function GardenWalkPage() {
         <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-8">
           <div className="space-y-4 max-w-2xl">
             <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-              Saturday, July 11, 2026 &bull; 10:00 AM – 4:00 PM
+              {eventDateStr}
             </span>
-            <h2 className="font-serif text-3xl font-bold text-foreground">
-              2026 Garden Walk Fundraiser Tour
-            </h2>
+            <h2 className="font-serif text-3xl font-bold text-foreground">{eventTitle}</h2>
             <div className="space-y-3 text-muted-foreground text-sm sm:text-base leading-relaxed">
-              <p>
-                Join garden lovers from throughout southwest Michigan and beyond for our signature
-                self-guided tour of six exceptional private garden retreats in Saugatuck and
-                Douglas.
-              </p>
+              {event?.description ? (
+                <p>{event.description}</p>
+              ) : (
+                <p>
+                  Join garden lovers from throughout southwest Michigan and beyond for our signature
+                  self-guided tour of exceptional private garden retreats in Saugatuck and Douglas.
+                </p>
+              )}
               <p>
                 From blooming historic cottage perennials and native pollinator sanctuaries to
-                peaceful woodland trails and creative waterscapes, this year&apos;s tour features
-                inspiring horticultural variety.
+                peaceful woodland trails and creative waterscapes, our tour features inspiring
+                horticultural variety and coastal charm.
               </p>
               <p className="font-medium text-foreground">
                 Advance tickets: $20 &bull; Day of tour: $25. All proceeds fund club civic
-                beautification projects and student scholarships.
+                beautification projects and local student scholarships.
               </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row lg:flex-col shrink-0">
             <Link
-              href={"/tickets-checkout" as Route}
+              href={ticketUrl}
               className="rounded-xl bg-primary px-8 py-4 text-center font-serif text-lg font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
             >
               Get Garden Walk Tickets &rarr;
             </Link>
             <Link
-              href="/event/2026-garden-walk-fundraiser"
+              href={`/event/${eventSlug}`}
               className="rounded-xl border border-border bg-card px-8 py-3 text-center text-sm font-semibold text-foreground hover:bg-muted transition-colors"
             >
               Tour Route & Details

@@ -87,6 +87,7 @@ export interface AdminPageRecord {
   slug: string;
   title: string;
   subtitle?: string;
+  content?: string;
   status: "published" | "draft";
   updatedAt: string;
 }

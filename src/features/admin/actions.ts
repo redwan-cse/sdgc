@@ -185,21 +185,31 @@ export async function updatePageAction(
   input: {
     title: string;
     subtitle?: string;
+    content?: string;
     status: "published" | "draft";
   },
 ): Promise<ActionResult> {
   const user = await requireCapability("content.manage");
   const supabase = await createClient();
 
-  const { error } = await supabase
-    .from("pages")
-    .update({
-      title: input.title,
-      meta_description: input.subtitle || null,
-      status: input.status,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("slug", slug);
+  const updateData: {
+    title: string;
+    meta_description: string | null;
+    status: "published" | "draft";
+    updated_at: string;
+    content?: string;
+  } = {
+    title: input.title,
+    meta_description: input.subtitle || null,
+    status: input.status,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.content !== undefined) {
+    updateData.content = input.content;
+  }
+
+  const { error } = await supabase.from("pages").update(updateData).eq("slug", slug);
 
   if (error) {
     return { success: false, error: error.message };

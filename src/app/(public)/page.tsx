@@ -39,7 +39,7 @@ export default async function HomePage() {
             />
             <div className="text-center lg:text-left space-y-4">
               <span className="inline-block rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                Growing Together Since 1980
+                Growing Together Since 1928
               </span>
               <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-primary">
                 {homeData.title || siteConfig.name}
@@ -58,7 +58,7 @@ export default async function HomePage() {
                   href="/garden-walk"
                   className="rounded-lg border border-border bg-background px-6 py-3 text-sm font-semibold text-foreground hover:bg-muted transition-colors shadow-2xs"
                 >
-                  2026 Garden Walk
+                  Annual Garden Walk
                 </Link>
                 <Link
                   href="/events"
@@ -153,8 +153,8 @@ export default async function HomePage() {
                 Youth Workshops & Grants
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                6th-grade gardening workshops, high school botanical scholarships, and community
-                educational grants.
+                6th-grade gardening workshops, local graduating senior college scholarships, and
+                community educational grants.
               </p>
             </div>
 

@@ -203,7 +203,23 @@ export function TicketsCheckout({ events }: TicketsCheckoutProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl py-8 px-4 space-y-8">
+    <div className="space-y-8">
+      {/* Simulation Warning Banner */}
+      <div
+        className="rounded-2xl border-2 border-amber-500/40 bg-amber-500/10 p-5 text-sm space-y-1.5 shadow-xs"
+        role="alert"
+      >
+        <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
+          SIMULATION NOTICE — NO PAYMENT COLLECTED
+        </div>
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          Advance ticket orders on this preview instance operate in local simulation mode. No real
+          financial charges will occur, and passes generated here are not valid for official event
+          admission.
+        </p>
+      </div>
+
       {/* Title & Simulation Notice */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">

@@ -20,6 +20,7 @@ export function AdminContent({ initialPages }: AdminContentProps) {
   const [editingPage, setEditingPage] = React.useState<AdminPageRecord | null>(null);
   const [editTitle, setEditTitle] = React.useState("");
   const [editSubtitle, setEditSubtitle] = React.useState("");
+  const [editContent, setEditContent] = React.useState("");
   const [editStatus, setEditStatus] = React.useState<"published" | "draft">("published");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -31,6 +32,7 @@ export function AdminContent({ initialPages }: AdminContentProps) {
     setEditingPage(p);
     setEditTitle(p.title);
     setEditSubtitle(p.subtitle || "");
+    setEditContent(p.content || "");
     setEditStatus(p.status);
   };
 
@@ -44,6 +46,7 @@ export function AdminContent({ initialPages }: AdminContentProps) {
       const res = await updatePageAction(editingPage.slug, {
         title: editTitle.trim(),
         subtitle: editSubtitle.trim() || undefined,
+        content: editContent.trim(),
         status: editStatus,
       });
 
@@ -55,6 +58,7 @@ export function AdminContent({ initialPages }: AdminContentProps) {
                   ...p,
                   title: editTitle.trim(),
                   subtitle: editSubtitle.trim() || undefined,
+                  content: editContent.trim(),
                   status: editStatus,
                   updatedAt: new Date().toISOString(),
                 }
@@ -157,7 +161,7 @@ export function AdminContent({ initialPages }: AdminContentProps) {
       {/* Page Edit Modal */}
       {editingPage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4">
+          <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <h2 className="font-serif text-xl font-bold text-foreground">
               Edit Page: {editingPage.slug}
             </h2>
@@ -186,10 +190,27 @@ export function AdminContent({ initialPages }: AdminContentProps) {
                 </label>
                 <textarea
                   id="edit-page-subtitle"
-                  rows={3}
+                  rows={2}
                   value={editSubtitle}
                   onChange={(e) => setEditSubtitle(e.target.value)}
                   className="w-full rounded-md border border-input bg-background p-3 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-page-content"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                >
+                  Page Body Content (Markdown & Tour Paragraphs)
+                </label>
+                <textarea
+                  id="edit-page-content"
+                  rows={5}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  placeholder="Enter detailed page content, civic project updates, or tour instructions..."
+                  className="w-full rounded-md border border-input bg-background p-3 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none font-sans"
                 />
               </div>
 

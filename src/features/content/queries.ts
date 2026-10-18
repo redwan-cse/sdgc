@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { CLUB_TIMEZONE } from "@/features/events/calendar";
+import type { EventSummary } from "@/features/events/types";
 import type { PageContent } from "./types";
 
 export async function getAboutPageContent(): Promise<PageContent | null> {
@@ -19,14 +21,14 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
     title: data.title || "About Our Club",
     subtitle:
       data.meta_description ||
-      "Civic beautification, education, scholarships, and friendship since 1980 across Saugatuck and Douglas, Michigan.",
+      "Civic beautification, education, scholarships, and friendship since 1928 across Saugatuck and Douglas, Michigan.",
     sections: [
       {
         id: "our-story",
         heading: "Our Story & Purpose",
         body: [
           data.content ||
-            "For more than four decades, the Saugatuck Douglas Garden Club has united plant lovers, Master Gardeners, and community volunteers dedicated to enhancing our shared public spaces.",
+            "For nearly a century, since 1928, the Saugatuck Douglas Garden Club has united plant lovers, Master Gardeners, and community volunteers dedicated to enhancing our shared public spaces.",
           "We operate as an active 501(c)(3) nonprofit organization welcoming gardeners of all experience levels to foster horticultural education and civic pride.",
         ],
         image: "/images/content/executive-committee.jpeg",
@@ -69,7 +71,7 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
         id: "annual-programs",
         heading: "Annual Programs & Scholarships",
         body: [
-          "High School Scholarships: Our highest fundraising priority. Since 2023, the club awards two $3,000 annual scholarships to local graduating high school seniors pursuing degrees in horticulture, environmental science, botany, or landscape architecture.",
+          "High School Scholarships: Our highest fundraising priority. Since 2023, the club awards two $3,000 annual scholarships to local graduating high school seniors pursuing higher education at accredited colleges or universities.",
           "6th Grade Holiday Workshop: In winter, students create fresh evergreen centerpieces — taking one home and delivering the second to residents at Grace of Douglas and Golden Orchards nursing facilities.",
           "Charitable Outreach: Our annual Christmas drive provides holiday gifts for families through Christian Neighbors, returning 98% of funding back into Allegan County.",
           "Welcome Back Tea & Spring Programs: Monthly educational lectures, guest speakers, demonstrations, and Arbor Day swags keep our community engaged throughout the gardening year.",
@@ -111,7 +113,7 @@ export async function getHomePageContent(): Promise<PageContent | null> {
         body: data.content
           ? [data.content]
           : [
-              "For more than 40 years, the Saugatuck Douglas Garden Club has planned, planted, and maintained vibrant public floral displays throughout Saugatuck and Douglas, Michigan.",
+              "For nearly a century since 1928, the Saugatuck Douglas Garden Club has planned, planted, and maintained vibrant public floral displays throughout Saugatuck and Douglas, Michigan.",
               "Our dedicated volunteer members cultivate sidewalk pots, corner bump-outs, civic plazas, and library gardens that welcome residents and visitors across the lakeshore.",
             ],
         callToAction: {
@@ -124,7 +126,7 @@ export async function getHomePageContent(): Promise<PageContent | null> {
         heading: "The Annual Garden Walk Fundraiser",
         body: [
           "Every summer, our signature Garden Walk invites the public to tour exquisite private sanctuaries and innovative coastal gardens throughout our historic twin cities.",
-          "Proceeds directly fund academic scholarships for Allegan County high school seniors studying horticulture, botany, conservation, and landscape architecture.",
+          "Proceeds directly fund academic scholarships for local Allegan County graduating high school seniors and community beautification plantings.",
         ],
         callToAction: {
           label: "Discover the Garden Walk",
@@ -148,12 +150,114 @@ export async function getGardenWalkPageContent(): Promise<PageContent | null> {
     return null;
   }
 
+  // Look for the active / upcoming Garden Walk event
+  const nowIso = new Date().toISOString();
+  let { data: eventData } = await supabase
+    .from("events")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      description,
+      starts_at,
+      ends_at,
+      timezone,
+      all_day,
+      status,
+      category,
+      ticket_url,
+      venues (
+        name,
+        address,
+        city,
+        state,
+        postal_code
+      )
+    `,
+    )
+    .or("category.eq.Garden Walk,slug.ilike.%garden-walk%")
+    .eq("status", "published")
+    .gte("ends_at", nowIso)
+    .order("starts_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!eventData) {
+    const { data: recentEvent } = await supabase
+      .from("events")
+      .select(
+        `
+        id,
+        slug,
+        title,
+        description,
+        starts_at,
+        ends_at,
+        timezone,
+        all_day,
+        status,
+        category,
+        ticket_url,
+        venues (
+          name,
+          address,
+          city,
+          state,
+          postal_code
+        )
+      `,
+      )
+      .or("category.eq.Garden Walk,slug.ilike.%garden-walk%")
+      .eq("status", "published")
+      .order("starts_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    eventData = recentEvent;
+  }
+
+  let eventSummary: EventSummary | undefined;
+  if (eventData) {
+    const venue = eventData.venues as {
+      name: string;
+      address: string | null;
+      city: string | null;
+      state: string | null;
+      postal_code: string | null;
+    } | null;
+    const fullAddress = venue
+      ? [venue.address, venue.city, venue.state, venue.postal_code].filter(Boolean).join(", ")
+      : undefined;
+
+    const startsDate = new Date(eventData.starts_at);
+    const endsDate = eventData.ends_at ? new Date(eventData.ends_at) : startsDate;
+    const now = new Date();
+
+    eventSummary = {
+      id: eventData.id,
+      slug: eventData.slug,
+      title: eventData.title,
+      description: eventData.description || "",
+      startsAt: eventData.starts_at,
+      endsAt: eventData.ends_at,
+      timezone: eventData.timezone || CLUB_TIMEZONE,
+      allDay: Boolean(eventData.all_day),
+      category: eventData.category || "Garden Walk",
+      venueName: venue?.name || "Old School House Douglas",
+      venueAddress: fullAddress,
+      ticketUrl: eventData.ticket_url || undefined,
+      isPast: endsDate < now,
+    };
+  }
+
   return {
     slug: "garden-walk",
     title: data.title || "Annual Garden Walk",
     subtitle:
       data.meta_description ||
       "Explore the annual Saugatuck Douglas Garden Walk: tour exquisite private gardens and support local community beautification and scholarships.",
+    event: eventSummary,
     sections: [
       {
         id: "tour-details",

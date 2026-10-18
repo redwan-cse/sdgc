@@ -20,7 +20,7 @@ export default async function AboutPage() {
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-12">
       <div className="space-y-4 text-center max-w-3xl mx-auto">
         <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-          Dedicated Since 1980
+          Dedicated Since 1928
         </span>
         <h1 className="font-serif text-4xl sm:text-5xl font-bold text-foreground">{about.title}</h1>
         <p className="text-lg text-muted-foreground leading-relaxed">{about.subtitle}</p>

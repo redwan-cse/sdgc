@@ -36,7 +36,9 @@ export async function getTicketEvents(): Promise<TicketEvent[]> {
     const supabase = await createClient();
     const { data } = await supabase
       .from("events")
-      .select("id, slug, title, starts_at, description, ticket_url, venues(name, city, state)")
+      .select(
+        "id, slug, title, starts_at, ends_at, description, ticket_url, venues(name, city, state)",
+      )
       .not("ticket_url", "is", null)
       .eq("status", "published")
       .order("starts_at", { ascending: true });
@@ -114,8 +116,11 @@ export async function processTicketOrderAction(
     };
   }
 
+  const yearMatch =
+    selectedEvent.slug.match(/\b(20\d\d)\b/) || selectedEvent.date.match(/\b(20\d\d)\b/);
+  const eventYear = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
   const orderSuffix = crypto.randomBytes(3).toString("hex").toUpperCase();
-  const orderReference = `SDGC-TKT-2026-${orderSuffix}`;
+  const orderReference = `SDGC-TKT-${eventYear}-${orderSuffix}`;
   const totalCents = input.quantity * selectedEvent.advancePriceCents;
 
   const order: TicketOrder = {

@@ -213,7 +213,7 @@ export async function getAdminPages(): Promise<AdminPageRecord[]> {
 
   const { data: pages, error } = await supabase
     .from("pages")
-    .select("id, slug, title, meta_description, status, updated_at")
+    .select("id, slug, title, content, meta_description, status, updated_at")
     .order("title", { ascending: true });
 
   if (error || !pages) {
@@ -225,6 +225,7 @@ export async function getAdminPages(): Promise<AdminPageRecord[]> {
     slug: p.slug,
     title: p.title,
     subtitle: p.meta_description ?? undefined,
+    content: p.content ?? undefined,
     status: p.status as "published" | "draft",
     updatedAt: p.updated_at,
   }));
