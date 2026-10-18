@@ -1,3 +1,4 @@
+import { getDetroitMonthBounds } from "@/features/events/calendar";
 import { getMembershipYear } from "@/features/membership/rules";
 import { EventMonthView } from "@/features/events/components/event-month-view";
 import { EventViewSelector } from "@/features/events/components/event-view-selector";
@@ -14,6 +15,7 @@ interface EventsMonthPageProps {
     year?: string;
     month?: string;
     query?: string;
+    category?: string;
   }>;
 }
 
@@ -38,14 +40,14 @@ export default async function EventsMonthPage(props: EventsMonthPageProps) {
       ? parsedMonth
       : defaultMonth;
 
-  const startOfMonth = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0)).toISOString();
-  const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString();
+  const { startIso, endIso } = getDetroitMonthBounds(year, month);
 
   const { events, error } = await listEvents({
     view: "month",
-    from: startOfMonth,
-    to: endOfMonth,
+    from: startIso,
+    to: endIso,
     query: searchParams.query,
+    category: searchParams.category,
   });
 
   return (

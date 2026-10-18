@@ -3,6 +3,7 @@
 import * as React from "react";
 import type { Route } from "next";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { formatEventDateTime } from "../calendar";
 import type { EventSummary } from "../types";
 import { Badge } from "@/components/ui/badge";
@@ -11,26 +12,58 @@ import { Input } from "@/components/ui/input";
 interface EventListViewProps {
   events: EventSummary[];
   error?: string;
+  initialQuery?: string;
+  initialCategory?: string;
 }
 
-export function EventListView({ events, error }: EventListViewProps) {
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
+const STANDARD_CATEGORIES = [
+  "Workshops & Presentations",
+  "Community Projects",
+  "Club Business",
+  "Social & Special Events",
+  "Garden Walk",
+];
+
+export function EventListView({
+  events,
+  error,
+  initialQuery = "",
+  initialCategory = "all",
+}: EventListViewProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [searchQuery, setSearchQuery] = React.useState(initialQuery);
+  const [categoryFilter, setCategoryFilter] = React.useState<string>(initialCategory);
 
   const categories = React.useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(STANDARD_CATEGORIES);
     for (const e of events) {
       if (e.category) set.add(e.category);
     }
     return Array.from(set);
   }, [events]);
 
+  const handleCategorySelect = (cat: string) => {
+    setCategoryFilter(cat);
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("query", searchQuery);
+    if (cat !== "all") params.set("category", cat);
+    const qs = params.toString();
+    router.replace((qs ? `${pathname}?${qs}` : pathname) as Route, { scroll: false });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+  };
+
   const filteredEvents = React.useMemo(() => {
     return events.filter((e) => {
+      const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
-        e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        e.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        e.venueName.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        e.title.toLowerCase().includes(q) ||
+        e.description.toLowerCase().includes(q) ||
+        e.venueName.toLowerCase().includes(q);
       const matchesCategory = categoryFilter === "all" || e.category === categoryFilter;
       return matchesSearch && matchesCategory;
     });
@@ -52,8 +85,8 @@ export function EventListView({ events, error }: EventListViewProps) {
       )}
 
       {/* Search and Category Filter */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="w-full sm:max-w-xs">
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="w-full lg:max-w-xs">
           <label htmlFor="event-search" className="sr-only">
             Search events
           </label>
@@ -61,17 +94,17 @@ export function EventListView({ events, error }: EventListViewProps) {
             id="event-search"
             placeholder="Search events by keyword or venue..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 w-full lg:w-auto">
           <button
             type="button"
-            onClick={() => setCategoryFilter("all")}
+            onClick={() => handleCategorySelect("all")}
             className={`rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
               categoryFilter === "all"
-                ? "bg-primary text-primary-foreground"
+                ? "bg-primary text-primary-foreground shadow-xs"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
@@ -81,10 +114,10 @@ export function EventListView({ events, error }: EventListViewProps) {
             <button
               key={cat}
               type="button"
-              onClick={() => setCategoryFilter(cat)}
+              onClick={() => handleCategorySelect(cat)}
               className={`rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
                 categoryFilter === cat
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground shadow-xs"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >

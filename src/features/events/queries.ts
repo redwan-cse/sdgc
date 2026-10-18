@@ -4,6 +4,7 @@ import type { EventCalendarView, EventPage, EventSummary } from "./types";
 
 export interface EventFilterOptions {
   query?: string;
+  category?: string;
   from?: string;
   to?: string;
   view?: EventCalendarView;
@@ -20,6 +21,7 @@ interface EventRowWithVenue {
   timezone: string;
   all_day: boolean;
   status: string;
+  category: string | null;
   ticket_url: string | null;
   venues: {
     name: string;
@@ -49,6 +51,7 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
       timezone,
       all_day,
       status,
+      category,
       ticket_url,
       venues (
         name,
@@ -63,7 +66,14 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
     .order("starts_at", { ascending: true });
 
   if (filters.query) {
-    query = query.ilike("title", `%${filters.query}%`);
+    const sanitized = filters.query.replace(/[,()]/g, " ").trim();
+    if (sanitized) {
+      query = query.or(`title.ilike.%${sanitized}%,description.ilike.%${sanitized}%`);
+    }
+  }
+
+  if (filters.category && filters.category !== "all") {
+    query = query.eq("category", filters.category);
   }
 
   // Multi-day overlap semantics (V11-07):
@@ -106,6 +116,7 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
       : undefined;
 
     const startsDate = new Date(item.starts_at);
+    const endsDate = item.ends_at ? new Date(item.ends_at) : startsDate;
 
     return {
       id: item.id,
@@ -116,10 +127,11 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
       endsAt: item.ends_at,
       timezone: item.timezone || CLUB_TIMEZONE,
       allDay: Boolean(item.all_day),
+      category: item.category || undefined,
       venueName: venue?.name || "TBD Saugatuck / Douglas",
       venueAddress: fullAddress,
       ticketUrl: item.ticket_url || undefined,
-      isPast: startsDate < now,
+      isPast: endsDate < now,
     };
   });
 
@@ -146,6 +158,7 @@ export async function getEventBySlug(slug: string): Promise<EventSummary | null>
       timezone,
       all_day,
       status,
+      category,
       ticket_url,
       venues (
         name,
@@ -172,6 +185,7 @@ export async function getEventBySlug(slug: string): Promise<EventSummary | null>
     : undefined;
 
   const startsDate = new Date(item.starts_at);
+  const endsDate = item.ends_at ? new Date(item.ends_at) : startsDate;
   const now = new Date();
 
   return {
@@ -183,10 +197,11 @@ export async function getEventBySlug(slug: string): Promise<EventSummary | null>
     endsAt: item.ends_at,
     timezone: item.timezone || CLUB_TIMEZONE,
     allDay: Boolean(item.all_day),
+    category: item.category || undefined,
     venueName: venue?.name || "TBD Saugatuck / Douglas",
     venueAddress: fullAddress,
     ticketUrl: item.ticket_url || undefined,
-    isPast: startsDate < now,
+    isPast: endsDate < now,
   };
 }
 
@@ -208,6 +223,7 @@ export async function listUpcomingEvents(limit: number = 3): Promise<EventSummar
       timezone,
       all_day,
       status,
+      category,
       ticket_url,
       venues (
         name,
@@ -241,6 +257,7 @@ export async function listUpcomingEvents(limit: number = 3): Promise<EventSummar
         timezone,
         all_day,
         status,
+        category,
         ticket_url,
         venues (
           name,
@@ -267,6 +284,9 @@ export async function listUpcomingEvents(limit: number = 3): Promise<EventSummar
       ? [venue.address, venue.city, venue.state, venue.postal_code].filter(Boolean).join(", ")
       : undefined;
 
+    const startsDate = new Date(item.starts_at);
+    const endsDate = item.ends_at ? new Date(item.ends_at) : startsDate;
+
     return {
       id: item.id,
       slug: item.slug,
@@ -276,10 +296,11 @@ export async function listUpcomingEvents(limit: number = 3): Promise<EventSummar
       endsAt: item.ends_at,
       timezone: item.timezone || CLUB_TIMEZONE,
       allDay: Boolean(item.all_day),
+      category: item.category || undefined,
       venueName: venue?.name || "TBD Saugatuck / Douglas",
       venueAddress: fullAddress,
       ticketUrl: item.ticket_url || undefined,
-      isPast: new Date(item.starts_at) < nowDate,
+      isPast: endsDate < nowDate,
     };
   });
 }

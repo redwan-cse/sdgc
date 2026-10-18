@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CLUB_TIMEZONE, eventOccursOnDate, getDetroitDateString, getMonthMatrix } from "./calendar";
+import {
+  CLUB_TIMEZONE,
+  eventOccursOnDate,
+  getDetroitDateString,
+  getDetroitDayBounds,
+  getDetroitMonthBounds,
+  getMonthMatrix,
+} from "./calendar";
 import type { EventSummary } from "./types";
 
 function createMockEvent(overrides: Partial<EventSummary>): EventSummary {
@@ -18,6 +25,28 @@ function createMockEvent(overrides: Partial<EventSummary>): EventSummary {
 }
 
 describe("R3 Calendar Behavior: America/Detroit Date Grouping & DST Boundaries", () => {
+  it("computes accurate Detroit day bounds across summer EDT and winter EST", () => {
+    // Summer EDT (UTC-4)
+    const summerBounds = getDetroitDayBounds("2026-07-11");
+    expect(summerBounds.startIso).toBe("2026-07-11T04:00:00.000Z");
+    expect(summerBounds.endIso).toBe("2026-07-12T03:59:00.000Z");
+
+    // Winter EST (UTC-5)
+    const winterBounds = getDetroitDayBounds("2026-12-10");
+    expect(winterBounds.startIso).toBe("2026-12-10T05:00:00.000Z");
+    expect(winterBounds.endIso).toBe("2026-12-11T04:59:00.000Z");
+  });
+
+  it("computes accurate Detroit month bounds for 30 and 31 day months", () => {
+    const juneBounds = getDetroitMonthBounds(2026, 6);
+    expect(juneBounds.startIso).toBe("2026-06-01T04:00:00.000Z");
+    expect(juneBounds.endIso).toBe("2026-07-01T03:59:00.000Z");
+
+    const julyBounds = getDetroitMonthBounds(2026, 7);
+    expect(julyBounds.startIso).toBe("2026-07-01T04:00:00.000Z");
+    expect(julyBounds.endIso).toBe("2026-08-01T03:59:00.000Z");
+  });
+
   it("pins near-midnight UTC event to Michigan day (2026-07-11T02:00:00Z is 10 PM July 10 in Detroit)", () => {
     // 02:00:00Z on July 11 is 22:00:00 (10 PM) on July 10 in Detroit (EDT, UTC-4)
     const lateNightEvent = createMockEvent({

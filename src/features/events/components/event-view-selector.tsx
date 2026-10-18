@@ -15,6 +15,7 @@ export function EventViewSelector({ currentView }: EventViewSelectorProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryParam = searchParams?.get("query");
+  const categoryParam = searchParams?.get("category");
 
   const views: { view: EventCalendarView; label: string; href: Route }[] = [
     { view: "list", label: "List View", href: "/events" },
@@ -27,9 +28,11 @@ export function EventViewSelector({ currentView }: EventViewSelectorProps) {
       <div className="flex items-center space-x-1 rounded-lg border border-border bg-card p-1 shadow-2xs">
         {views.map((v) => {
           const isActive = pathname === v.href || currentView === v.view;
-          const targetHref = (
-            queryParam ? `${v.href}?query=${encodeURIComponent(queryParam)}` : v.href
-          ) as Route;
+          const params = new URLSearchParams();
+          if (queryParam) params.set("query", queryParam);
+          if (categoryParam && categoryParam !== "all") params.set("category", categoryParam);
+          const qs = params.toString();
+          const targetHref = (qs ? `${v.href}?${qs}` : v.href) as Route;
 
           return (
             <Link

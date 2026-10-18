@@ -236,3 +236,28 @@ export function parseDetroitDateTimeLocal(dateTimeLocalStr: string): string {
   const realUtc = new Date(guessUtc - offsetMs);
   return realUtc.toISOString();
 }
+
+/**
+ * Returns the UTC ISO start and end boundary strings covering an entire America/Detroit calendar day.
+ */
+export function getDetroitDayBounds(dateStr: string): { startIso: string; endIso: string } {
+  const startIso = parseDetroitDateTimeLocal(`${dateStr}T00:00`);
+  const endIso = parseDetroitDateTimeLocal(`${dateStr}T23:59`);
+  return { startIso, endIso };
+}
+
+/**
+ * Returns the UTC ISO start and end boundary strings covering an entire America/Detroit calendar month.
+ */
+export function getDetroitMonthBounds(
+  year: number,
+  month: number,
+): { startIso: string; endIso: string } {
+  const startStr = `${year}-${String(month).padStart(2, "0")}-01T00:00`;
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const endStr = `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}T23:59`;
+  return {
+    startIso: parseDetroitDateTimeLocal(startStr),
+    endIso: parseDetroitDateTimeLocal(endStr),
+  };
+}

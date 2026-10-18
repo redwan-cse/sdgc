@@ -1,4 +1,4 @@
-import { getDetroitDateString } from "@/features/events/calendar";
+import { getDetroitDateString, getDetroitDayBounds } from "@/features/events/calendar";
 import { EventDayView } from "@/features/events/components/event-day-view";
 import { EventViewSelector } from "@/features/events/components/event-view-selector";
 import { listEvents } from "@/features/events/queries";
@@ -12,6 +12,7 @@ interface EventsDayPageProps {
   searchParams: Promise<{
     date?: string;
     query?: string;
+    category?: string;
   }>;
 }
 
@@ -22,15 +23,15 @@ export default async function EventsDayPage(props: EventsDayPageProps) {
   const date =
     searchParams.date && dateRegex.test(searchParams.date) ? searchParams.date : todayDetroit;
 
-  const startOfDay = new Date(`${date}T00:00:00Z`).toISOString();
-  const endOfDay = new Date(`${date}T23:59:59.999Z`).toISOString();
+  const { startIso, endIso } = getDetroitDayBounds(date);
 
   const { events, error } = await listEvents({
     view: "day",
     date,
-    from: startOfDay,
-    to: endOfDay,
+    from: startIso,
+    to: endIso,
     query: searchParams.query,
+    category: searchParams.category,
   });
 
   return (

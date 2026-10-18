@@ -88,14 +88,14 @@ isOneToOne: false
                   ]
                 },"events": {
                   Row: {
-                    "all_day": boolean,"created_at": string,"description": string,"ends_at": string,"excerpt": string | null,"featured_image": string | null,"id": string,"slug": string,"starts_at": string,"status": string,"ticket_url": string | null,"timezone": string,"title": string,"updated_at": string,"venue_id": string | null
+                    "all_day": boolean,"category": string | null,"created_at": string,"description": string,"ends_at": string,"excerpt": string | null,"featured_image": string | null,"id": string,"slug": string,"starts_at": string,"status": string,"ticket_url": string | null,"timezone": string,"title": string,"updated_at": string,"venue_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "all_day"?: boolean,"created_at"?: string,"description": string,"ends_at": string,"excerpt"?: string | null,"featured_image"?: string | null,"id"?: string,"slug": string,"starts_at": string,"status"?: string,"ticket_url"?: string | null,"timezone"?: string,"title": string,"updated_at"?: string,"venue_id"?: string | null
+                    "all_day"?: boolean,"category"?: string | null,"created_at"?: string,"description": string,"ends_at": string,"excerpt"?: string | null,"featured_image"?: string | null,"id"?: string,"slug": string,"starts_at": string,"status"?: string,"ticket_url"?: string | null,"timezone"?: string,"title": string,"updated_at"?: string,"venue_id"?: string | null
                   }
                   Update: {
-                    "all_day"?: boolean,"created_at"?: string,"description"?: string,"ends_at"?: string,"excerpt"?: string | null,"featured_image"?: string | null,"id"?: string,"slug"?: string,"starts_at"?: string,"status"?: string,"ticket_url"?: string | null,"timezone"?: string,"title"?: string,"updated_at"?: string,"venue_id"?: string | null
+                    "all_day"?: boolean,"category"?: string | null,"created_at"?: string,"description"?: string,"ends_at"?: string,"excerpt"?: string | null,"featured_image"?: string | null,"id"?: string,"slug"?: string,"starts_at"?: string,"status"?: string,"ticket_url"?: string | null,"timezone"?: string,"title"?: string,"updated_at"?: string,"venue_id"?: string | null
                   }
                   Relationships: [
                     {

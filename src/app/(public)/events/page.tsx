@@ -11,6 +11,7 @@ export const metadata = {
 interface EventsListPageProps {
   searchParams: Promise<{
     query?: string;
+    category?: string;
   }>;
 }
 
@@ -19,6 +20,7 @@ export default async function EventsListPage(props: EventsListPageProps) {
   const { events, error } = await listEvents({
     view: "list",
     query: searchParams.query,
+    category: searchParams.category,
   });
 
   return (
@@ -38,7 +40,12 @@ export default async function EventsListPage(props: EventsListPageProps) {
 
       <EventViewSelector currentView="list" />
 
-      <EventListView events={events} error={error} />
+      <EventListView
+        events={events}
+        error={error}
+        initialQuery={searchParams.query}
+        initialCategory={searchParams.category}
+      />
     </div>
   );
 }
