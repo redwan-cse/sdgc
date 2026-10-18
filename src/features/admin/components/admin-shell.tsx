@@ -1,6 +1,6 @@
 "use client";
 
-import type * as React from "react";
+import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,6 +11,7 @@ import { logoutAction } from "@/features/auth/actions";
 interface AdminShellProps {
   children: React.ReactNode;
   activeRole?: string;
+  roles?: string[];
   userEmail?: string;
 }
 
@@ -18,6 +19,7 @@ interface NavItem {
   href: Route | string;
   label: string;
   icon: (props: { className?: string }) => React.ReactNode;
+  allowedRoles?: string[];
 }
 
 interface NavGroup {
@@ -183,31 +185,89 @@ function LogoutIcon({ className = "h-4 w-4" }: { className?: string }) {
 const ADMIN_GROUPS: NavGroup[] = [
   {
     title: "OVERVIEW",
-    items: [{ href: "/admin", label: "Overview", icon: DashboardIcon }],
+    items: [
+      {
+        href: "/admin",
+        label: "Overview",
+        icon: DashboardIcon,
+        allowedRoles: ["admin", "editor", "treasurer"],
+      },
+    ],
   },
   {
     title: "MEMBERSHIP",
     items: [
-      { href: "/admin/members", label: "Members & Approvals", icon: UsersIcon },
-      { href: "/admin/dues", label: "Dues & Reconciliation", icon: CreditCardIcon },
+      {
+        href: "/admin/members",
+        label: "Members & Approvals",
+        icon: UsersIcon,
+        allowedRoles: ["admin", "treasurer"],
+      },
+      {
+        href: "/admin/dues",
+        label: "Dues & Reconciliation",
+        icon: CreditCardIcon,
+        allowedRoles: ["admin", "treasurer"],
+      },
     ],
   },
   {
     title: "CONTENT",
     items: [
-      { href: "/admin/events", label: "Events & Scheduling", icon: CalendarIcon },
-      { href: "/admin/media", label: "Media & Albums", icon: MediaIcon },
-      { href: "/admin/content", label: "Pages & Copy", icon: DocumentIcon },
+      {
+        href: "/admin/events",
+        label: "Events & Scheduling",
+        icon: CalendarIcon,
+        allowedRoles: ["admin", "editor"],
+      },
+      {
+        href: "/admin/media",
+        label: "Media & Albums",
+        icon: MediaIcon,
+        allowedRoles: ["admin", "editor"],
+      },
+      {
+        href: "/admin/content",
+        label: "Pages & Copy",
+        icon: DocumentIcon,
+        allowedRoles: ["admin", "editor"],
+      },
     ],
   },
   {
     title: "COMMUNICATION",
-    items: [{ href: "/admin/messages", label: "Contact Inbox", icon: InboxIcon }],
+    items: [
+      {
+        href: "/admin/messages",
+        label: "Contact Inbox",
+        icon: InboxIcon,
+        allowedRoles: ["admin"],
+      },
+    ],
   },
 ];
 
-export function AdminShell({ children, activeRole = "Administrator", userEmail }: AdminShellProps) {
+export function AdminShell({
+  children,
+  activeRole = "Administrator",
+  roles,
+  userEmail,
+}: AdminShellProps) {
   const pathname = usePathname();
+
+  const userRoles = roles && roles.length > 0 ? roles : ["admin"];
+  const visibleGroups = React.useMemo(() => {
+    return ADMIN_GROUPS.map((group) => {
+      const filteredItems = group.items.filter((item) => {
+        if (!item.allowedRoles) return true;
+        return item.allowedRoles.some((role) => userRoles.includes(role));
+      });
+      return {
+        ...group,
+        items: filteredItems,
+      };
+    }).filter((group) => group.items.length > 0);
+  }, [userRoles]);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row bg-background text-foreground antialiased">
@@ -239,7 +299,7 @@ export function AdminShell({ children, activeRole = "Administrator", userEmail }
 
         {/* Navigation Categories */}
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6">
-          {ADMIN_GROUPS.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.title} className="space-y-1">
               <h2 className="px-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                 {group.title}

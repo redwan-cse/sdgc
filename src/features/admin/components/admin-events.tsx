@@ -64,6 +64,17 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
     setEditVenueId(e.venueId);
   };
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (isModalOpen) setIsModalOpen(false);
+        if (editingEvent) setEditingEvent(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen, editingEvent]);
+
   const handleUpdate = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!editingEvent) return;
@@ -323,8 +334,18 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
       {/* New Event Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="font-serif text-xl font-bold text-foreground">Create New Club Event</h2>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-event-modal-title"
+            className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto"
+          >
+            <h2
+              id="create-event-modal-title"
+              className="font-serif text-xl font-bold text-foreground"
+            >
+              Create New Club Event
+            </h2>
             <p className="text-xs text-muted-foreground">
               Published events will appear on the public /events calendar and RSS feeds.
             </p>
@@ -500,8 +521,18 @@ export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsPr
       {/* Edit Event Modal */}
       {editingEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="font-serif text-xl font-bold text-foreground">Edit Club Event</h2>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-event-modal-title"
+            className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto"
+          >
+            <h2
+              id="edit-event-modal-title"
+              className="font-serif text-xl font-bold text-foreground"
+            >
+              Edit Club Event
+            </h2>
             <p className="text-xs text-muted-foreground">
               Modify event details, schedule dates, venue location, or visibility status.
             </p>

@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         : "Staff";
 
   return (
-    <AdminShell activeRole={primaryRole} userEmail={user.email ?? ""}>
+    <AdminShell activeRole={primaryRole} roles={roles} userEmail={user.email ?? ""}>
       {children}
     </AdminShell>
   );

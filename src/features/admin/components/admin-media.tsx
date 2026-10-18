@@ -44,6 +44,17 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
     setMediaList(initialMedia);
   }, [initialMedia]);
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (isUploadOpen) setIsUploadOpen(false);
+        if (editingItem) setEditingItem(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isUploadOpen, editingItem]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setSelectedFile(file);
@@ -345,8 +356,18 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
       {/* Upload/Add Modal */}
       {isUploadOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4">
-            <h2 className="font-serif text-xl font-bold text-foreground">Add New Media Asset</h2>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upload-media-modal-title"
+            className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4"
+          >
+            <h2
+              id="upload-media-modal-title"
+              className="font-serif text-xl font-bold text-foreground"
+            >
+              Add New Media Asset
+            </h2>
             <p className="text-xs text-muted-foreground">
               Register a photo stored in the club storage bucket or gallery collection.
             </p>
@@ -460,8 +481,18 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
       {/* Edit Modal */}
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4">
-            <h2 className="font-serif text-xl font-bold text-foreground">Edit Media Asset</h2>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-media-modal-title"
+            className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4"
+          >
+            <h2
+              id="edit-media-modal-title"
+              className="font-serif text-xl font-bold text-foreground"
+            >
+              Edit Media Asset
+            </h2>
             <p className="text-xs text-muted-foreground">
               Update accessibility alt text, public caption, and visibility status.
             </p>

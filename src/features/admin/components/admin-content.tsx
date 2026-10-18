@@ -36,6 +36,16 @@ export function AdminContent({ initialPages }: AdminContentProps) {
     setEditStatus(p.status);
   };
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (editingPage) setEditingPage(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editingPage]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPage || !editTitle.trim()) return;
@@ -161,8 +171,13 @@ export function AdminContent({ initialPages }: AdminContentProps) {
       {/* Page Edit Modal */}
       {editingPage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="font-serif text-xl font-bold text-foreground">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-page-modal-title"
+            className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto"
+          >
+            <h2 id="edit-page-modal-title" className="font-serif text-xl font-bold text-foreground">
               Edit Page: {editingPage.slug}
             </h2>
             <form onSubmit={handleSave} className="space-y-4 pt-2">

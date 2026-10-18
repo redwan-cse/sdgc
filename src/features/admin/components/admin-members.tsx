@@ -65,6 +65,17 @@ export function AdminMembers({ initialMembers, initialStatusFilter }: AdminMembe
     setEditNotes(member.adminNotes || "");
   };
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedUserForRoles) setSelectedUserForRoles(null);
+        if (editingMember) setEditingMember(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedUserForRoles, editingMember]);
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMember) return;
@@ -366,8 +377,16 @@ export function AdminMembers({ initialMembers, initialStatusFilter }: AdminMembe
       {/* Role Management Modal */}
       {selectedUserForRoles && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4">
-            <h2 className="font-serif text-xl font-bold text-foreground">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manage-roles-modal-title"
+            className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4"
+          >
+            <h2
+              id="manage-roles-modal-title"
+              className="font-serif text-xl font-bold text-foreground"
+            >
               Manage Roles: {selectedUserForRoles.name}
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -430,8 +449,16 @@ export function AdminMembers({ initialMembers, initialStatusFilter }: AdminMembe
       {/* Profile Details & Edit Modal */}
       {editingMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="font-serif text-xl font-bold text-foreground">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-member-modal-title"
+            className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto"
+          >
+            <h2
+              id="edit-member-modal-title"
+              className="font-serif text-xl font-bold text-foreground"
+            >
               Member Details: {editingMember.name}
             </h2>
             <p className="text-xs text-muted-foreground">
