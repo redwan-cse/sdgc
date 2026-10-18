@@ -133,9 +133,25 @@ async function listMediaItemsInternal(includePrivate: boolean): Promise<MediaIte
           Array<{ album_id: string; sort_order: number }> | undefined;
         const albumItem = albumItems?.[0];
         const storagePath = (m.storage_path as string) || "";
+        const isCloudinary = process.env.STORAGE_PROVIDER === "cloudinary";
+        const cloudinaryName = process.env.CLOUDINARY_CLOUD_NAME || "sdgc";
+        const cloudinaryUrl = isCloudinary
+          ? `https://res.cloudinary.com/${cloudinaryName}/image/upload/${storagePath}`
+          : undefined;
+
+        const isR2 =
+          process.env.STORAGE_PROVIDER === "cloudflare_r2" ||
+          process.env.STORAGE_PROVIDER === "r2" ||
+          Boolean(process.env.R2_PUBLIC_URL);
+        const r2PublicUrl =
+          process.env.R2_PUBLIC_URL || "https://media.saugatuckdouglasgardenclub.com";
+        const r2Url = isR2 ? `${r2PublicUrl.replace(/\/$/, "")}/${storagePath}` : undefined;
+
         const signedUrl = signedUrlMap.get(storagePath);
         const src =
-          storagePath.startsWith("http") || storagePath.startsWith("/") ? storagePath : signedUrl;
+          storagePath.startsWith("http") || storagePath.startsWith("/")
+            ? storagePath
+            : cloudinaryUrl || r2Url || signedUrl;
 
         if (!src) {
           // Exclude assets whose underlying files do not exist

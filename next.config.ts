@@ -24,6 +24,26 @@ const nextConfig: NextConfig = {
         hostname: "**.supabase.co",
         pathname: "/storage/v1/object/**",
       },
+      {
+        protocol: "https",
+        hostname: "**.r2.dev",
+      },
+      {
+        protocol: "https",
+        hostname: "media.saugatuckdouglasgardenclub.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.saugatuckdouglasgardenclub.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.cloudflarestorage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
     ],
   },
   async headers() {
