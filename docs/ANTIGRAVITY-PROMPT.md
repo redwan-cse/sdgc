@@ -4,7 +4,7 @@ Copy the prompt below into Antigravity with `J:\DevDrive\sdgc` open.
 
 ---
 
-You are implementing the full-stack replacement website for **Saugatuck Douglas Garden Club (SDGC)** in the existing repository at `J:\DevDrive\sdgc`, remote `https://github.com/sdgcmich/sdgc`.
+You are implementing the full-stack replacement website for **Saugatuck Douglas Garden Club (SDGC)** in the existing repository at `J:\DevDrive\sdgc`, remote `https://github.com/sdgcmich/sdgc-web`.
 
 The repository has already been initialized. Continue its Next.js App Router + strict TypeScript + Tailwind 4 + Supabase foundation. Preserve the exact supplied tweakcn light/dark palette and the original club logo. The active theme is `src/app/globals.css`, the logo is `public/images/brand/sdgc-logo.jpg`, and untouched source references are in `docs/reference/theme/`. Fonts are served locally from Inter/Lora packages. Use Node 24, npm 11, `npm ci`, exact dependencies and the npm lockfile. Do not replace the scaffold with a different stack or theme.
 
