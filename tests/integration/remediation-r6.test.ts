@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { stripePaymentProvider } from "@/features/payments/stripe-provider";
 import { POST as stripeWebhookPost } from "@/app/api/webhooks/stripe/route";
@@ -24,6 +24,30 @@ import { GET as singleEventIcsGet } from "@/app/(public)/event/[slug]/ics/route"
 import { createServiceClient } from "./setup";
 
 describe("Remediation Package R6 — Integrations, Accessibility & Calendar Feeds", () => {
+  beforeAll(async () => {
+    const serviceClient = createServiceClient();
+    await serviceClient.from("events").upsert(
+      {
+        id: "e9999999-9999-9999-9999-202607110000",
+        slug: "2026-garden-walk-fundraiser",
+        title: "2026 Garden Walk Fundraiser & Perennial Plant Sale",
+        category: "Annual Fundraiser",
+        excerpt:
+          "Tour 6 spectacular private coastal gardens. Features the member perennial plant sale and garden treasures at the Old School House.",
+        description:
+          "Self-guided tour of six stunning private gardens and public plantings in Saugatuck and Douglas. Proceeds support community beautification and horticultural scholarships.",
+        starts_at: "2026-07-11 10:00:00-04",
+        ends_at: "2026-07-11 16:00:00-04",
+        timezone: "America/Detroit",
+        all_day: false,
+        venue_id: "d2222222-2222-2222-2222-222222222222",
+        status: "published",
+        ticket_url: "https://saugatuckdouglasgardenclub.com/garden-walk",
+        featured_image: "/images/wordpress/DSC_2808-scaled-1.jpg",
+      },
+      { onConflict: "id" },
+    );
+  });
   describe("R6.1: Sandbox Stripe Integration Contracts & Webhook Idempotence", () => {
     it("reports configuration status and prevents live charges during local testing", () => {
       const status = stripePaymentProvider.getConfigStatus();

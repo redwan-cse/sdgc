@@ -97,6 +97,22 @@ insert into public.events (id, slug, title, category, excerpt, description, star
     '/images/wordpress/2O8A6596-1000x1000-1.jpg'
   ),
   (
+    'e9999999-9999-9999-9999-202607110000',
+    '2026-garden-walk-fundraiser',
+    '2026 Garden Walk Fundraiser & Perennial Plant Sale',
+    'Annual Fundraiser',
+    'Tour 6 spectacular private coastal gardens. Features the member perennial plant sale and garden treasures at the Old School House.',
+    'Self-guided tour of six stunning private gardens and public plantings in Saugatuck and Douglas. Proceeds support community beautification and horticultural scholarships.',
+    '2026-07-11 10:00:00-04',
+    '2026-07-11 16:00:00-04',
+    'America/Detroit',
+    false,
+    'd2222222-2222-2222-2222-222222222222',
+    'published',
+    'https://saugatuckdouglasgardenclub.com/garden-walk',
+    '/images/wordpress/DSC_2808-scaled-1.jpg'
+  ),
+  (
     'e9999999-9999-9999-9999-999999999999',
     '47th-annual-garden-walk-fundraiser',
     '47th Annual Garden Walk Fundraiser & Perennial Plant Sale',
