@@ -6,7 +6,7 @@ import { AccountSecurity } from "@/features/membership/components/account-securi
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
-  title: "My Member Profile & Account Security",
+  title: "My Member Profile",
   description:
     "View and edit your personal member profile details, password, and two-factor authentication credentials.",
 };
@@ -34,7 +34,7 @@ export default async function ProfilePage() {
           Member Dashboard
         </span>
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-foreground">
-          My Member Profile &amp; Settings
+          My Member Profile
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Keep your contact information, address, volunteer preferences, and account security up to
