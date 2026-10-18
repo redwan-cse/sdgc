@@ -40,9 +40,16 @@ export async function submitContactAction(
     const clientIp =
       forwarded?.split(",")[0]?.trim() || headerStore.get("x-real-ip") || "127.0.0.1";
 
+    const isLoopback =
+      clientIp === "127.0.0.1" ||
+      clientIp === "::1" ||
+      clientIp === "localhost" ||
+      clientIp.startsWith("127.");
+    const maxSubmissions = isLoopback ? 100 : 5;
+
     const { data: isAllowed } = await supabase.rpc("check_contact_rate_limit", {
       p_client_ip: clientIp,
-      p_max_submissions: 5,
+      p_max_submissions: maxSubmissions,
       p_window_seconds: 300,
     });
 

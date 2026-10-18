@@ -28,7 +28,7 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
 
-    await expect(page).toHaveURL(/\/directory/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/directory$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Member Directory Access Pending",
     );
@@ -51,7 +51,7 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
 
-    await expect(page).toHaveURL(/\/directory/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/directory$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       /Private Member Directory|SDGC Member Directory/,
     );
@@ -103,7 +103,7 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
 
-    await expect(page).toHaveURL(/\/admin\/members/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/admin\/members(\?.*)?$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       /Member (Management|Roster) & Approvals/,
     );
@@ -129,7 +129,7 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
 
-    await expect(page).toHaveURL(/\/admin\/dues/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/admin\/dues(\?.*)?$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       /Dues (Reconciliation & Financials|& Financial Reconciliation)/,
     );
@@ -151,7 +151,7 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
 
-    await expect(page).toHaveURL(/\/admin\/events/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/admin\/events(\?.*)?$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Events & Calendar Scheduling",
     );
@@ -182,7 +182,7 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
 
-    await expect(page).toHaveURL(/\/admin\/content/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/admin\/content(\?.*)?$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Page Content & Site Copy");
     await expect(page.getByText("About Saugatuck Douglas Garden Club").first()).toBeVisible();
 
@@ -201,7 +201,7 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
 
-    await expect(page).toHaveURL(/\/admin\/messages/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/admin\/messages(\?.*)?$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       /Contact (Submissions|Messages) Inbox/,
     );
@@ -221,7 +221,7 @@ test.describe("Phase P6 — Member Directory, Editorial Publishing & Administrat
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: "Sign In to Member Area" }).click();
 
-    await expect(page).toHaveURL(/\/admin\/media/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/admin\/media(\?.*)?$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Media Library/);
 
     await page.screenshot({

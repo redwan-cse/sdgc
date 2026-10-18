@@ -129,6 +129,14 @@ export function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-6" suppressHydrationWarning>
+      {errors.form && (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive"
+        >
+          {errors.form}
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div suppressHydrationWarning>
           <Label htmlFor="contact-name" required>

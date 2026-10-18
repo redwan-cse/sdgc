@@ -3,8 +3,8 @@ import { expect, test } from "@playwright/test";
 test.describe("Phase 2: Responsive Navigation & Breakpoint Parity", () => {
   const viewports = [
     { name: "Mobile (375px)", width: 375, height: 667, isMobile: true },
-    { name: "Tablet iPad Mini (768px)", width: 768, height: 1024, isMobile: false },
-    { name: "Tablet iPad Air (820px)", width: 820, height: 1180, isMobile: false },
+    { name: "Tablet iPad Mini (768px)", width: 768, height: 1024, isMobile: true },
+    { name: "Tablet iPad Air (820px)", width: 820, height: 1180, isMobile: true },
     { name: "Desktop (1024px)", width: 1024, height: 768, isMobile: false },
   ];
 
@@ -67,8 +67,8 @@ test.describe("Phase 2: Responsive Navigation & Breakpoint Parity", () => {
     const dialog = page.locator("#mobile-navigation");
     await expect(dialog).toBeVisible();
 
-    // Resize viewport to 768px
-    await page.setViewportSize({ width: 768, height: 1024 });
+    // Resize viewport to 1024px
+    await page.setViewportSize({ width: 1024, height: 768 });
 
     // Dialog should auto-close
     await expect(dialog).not.toBeVisible();

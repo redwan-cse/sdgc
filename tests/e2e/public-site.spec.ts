@@ -7,7 +7,7 @@ test.describe("Public Site Navigation & Experiences", () => {
       "Saugatuck Douglas Garden Club",
     );
 
-    const isMobile = (page.viewportSize()?.width ?? 1000) < 768;
+    const isMobile = (page.viewportSize()?.width ?? 1024) < 1024;
 
     const navigateTo = async (label: string) => {
       if (isMobile) {

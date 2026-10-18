@@ -58,7 +58,12 @@ export function AdminOverview({ metrics }: AdminOverviewProps) {
             className="flex flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-xs hover:border-primary/50 transition-colors"
           >
             <div className="flex items-center justify-between gap-1.5 min-h-[22px]">
-              <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {stat.label}
+                {stat.sublabel && (
+                  <span className="font-normal text-muted-foreground/80"> ({stat.sublabel})</span>
+                )}
+              </span>
               {stat.alert && (
                 <Badge variant="warning" className="shrink-0 text-[10px] px-1.5 py-0.5">
                   Action Needed
@@ -67,11 +72,6 @@ export function AdminOverview({ metrics }: AdminOverviewProps) {
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-bold text-foreground">{stat.value}</span>
-              {stat.sublabel && (
-                <span className="text-[11px] text-muted-foreground font-medium">
-                  ({stat.sublabel})
-                </span>
-              )}
             </div>
           </Link>
         ))}

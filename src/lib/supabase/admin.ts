@@ -10,9 +10,11 @@ import type { Database } from "@/types/database";
  * and background tasks. Never exposed to browser or client components.
  */
 export function createAdminClient() {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
   if (!serviceKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for server administrative operations.");
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY is required for server administrative operations.",
+    );
   }
   const env = getPublicSupabaseEnv();
   return createSupabaseClient<Database>(env.url, serviceKey, {

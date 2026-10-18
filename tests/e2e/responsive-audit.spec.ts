@@ -63,7 +63,7 @@ async function loadAndCapturePage(page: Page, url: string, filePath: string) {
       }, 30);
     });
   });
-  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForLoadState("networkidle", { timeout: 2000 }).catch(() => {});
   await page.waitForTimeout(300);
   await page.screenshot({
     path: filePath,
@@ -73,6 +73,10 @@ async function loadAndCapturePage(page: Page, url: string, filePath: string) {
 
 test.describe("Multi-device Responsive Screenshot Audit", () => {
   test.setTimeout(180_000);
+  test.skip(
+    ({ isMobile }) => isMobile,
+    "Responsive audit sets its own viewports (desktop, tablet, mobile) on desktop browser",
+  );
 
   test.beforeAll(() => {
     fs.mkdirSync(outputDir, { recursive: true });

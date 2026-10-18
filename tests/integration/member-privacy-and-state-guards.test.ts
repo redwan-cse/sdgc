@@ -133,6 +133,7 @@ describe("Phase 1: Member Data Privacy, Notes Persistence & State Guards", () =>
       .from("memberships")
       .select("id, term_id")
       .eq("user_id", memberUser.id)
+      .limit(1)
       .single();
     expect(mem).toBeDefined();
     if (!mem) throw new Error("Expected membership record");

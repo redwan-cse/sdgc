@@ -20,7 +20,7 @@ if (fs.existsSync(".env.local")) {
 }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
 const parsedUrl = new URL(supabaseUrl);
 if (parsedUrl.hostname !== "127.0.0.1" && parsedUrl.hostname !== "localhost") {
@@ -32,7 +32,9 @@ if (parsedUrl.hostname !== "127.0.0.1" && parsedUrl.hostname !== "localhost") {
 }
 
 if (!serviceRoleKey) {
-  console.error("FATAL: SUPABASE_SERVICE_ROLE_KEY is required for local provisioning");
+  console.error(
+    "FATAL: SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY is required for local provisioning",
+  );
   process.exit(1);
 }
 

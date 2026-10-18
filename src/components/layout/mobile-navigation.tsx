@@ -124,7 +124,7 @@ export function MobileNavigation({
       aria-modal="true"
       aria-label="Site Navigation"
       ref={navRef}
-      className="fixed inset-0 z-[100] flex flex-col bg-background text-foreground px-6 py-6 md:hidden overflow-y-auto"
+      className="fixed inset-0 z-[100] flex flex-col bg-background text-foreground px-6 py-6 lg:hidden overflow-y-auto"
     >
       <div className="flex items-center justify-between pb-6 border-b border-border shrink-0">
         <span className="font-serif text-xl font-bold text-primary">SDGC Navigation</span>
