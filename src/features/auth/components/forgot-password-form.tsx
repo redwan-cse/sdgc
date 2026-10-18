@@ -11,7 +11,7 @@ import { type ForgotPasswordFormData, forgotPasswordSchema } from "../validation
 export function ForgotPasswordForm() {
   const [mounted, setMounted] = React.useState(false);
   const [formData, setFormData] = React.useState<ForgotPasswordFormData>({
-    email: "",
+    identifier: "",
   });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
@@ -46,19 +46,19 @@ export function ForgotPasswordForm() {
 
     const result = forgotPasswordSchema.safeParse(formData);
     if (!result.success) {
-      setErrors({ email: result.error.issues[0]?.message || "Invalid email" });
+      setErrors({ identifier: result.error.issues[0]?.message || "Invalid input" });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await forgotPasswordAction(formData.email);
+      const res = await forgotPasswordAction(formData.identifier);
       if (res.success) {
         setStatusMessage(
           "If an account exists with that email address, a password reset link has been dispatched to your inbox.",
         );
       } else {
-        setErrors({ email: res.error });
+        setErrors({ identifier: res.error });
       }
     } catch {
       setStatusMessage(
@@ -84,18 +84,21 @@ export function ForgotPasswordForm() {
         <Label htmlFor="forgot-email" required>
           Account Email Address
         </Label>
+        <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">
+          Enter your email address or club username to receive a password reset link.
+        </p>
         <Input
           id="forgot-email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ email: e.target.value })}
-          placeholder="daisy@example.com"
-          error={errors.email}
-          aria-describedby={errors.email ? "forgot-email-error" : undefined}
+          value={formData.identifier}
+          onChange={(e) => setFormData({ identifier: e.target.value })}
+          placeholder="daisy or daisy@example.com"
+          autoComplete="username"
+          error={errors.identifier}
+          aria-describedby={errors.identifier ? "forgot-email-error" : undefined}
         />
-        {errors.email && (
+        {errors.identifier && (
           <p id="forgot-email-error" className="mt-1 text-xs text-destructive">
-            {errors.email}
+            {errors.identifier}
           </p>
         )}
       </div>

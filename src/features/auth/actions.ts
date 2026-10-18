@@ -113,7 +113,7 @@ export async function registerAction(
     if (key === "projectInterests") {
       if (!rawData[key]) rawData[key] = [];
       (rawData[key] as string[]).push(value as string);
-    } else if (key === "masterGardener") {
+    } else if (key === "masterGardener" || key === "directoryOptOut") {
       rawData[key] = value === "true" || value === "on";
     } else if (key === "birthMonth" || key === "birthDay") {
       const num = Number(value);
@@ -188,25 +188,29 @@ export async function logoutAction(): Promise<void> {
   redirect("/");
 }
 
-export async function forgotPasswordAction(email: string): Promise<ActionResult<string>> {
-  if (!email?.includes("@")) {
+export async function forgotPasswordAction(identifier: string): Promise<ActionResult<string>> {
+  const trimmed = identifier?.trim();
+  if (!trimmed) {
     return {
       success: false,
-      error: "Please enter a valid email address.",
+      error: "Please enter your username or email address.",
     };
   }
 
-  const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:3000";
+  const targetEmail = await resolveIdentifierToEmail(trimmed);
+  if (targetEmail.includes("@") && !targetEmail.endsWith("@invalid.local")) {
+    const supabase = await createClient();
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:3000";
 
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/reset-password`,
-  });
+    await supabase.auth.resetPasswordForEmail(targetEmail, {
+      redirectTo: `${siteUrl}/reset-password`,
+    });
+  }
 
-  // Always return success to prevent email enumeration
+  // Always return success to prevent username or email enumeration
   return {
     success: true,
-    data: "If an account matches that email, a password recovery link has been sent.",
+    data: "If an account matches that username or email, a password recovery link has been sent.",
   };
 }
 

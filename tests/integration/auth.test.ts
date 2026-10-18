@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { forgotPasswordAction } from "@/features/auth/actions";
 import { createAnonClient, createAuthClient, createServiceClient, getLocalFixtures } from "./setup";
 
 describe("Phase P4: Authentication & Authorization Integration Tests", () => {
@@ -106,6 +107,17 @@ describe("Phase P4: Authentication & Authorization Integration Tests", () => {
         .maybeSingle();
 
       expect(profile).toBeNull();
+    });
+
+    it("handles password recovery by email and username cleanly with uniform success response", async () => {
+      const emailRes = await forgotPasswordAction("member@sdgc.local");
+      expect(emailRes.success).toBe(true);
+
+      const usernameRes = await forgotPasswordAction("active_member");
+      expect(usernameRes.success).toBe(true);
+
+      const nonExistentRes = await forgotPasswordAction("nonexistent_user_9999");
+      expect(nonExistentRes.success).toBe(true);
     });
   });
 

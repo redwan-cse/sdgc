@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { registerAction } from "@/features/auth/actions";
 import { registerSchema, type RegisterFormData } from "../validation";
 import { PROJECT_INTEREST_CHOICES, type ProjectInterestCode } from "@/features/membership/types";
@@ -14,8 +13,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
 
 export function RegisterForm() {
-  const router = useRouter();
-
   const [mounted, setMounted] = React.useState(false);
   const [formData, setFormData] = React.useState<RegisterFormData>({
     username: "",
@@ -44,7 +41,7 @@ export function RegisterForm() {
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [submittedEmail, setSubmittedEmail] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
@@ -89,6 +86,69 @@ export function RegisterForm() {
     );
   }
 
+  if (submittedEmail) {
+    return (
+      <div className="rounded-2xl border border-primary/20 bg-card p-6 sm:p-8 space-y-6 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="font-serif text-2xl font-bold text-foreground">
+              Registration Submitted Successfully!
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Your member profile has been created and is pending confirmation.
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-muted/40 p-5 border border-border space-y-4 text-sm text-foreground">
+          <h3 className="font-semibold text-foreground">Next Steps for Membership:</h3>
+          <ol className="list-decimal list-inside space-y-2.5 text-muted-foreground">
+            <li>
+              <strong className="text-foreground">Verify Your Email:</strong> We've sent a
+              confirmation link to <strong className="text-primary">{submittedEmail}</strong>.
+              Please check your inbox and confirm your address.
+            </li>
+            <li>
+              <strong className="text-foreground">Annual Dues Payment:</strong> Sign in to the
+              member portal to complete your $50 annual dues payment (by card or offline check).
+            </li>
+            <li>
+              <strong className="text-foreground">Officer Verification:</strong> Club leadership
+              will review and approve your membership once dues payment is received.
+            </li>
+          </ol>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <Link
+            href="/login?registered=true"
+            className="inline-flex justify-center items-center rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            Proceed to Member Sign In &rarr;
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex justify-center items-center rounded-xl border border-border bg-background px-6 py-3 text-sm font-semibold text-foreground hover:bg-muted/50 transition-colors"
+          >
+            Return to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const handleProjectToggle = (code: ProjectInterestCode) => {
     setFormData((prev) => {
       const exists = prev.projectInterests.includes(code);
@@ -103,7 +163,6 @@ export function RegisterForm() {
     e.preventDefault();
     setErrors({});
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     const result = registerSchema.safeParse(formData);
     if (!result.success) {
@@ -159,13 +218,7 @@ export function RegisterForm() {
           setErrors(mapped);
         }
       } else {
-        setSuccessMessage(
-          "Your membership registration has been submitted successfully! Redirecting to login...",
-        );
-        setTimeout(() => {
-          router.push("/login?registered=true");
-          router.refresh();
-        }, 1500);
+        setSubmittedEmail(formData.email);
       }
     } catch {
       setErrorMessage("An unexpected network error occurred. Please try again.");
@@ -182,15 +235,6 @@ export function RegisterForm() {
           role="alert"
         >
           {errorMessage}
-        </div>
-      )}
-
-      {successMessage && (
-        <div
-          className="rounded-md bg-primary/10 border border-primary/20 p-4 text-sm text-primary"
-          role="status"
-        >
-          {successMessage}
         </div>
       )}
 
@@ -491,12 +535,18 @@ export function RegisterForm() {
           </div>
         </div>
 
-        <div className="pt-2">
+        <div className="space-y-3 pt-2">
           <Checkbox
             id="reg-master-gardener"
             label="I am a certified Master Gardener"
             checked={formData.masterGardener}
             onChange={(e) => setFormData({ ...formData, masterGardener: e.target.checked })}
+          />
+          <Checkbox
+            id="reg-directory-opt-out"
+            label="Keep my contact information private (do not list me in the Member Directory)"
+            checked={formData.directoryOptOut}
+            onChange={(e) => setFormData({ ...formData, directoryOptOut: e.target.checked })}
           />
         </div>
 

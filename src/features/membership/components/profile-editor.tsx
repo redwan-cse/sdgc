@@ -47,6 +47,11 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleProjectToggle = (code: ProjectInterestCode) => {
     setFormData((prev) => {
@@ -106,7 +111,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   };
 
   return (
-    <form onSubmit={handleSave} noValidate className="space-y-8">
+    <form onSubmit={handleSave} method="POST" noValidate className="space-y-8">
       {statusMessage && (
         <div
           className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-600/30 p-4 text-sm text-emerald-800 dark:text-emerald-300"
@@ -387,7 +392,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
         </div>
       </section>
 
-      <Button type="submit" disabled={isSaving} size="lg">
+      <Button type="submit" disabled={isSaving || !mounted} size="lg">
         {isSaving ? "Saving Changes..." : "Save Profile Updates"}
       </Button>
     </form>

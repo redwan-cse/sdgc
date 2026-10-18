@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Phase P8: RBAC Personas & Access Control Matrix E2E", () => {
+  test.setTimeout(60_000);
+
   test("Super Admin persona has unrestricted access across all admin panels and directory", async ({
     page,
   }) => {

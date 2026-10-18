@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema, registerSchema } from "./validation";
+import { forgotPasswordSchema, loginSchema, registerSchema } from "./validation";
 
 describe("loginSchema", () => {
   it("accepts valid identifier and password", () => {
@@ -121,6 +121,29 @@ describe("registerSchema", () => {
     const result = registerSchema.safeParse({
       ...validBase,
       projectInterests: ["unknown_code"],
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("forgotPasswordSchema", () => {
+  it("accepts valid email address", () => {
+    const result = forgotPasswordSchema.safeParse({
+      identifier: "daisy@example.com",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts valid username", () => {
+    const result = forgotPasswordSchema.safeParse({
+      identifier: "daisy_miller",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects empty or single character identifier", () => {
+    const result = forgotPasswordSchema.safeParse({
+      identifier: "a",
     });
     expect(result.success).toBe(false);
   });

@@ -119,11 +119,8 @@ export function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/admin"
-                  className="hover:text-foreground transition-colors text-xs text-muted-foreground/80"
-                >
-                  Staff Administration
+                <Link href="/about" className="hover:text-foreground transition-colors">
+                  Community Programs
                 </Link>
               </li>
             </ul>

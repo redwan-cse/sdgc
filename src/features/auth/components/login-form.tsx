@@ -12,6 +12,23 @@ import { type LoginFormData, loginSchema } from "../validation";
 export function LoginForm() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
+  const registered = searchParams.get("registered");
+  const reset = searchParams.get("reset");
+  const notice = searchParams.get("notice");
+  const confirmed = searchParams.get("confirmed");
+
+  let infoNotice: string | null = null;
+  if (registered === "true") {
+    infoNotice =
+      "Your member application has been received! Please verify your email or sign in below.";
+  } else if (reset === "true") {
+    infoNotice =
+      "Your password has been updated successfully. Please sign in with your new password.";
+  } else if (notice === "signed_out") {
+    infoNotice = "You have been signed out safely.";
+  } else if (confirmed === "true") {
+    infoNotice = "Your email has been confirmed! Please sign in to access your membership.";
+  }
 
   const [mounted, setMounted] = React.useState(false);
   const [formData, setFormData] = React.useState<LoginFormData>({
@@ -99,6 +116,15 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-6" suppressHydrationWarning>
+      {infoNotice && (
+        <div
+          className="rounded-md bg-primary/10 border border-primary/20 p-3.5 text-xs text-primary font-medium"
+          role="status"
+        >
+          {infoNotice}
+        </div>
+      )}
+
       {errorMessage && (
         <div
           className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive"
