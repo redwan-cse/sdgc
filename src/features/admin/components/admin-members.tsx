@@ -57,7 +57,7 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
     setEditState(member.state || "");
     setEditPostalCode(member.postalCode || "");
     setEditGardeningInterests(member.gardeningInterests || "");
-    setEditVolunteerExperience(member.volunteerExperience || "");
+    setEditVolunteerExperience(member.volunteerExperience || member.workExperience || "");
     setEditIsMasterGardener(member.isMasterGardener);
     setEditDirectoryOptOut(Boolean(member.directoryOptOut));
     setEditNotes(member.adminNotes || "");
@@ -104,6 +104,7 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
                   postalCode: editPostalCode.trim() || undefined,
                   gardeningInterests: editGardeningInterests.trim() || undefined,
                   volunteerExperience: editVolunteerExperience.trim() || undefined,
+                  workExperience: editVolunteerExperience.trim() || undefined,
                   isMasterGardener: editIsMasterGardener,
                   directoryOptOut: editDirectoryOptOut,
                   adminNotes: editNotes.trim() || undefined,

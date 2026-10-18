@@ -10,6 +10,76 @@ interface MemberDirectoryProps {
   initialMembers: DirectoryMember[];
 }
 
+function MapPinIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
+      />
+    </svg>
+  );
+}
+
+function PhoneIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"
+      />
+    </svg>
+  );
+}
+
+const COMMITTEE_ALIASES: Record<string, string> = {
+  beautification: "Community Beautification",
+  community_beautification: "Community Beautification",
+  workshop: "6th Grade Workshop",
+  sixth_grade_workshop: "6th Grade Workshop",
+  reception: "New Member Reception",
+  new_member_reception: "New Member Reception",
+  website: "Club Website",
+  club_website: "Club Website",
+  garden_awards: "Community Garden Recognition Awards",
+  garden_recognition_awards: "Community Garden Recognition Awards",
+  garden_walk: "Garden Walk Fund Raiser",
+  garden_walk_fundraiser: "Garden Walk Fund Raiser",
+  charitable: "Community Charitable Contributions",
+  charitable_contributions: "Community Charitable Contributions",
+  holiday: "Holiday Decoration Workshop",
+  holiday_decoration_workshop: "Holiday Decoration Workshop",
+};
+
+export function getCommitteeLabel(code: string): string {
+  if (COMMITTEE_ALIASES[code]) {
+    return COMMITTEE_ALIASES[code];
+  }
+  const match = PROJECT_INTEREST_CHOICES.find((c) => c.code === code);
+  return match?.label || code.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function MemberDirectory({ initialMembers }: MemberDirectoryProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedInterest, setSelectedInterest] = React.useState<string>("all");
@@ -17,17 +87,22 @@ export function MemberDirectory({ initialMembers }: MemberDirectoryProps) {
 
   const filteredMembers = React.useMemo(() => {
     return initialMembers.filter((m) => {
-      // Text search: matches full name, username, city, or bio
+      // Text search: matches full name, city, or bio
       const matchesSearch =
         searchTerm.trim() === "" ||
         m.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         Boolean(m.city?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         Boolean(m.interestsExperience?.toLowerCase().includes(searchTerm.toLowerCase()));
 
       // Committee / project interest filter
       const matchesInterest =
-        selectedInterest === "all" || m.projectInterests.includes(selectedInterest);
+        selectedInterest === "all" ||
+        m.projectInterests.some((code) => {
+          if (code === selectedInterest) return true;
+          const mappedCode = COMMITTEE_ALIASES[code];
+          const mappedFilter = COMMITTEE_ALIASES[selectedInterest];
+          return Boolean(mappedCode && mappedFilter && mappedCode === mappedFilter);
+        });
 
       // Master gardener filter
       const matchesMG = !masterGardenerOnly || m.isMasterGardener;
@@ -50,7 +125,7 @@ export function MemberDirectory({ initialMembers }: MemberDirectoryProps) {
             </label>
             <Input
               id="directory-search"
-              placeholder="Search by member name, username, city, or interests..."
+              placeholder="Search by member name, city, or interests..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full"
@@ -139,9 +214,7 @@ export function MemberDirectory({ initialMembers }: MemberDirectoryProps) {
                         <h3 className="font-serif text-lg font-bold text-foreground leading-snug">
                           {member.fullName}
                         </h3>
-                        <p className="text-xs text-muted-foreground font-mono">
-                          @{member.username}
-                        </p>
+                        <p className="text-xs text-muted-foreground">Club Member</p>
                       </div>
                     </div>
 
@@ -153,10 +226,10 @@ export function MemberDirectory({ initialMembers }: MemberDirectoryProps) {
                   </div>
 
                   {/* Contact & Location */}
-                  <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="space-y-2 text-xs text-muted-foreground">
                     {(member.city || member.state) && (
-                      <p className="flex items-center gap-1.5">
-                        <span className="text-foreground/70 font-medium">📍 Location:</span>
+                      <p className="flex items-center gap-2">
+                        <MapPinIcon className="h-4 w-4 shrink-0 text-muted-foreground/80" />
                         <span>
                           {[member.city, member.state].filter(Boolean).join(", ")}
                           {member.postalCode ? ` ${member.postalCode}` : ""}
@@ -164,15 +237,24 @@ export function MemberDirectory({ initialMembers }: MemberDirectoryProps) {
                       </p>
                     )}
                     {member.phone && (
-                      <p className="flex items-center gap-1.5">
-                        <span className="text-foreground/70 font-medium">📞 Phone:</span>
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <span className="flex items-center gap-2">
+                          <PhoneIcon className="h-4 w-4 shrink-0 text-muted-foreground/80" />
+                          <a
+                            href={`tel:${member.phone.replace(/[^0-9+]/g, "")}`}
+                            className="hover:text-primary transition-colors font-medium text-foreground/90"
+                          >
+                            {member.phone}
+                          </a>
+                        </span>
                         <a
                           href={`tel:${member.phone.replace(/[^0-9+]/g, "")}`}
-                          className="hover:text-primary transition-colors"
+                          className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/20 transition-colors"
+                          aria-label={`Call ${member.fullName}`}
                         >
-                          {member.phone}
+                          Call
                         </a>
-                      </p>
+                      </div>
                     )}
                   </div>
 
@@ -191,18 +273,15 @@ export function MemberDirectory({ initialMembers }: MemberDirectoryProps) {
                       Volunteer Committees
                     </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {member.projectInterests.map((code) => {
-                        const choice = PROJECT_INTEREST_CHOICES.find((c) => c.code === code);
-                        return (
-                          <Badge
-                            key={code}
-                            variant="secondary"
-                            className="text-[10px] py-0 px-2 font-normal"
-                          >
-                            {choice?.label || code}
-                          </Badge>
-                        );
-                      })}
+                      {member.projectInterests.map((code) => (
+                        <Badge
+                          key={code}
+                          variant="secondary"
+                          className="text-[10px] py-0 px-2 font-normal"
+                        >
+                          {getCommitteeLabel(code)}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
                 )}

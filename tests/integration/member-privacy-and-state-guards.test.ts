@@ -228,4 +228,54 @@ describe("Phase 1: Member Data Privacy, Notes Persistence & State Guards", () =>
       .delete()
       .in("id", [cardPayment.id, failedCheck.id, validCheck.id]);
   });
+
+  it("preserves volunteer_experience and gardening_interests across partial admin updates and returns in roster", async () => {
+    const { client: adminClient } = await createAuthClient("admin@sdgc.local");
+
+    const testEmail = `volunteer_exp_${Date.now()}@sdgc.local`;
+    const { data: userData } = await serviceClient.auth.admin.createUser({
+      email: testEmail,
+      password: "Password123!",
+      email_confirm: true,
+      user_metadata: {
+        username: `vol_${Date.now()}`,
+        first_name: "Volunteer",
+        last_name: "Tester",
+      },
+    });
+    if (!userData.user) throw new Error("Expected user");
+    const testUserId = userData.user.id;
+
+    // Set volunteer_experience and gardening_interests
+    await serviceClient
+      .from("profiles")
+      .update({
+        volunteer_experience: "5 years leading community rose gardens",
+        gardening_interests: "Perennials, native pollinators",
+      })
+      .eq("id", testUserId);
+
+    // Admin updates ONLY city and state
+    const { error: rpcErr } = await adminClient.rpc("admin_update_member_profile", {
+      target_user_id: testUserId,
+      p_city: "Douglas",
+      p_state: "MI",
+    });
+    expect(rpcErr).toBeNull();
+
+    // Verify profile retains volunteer_experience
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("city, state, volunteer_experience, gardening_interests")
+      .eq("id", testUserId)
+      .single();
+
+    expect(profile?.city).toBe("Douglas");
+    expect(profile?.state).toBe("MI");
+    expect(profile?.volunteer_experience).toBe("5 years leading community rose gardens");
+    expect(profile?.gardening_interests).toBe("Perennials, native pollinators");
+
+    // Clean up
+    await serviceClient.auth.admin.deleteUser(testUserId);
+  });
 });
