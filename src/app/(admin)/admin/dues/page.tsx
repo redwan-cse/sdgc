@@ -6,8 +6,15 @@ export const metadata = {
   title: "Dues & Financial Reconciliation",
 };
 
-export default async function AdminDuesPage() {
+interface AdminDuesPageProps {
+  searchParams?: Promise<{ status?: string }>;
+}
+
+export default async function AdminDuesPage({ searchParams }: AdminDuesPageProps) {
   await requireCapability("dues.reconcile", "/admin/dues");
+  const params = await searchParams;
   const [records, terms] = await Promise.all([getAdminDuesRecords(), getAdminTerms()]);
-  return <AdminDues initialRecords={records} initialTerms={terms} />;
+  return (
+    <AdminDues initialRecords={records} initialTerms={terms} initialStatusFilter={params?.status} />
+  );
 }

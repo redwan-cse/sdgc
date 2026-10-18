@@ -130,7 +130,7 @@ export function MemberShell({ children, userEmail, isStaff = false }: MemberShel
       title: "MY ACCOUNT",
       items: [
         { href: "/profile", label: "My Profile", icon: UserIcon },
-        { href: "/membership", label: "Annual Dues", icon: CreditCardIcon },
+        { href: "/dues", label: "Annual Dues", icon: CreditCardIcon },
       ],
     },
     {

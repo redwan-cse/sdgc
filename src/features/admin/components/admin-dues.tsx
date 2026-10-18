@@ -9,11 +9,37 @@ import { reconcilePaymentAction, updateDuesRateAction } from "../actions";
 interface AdminDuesProps {
   initialRecords: AdminDuesRecord[];
   initialTerms?: AdminTermRecord[];
+  initialStatusFilter?: string;
 }
 
-export function AdminDues({ initialRecords, initialTerms = [] }: AdminDuesProps) {
+function formatInclusiveTermDates(opensAt: string, closesAt: string): string {
+  try {
+    const start = new Date(opensAt);
+    const end = new Date(closesAt);
+    const options: Intl.DateTimeFormatOptions = {
+      month: "short",
+      day: "numeric",
+      timeZone: "America/Detroit",
+    };
+    const startStr = start.toLocaleDateString("en-US", options);
+    const endStr = end.toLocaleDateString("en-US", {
+      ...options,
+      year: "numeric",
+    });
+    return `${startStr} – ${endStr}`;
+  } catch {
+    return `${opensAt.slice(0, 10)} to ${closesAt.slice(0, 10)}`;
+  }
+}
+
+export function AdminDues({
+  initialRecords,
+  initialTerms = [],
+  initialStatusFilter,
+}: AdminDuesProps) {
   const [records, setRecords] = React.useState<AdminDuesRecord[]>(initialRecords);
   const [terms, setTerms] = React.useState<AdminTermRecord[]>(initialTerms);
+  const [statusFilter, setStatusFilter] = React.useState<string>(initialStatusFilter || "all");
   const [notice, setNotice] = React.useState<string | null>(null);
   const [isError, setIsError] = React.useState(false);
   const [reconcilingId, setReconcilingId] = React.useState<string | null>(null);
@@ -116,6 +142,15 @@ export function AdminDues({ initialRecords, initialTerms = [] }: AdminDuesProps)
     }
   };
 
+  const filteredRecords = React.useMemo(() => {
+    return records.filter((r) => {
+      if (statusFilter === "pending") return r.status === "pending";
+      if (statusFilter === "confirmed") return r.status === "confirmed";
+      if (statusFilter === "closed") return r.status === "failed" || r.status === "refunded";
+      return true;
+    });
+  }, [records, statusFilter]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -154,7 +189,7 @@ export function AdminDues({ initialRecords, initialTerms = [] }: AdminDuesProps)
           </p>
           <p className="text-xs text-muted-foreground">
             {activeTerm
-              ? `Term active: ${activeTerm.opensAt.slice(0, 10)} to ${activeTerm.closesAt.slice(0, 10)}`
+              ? `Term active: ${formatInclusiveTermDates(activeTerm.opensAt, activeTerm.closesAt)}`
               : "Configure an annual membership term below."}
           </p>
         </div>
@@ -198,11 +233,37 @@ export function AdminDues({ initialRecords, initialTerms = [] }: AdminDuesProps)
 
       {/* Transactions Table */}
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-border font-semibold text-sm flex justify-between items-center">
-          <span>Dues Payment Journal ({records.length} records)</span>
-          <span className="text-xs text-muted-foreground">
-            Pending: {records.filter((r) => r.status === "pending").length}
-          </span>
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm">
+              Dues Payment Journal ({filteredRecords.length} records)
+            </span>
+            <span className="text-xs text-muted-foreground">
+              (Pending: {records.filter((r) => r.status === "pending").length})
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-muted-foreground mr-1">Status:</span>
+            {[
+              { id: "all", label: "All" },
+              { id: "pending", label: "Pending" },
+              { id: "confirmed", label: "Confirmed" },
+              { id: "closed", label: "Closed" },
+            ].map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setStatusFilter(f.id)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  statusFilter === f.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -217,14 +278,14 @@ export function AdminDues({ initialRecords, initialTerms = [] }: AdminDuesProps)
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {records.length === 0 ? (
+              {filteredRecords.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">
                     No payment records found.
                   </td>
                 </tr>
               ) : (
-                records.map((r) => (
+                filteredRecords.map((r) => (
                   <tr key={r.id} className="hover:bg-muted/30 transition-colors">
                     <td className="p-4">
                       <span className="font-semibold text-foreground block">{r.memberName}</span>
@@ -247,52 +308,64 @@ export function AdminDues({ initialRecords, initialTerms = [] }: AdminDuesProps)
                     <td className="p-4">
                       {r.status === "confirmed" ? (
                         <Badge variant="success">Confirmed</Badge>
+                      ) : r.status === "failed" ? (
+                        <Badge variant="destructive">Failed</Badge>
+                      ) : r.status === "refunded" ? (
+                        <Badge variant="outline">Refunded</Badge>
                       ) : (
                         <Badge variant="warning">Awaiting Clearance</Badge>
                       )}
                     </td>
                     <td className="p-4 text-right">
                       {r.status === "pending" ? (
-                        reconcilingId === r.id ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <input
-                              type="text"
-                              placeholder="Check # or note..."
-                              value={reconcileNotes}
-                              onChange={(e) => setReconcileNotes(e.target.value)}
-                              className="rounded border border-input bg-background px-2 py-1 text-xs text-foreground w-36"
-                            />
+                        r.paymentMethod === "check" ? (
+                          reconcilingId === r.id ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <input
+                                type="text"
+                                placeholder="Check # or note..."
+                                value={reconcileNotes}
+                                onChange={(e) => setReconcileNotes(e.target.value)}
+                                className="rounded border border-input bg-background px-2 py-1 text-xs text-foreground w-36"
+                              />
+                              <Button
+                                size="sm"
+                                disabled={isSubmitting}
+                                onClick={() => handleReconcile(r.id, r.memberName)}
+                              >
+                                Confirm
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setReconcilingId(null);
+                                  setReconcileNotes("");
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
                             <Button
                               size="sm"
-                              disabled={isSubmitting}
-                              onClick={() => handleReconcile(r.id, r.memberName)}
+                              variant="secondary"
+                              onClick={() => setReconcilingId(r.id)}
                             >
-                              Confirm
+                              Reconcile Check
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setReconcilingId(null);
-                                setReconcileNotes("");
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
+                          )
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setReconcilingId(r.id)}
-                          >
-                            Reconcile Payment
-                          </Button>
+                          <span className="text-xs text-muted-foreground italic">
+                            Online Processing
+                          </span>
                         )
-                      ) : (
-                        <span className="text-xs text-muted-foreground font-medium">
+                      ) : r.status === "confirmed" ? (
+                        <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
                           Reconciled
                         </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Closed</span>
                       )}
                     </td>
                   </tr>

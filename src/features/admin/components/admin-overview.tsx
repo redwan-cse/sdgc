@@ -11,31 +11,31 @@ export function AdminOverview({ metrics }: AdminOverviewProps) {
   const stats = [
     {
       label: "Active Members (Current Term)",
-      value: metrics ? String(metrics.totalMembers) : "48",
-      href: "/admin/members",
+      value: metrics ? String(metrics.totalMembers) : "—",
+      href: "/admin/members?status=approved",
     },
     {
       label: "Pending Approvals",
-      value: metrics ? String(metrics.pendingApprovals) : "3",
-      alert: metrics ? metrics.pendingApprovals > 0 : true,
-      href: "/admin/members",
+      value: metrics ? String(metrics.pendingApprovals) : "—",
+      alert: Boolean(metrics && metrics.pendingApprovals > 0),
+      href: "/admin/members?status=pending",
     },
     {
       label: "Unreconciled Dues",
-      value: metrics ? String(metrics.unreconciledPayments) : "2",
-      alert: metrics ? metrics.unreconciledPayments > 0 : true,
-      href: "/admin/dues",
+      value: metrics ? String(metrics.unreconciledPayments) : "—",
+      alert: Boolean(metrics && metrics.unreconciledPayments > 0),
+      href: "/admin/dues?status=pending",
     },
     {
       label: "Upcoming Events",
-      value: metrics ? String(metrics.upcomingEvents) : "4",
+      value: metrics ? String(metrics.upcomingEvents) : "—",
       href: "/admin/events",
     },
     {
       label: "Unread Messages",
-      value: metrics ? String(metrics.unreadMessages) : "1",
-      alert: metrics ? metrics.unreadMessages > 0 : true,
-      href: "/admin/messages",
+      value: metrics ? String(metrics.unreadMessages) : "—",
+      alert: Boolean(metrics && metrics.unreadMessages > 0),
+      href: "/admin/messages?status=unread",
     },
   ];
 

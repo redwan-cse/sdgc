@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { initiateDuesPaymentAction } from "@/features/payments/actions";
 
+import type { PaymentRecord } from "@/features/payments/types";
+
 interface DuesCardProps {
   membership: MembershipSummary;
   isLoggedIn?: boolean;
+  paymentHistory?: PaymentRecord[];
 }
 
-export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
+export function DuesCard({ membership, isLoggedIn, paymentHistory }: DuesCardProps) {
   const [selectedMethod, setSelectedMethod] = React.useState<"credit_card" | "check">(
     "credit_card",
   );
@@ -90,8 +93,14 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
               <Badge variant="default">Approved</Badge>
             ) : isConfirmed ? (
               <Badge variant="warning">Payment Confirmed &bull; Pending Staff Approval</Badge>
+            ) : currentPaymentStatus === "pending" ? (
+              membership.paymentMethod === "check" ? (
+                <Badge variant="warning">Check Awaiting Clearance</Badge>
+              ) : (
+                <Badge variant="warning">Payment Processing</Badge>
+              )
             ) : (
-              <Badge variant="outline">Payment Pending</Badge>
+              <Badge variant="outline">Payment Due</Badge>
             )}
           </div>
         </div>
@@ -107,14 +116,22 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
           <div className="rounded-lg bg-muted/40 p-3 border border-border">
             <span className="text-xs text-muted-foreground block">Payment Status</span>
             <span className="text-lg font-bold capitalize text-foreground">
-              {currentPaymentStatus}
+              {currentPaymentStatus === "unpaid"
+                ? "No payment submitted"
+                : currentPaymentStatus === "pending" && membership.paymentMethod === "check"
+                  ? "Check Awaiting Clearance"
+                  : currentPaymentStatus}
             </span>
           </div>
 
           <div className="rounded-lg bg-muted/40 p-3 border border-border">
             <span className="text-xs text-muted-foreground block">Approval Decision</span>
             <span className="text-lg font-bold text-foreground">
-              {membership.isApproved ? "Approved by Staff" : "Awaiting Verification"}
+              {membership.isApproved
+                ? "Approved by Staff"
+                : currentPaymentStatus === "unpaid"
+                  ? "Awaiting Payment"
+                  : "Awaiting Verification"}
             </span>
           </div>
         </div>
@@ -204,7 +221,8 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
               <span className="text-xs font-bold text-primary">{formattedDues}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Payable to SDGC, P.O. Box 1011, Douglas, MI 49406. Activated once check clears.
+              Payable to SDGC, P.O. Box 1011, Douglas, MI 49406. Membership activation requires
+              check clearance AND manual staff approval.
             </p>
           </button>
         </div>
@@ -225,6 +243,10 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
             <p>3. Memo line: Write your username or full name</p>
             <p>
               4. Mail to: <span className="font-bold">SDGC, P.O. Box 1011, Douglas, MI 49406</span>
+            </p>
+            <p className="mt-2 text-[11px] text-muted-foreground border-t border-border pt-2 italic">
+              Important: Per club bylaws, membership activation requires both financial clearance of
+              your check and manual administrative approval.
             </p>
           </div>
         ) : (
@@ -254,6 +276,65 @@ export function DuesCard({ membership, isLoggedIn }: DuesCardProps) {
                 : "Confirm Check Mailing Plan"}
         </Button>
       </div>
+
+      {/* Owner Payment History */}
+      {paymentHistory && paymentHistory.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-6 shadow-xs space-y-4">
+          <div>
+            <h3 className="font-serif text-xl font-bold text-foreground">Payment History</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Personal transaction record for your SDGC membership dues.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="p-3">Date</th>
+                  <th className="p-3">Method</th>
+                  <th className="p-3">Amount</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Reference</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {paymentHistory.map((p) => (
+                  <tr key={p.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="p-3 text-xs text-foreground">
+                      {new Date(p.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        timeZone: "America/Detroit",
+                      })}
+                    </td>
+                    <td className="p-3 text-xs text-foreground capitalize">
+                      {p.paymentMethod === "check" ? "Paper Check" : "Online Card"}
+                    </td>
+                    <td className="p-3 text-xs font-semibold text-foreground">
+                      ${(p.amountCents / 100).toFixed(2)} {p.currency}
+                    </td>
+                    <td className="p-3">
+                      {p.status === "confirmed" ? (
+                        <Badge variant="success">Confirmed</Badge>
+                      ) : p.status === "failed" ? (
+                        <Badge variant="destructive">Failed</Badge>
+                      ) : p.status === "refunded" ? (
+                        <Badge variant="outline">Refunded</Badge>
+                      ) : (
+                        <Badge variant="warning">Awaiting Clearance</Badge>
+                      )}
+                    </td>
+                    <td className="p-3 text-xs text-muted-foreground text-right font-mono">
+                      {p.notes || p.providerTransactionId || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

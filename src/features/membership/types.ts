@@ -41,7 +41,7 @@ export interface MemberProfile extends MemberProfileInput {
 }
 
 export type ApplicationStatus = "pending" | "approved" | "rejected" | "expired" | "suspended";
-export type PaymentStatus = "pending" | "confirmed" | "failed" | "refunded";
+export type PaymentStatus = "pending" | "confirmed" | "failed" | "refunded" | "unpaid";
 export type PaymentMethod = "credit_card" | "check";
 
 export interface MembershipSummary {

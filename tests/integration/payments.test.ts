@@ -227,4 +227,61 @@ describe("Payments & Dues Workflows (Integration)", () => {
     const { data: memberMessages } = await memberClient.client.from("contact_messages").select("*");
     expect(memberMessages?.length ?? 0).toBe(0);
   });
+
+  it("rejects manual reconciliation on electronic credit card payments", async () => {
+    // 1. Fetch 2026 term
+    const { data: term } = await serviceClient
+      .from("membership_terms")
+      .select("id")
+      .eq("year", 2026)
+      .single();
+    expect(term).toBeDefined();
+    if (!term) return;
+
+    // 2. Fetch membership for member
+    const { data: mem } = await serviceClient
+      .from("memberships")
+      .select("id, user_id")
+      .eq("user_id", memberClient.userId)
+      .limit(1)
+      .single();
+    expect(mem).toBeDefined();
+    if (!mem) return;
+
+    // 3. Create a pending credit card payment
+    const { data: cardPayment, error: createError } = await serviceClient
+      .from("payments")
+      .insert({
+        user_id: memberClient.userId,
+        membership_id: mem.id,
+        term_id: term.id,
+        amount_cents: 5000,
+        currency: "USD",
+        payment_method: "credit_card",
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    expect(createError).toBeNull();
+    expect(cardPayment).toBeDefined();
+    if (!cardPayment) return;
+
+    // 4. Treasurer attempts manual reconciliation -> must be rejected by reconcile_payment RPC
+    const { data: reconcileResult, error: rpcError } = await treasurerClient.client.rpc(
+      "reconcile_payment",
+      {
+        p_payment_id: cardPayment.id,
+        p_notes: "Attempting manual reconciliation on card",
+      },
+    );
+
+    expect(rpcError).toBeNull();
+    const res = reconcileResult as { success: boolean; error?: string };
+    expect(res.success).toBe(false);
+    expect(res.error).toMatch(/Only paper-check payments can be manually reconciled/i);
+
+    // Clean up test payment
+    await serviceClient.from("payments").delete().eq("id", cardPayment.id);
+  });
 });

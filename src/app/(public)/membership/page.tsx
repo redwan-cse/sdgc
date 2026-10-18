@@ -2,8 +2,8 @@ import { getCurrentUser } from "@/features/auth/authorization";
 import { getOwnMembershipSummary } from "@/features/membership/queries";
 import { getCurrentTermInfo } from "@/features/payments/queries";
 import { getMembershipYear } from "@/features/membership/rules";
-import { FIXTURE_MEMBERSHIP } from "../../../../tests/fixtures/public-content";
 import { DuesCard } from "@/features/membership/components/dues-card";
+import type { MembershipSummary } from "@/features/membership/types";
 
 export async function generateMetadata() {
   const term = await getCurrentTermInfo();
@@ -22,14 +22,18 @@ export default async function MembershipPage() {
   const targetYear = term?.year ?? michiganYear;
   const summary = user ? await getOwnMembershipSummary(targetYear) : null;
 
-  const membershipData = summary ?? {
-    ...FIXTURE_MEMBERSHIP,
-    duesCents: term?.duesCents ?? 5000,
-    year: targetYear,
+  const membershipData: MembershipSummary = summary ?? {
+    id: "",
     userId: user?.id ?? "",
-    paymentStatus: "pending",
-    approved: false,
-    status: "pending",
+    year: targetYear,
+    duesCents: term?.duesCents ?? 5000,
+    currency: "USD",
+    applicationStatus: "pending",
+    paymentStatus: "unpaid",
+    paymentMethod: undefined,
+    isApproved: false,
+    isSuspended: false,
+    isActive: false,
   };
 
   return (

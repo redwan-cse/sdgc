@@ -6,8 +6,13 @@ export const metadata = {
   title: "Member Roster & Approvals",
 };
 
-export default async function AdminMembersPage() {
+interface AdminMembersPageProps {
+  searchParams?: Promise<{ status?: string }>;
+}
+
+export default async function AdminMembersPage({ searchParams }: AdminMembersPageProps) {
   await requireCapability(["members.manage", "memberships.approve"], "/admin/members");
+  const params = await searchParams;
   const members = await getAdminMembers();
-  return <AdminMembers initialMembers={members} />;
+  return <AdminMembers initialMembers={members} initialStatusFilter={params?.status} />;
 }

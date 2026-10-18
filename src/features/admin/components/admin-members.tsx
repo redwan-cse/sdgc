@@ -13,11 +13,13 @@ import {
 
 interface AdminMembersProps {
   initialMembers: AdminMemberRecord[];
+  initialStatusFilter?: string;
 }
 
-export function AdminMembers({ initialMembers }: AdminMembersProps) {
+export function AdminMembers({ initialMembers, initialStatusFilter }: AdminMembersProps) {
   const [members, setMembers] = React.useState<AdminMemberRecord[]>(initialMembers);
   const [filter, setFilter] = React.useState<string>("");
+  const [statusFilter, setStatusFilter] = React.useState<string>(initialStatusFilter || "all");
   const [actionNotice, setActionNotice] = React.useState<string | null>(null);
   const [isError, setIsError] = React.useState<boolean>(false);
   const [selectedUserForRoles, setSelectedUserForRoles] = React.useState<AdminMemberRecord | null>(
@@ -205,12 +207,16 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
     }
   };
 
-  const filteredMembers = members.filter(
-    (m) =>
+  const filteredMembers = members.filter((m) => {
+    const matchesSearch =
       m.name.toLowerCase().includes(filter.toLowerCase()) ||
       m.username.toLowerCase().includes(filter.toLowerCase()) ||
-      m.email.toLowerCase().includes(filter.toLowerCase()),
-  );
+      m.email.toLowerCase().includes(filter.toLowerCase());
+    if (!matchesSearch) return false;
+    if (statusFilter === "pending") return m.applicationStatus === "pending";
+    if (statusFilter === "approved") return m.applicationStatus === "approved";
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -225,12 +231,34 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
           </p>
         </div>
 
-        <div className="w-full sm:w-64">
-          <Input
-            placeholder="Search members..."
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs">
+            {[
+              { id: "all", label: "All" },
+              { id: "pending", label: "Pending" },
+              { id: "approved", label: "Approved" },
+            ].map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setStatusFilter(f.id)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  statusFilter === f.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div className="w-full sm:w-56">
+            <Input
+              placeholder="Search members..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 

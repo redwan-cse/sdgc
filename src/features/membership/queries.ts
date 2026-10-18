@@ -125,7 +125,7 @@ export async function getOwnMembershipSummary(
     duesCents,
     currency: "USD",
     applicationStatus: membership.status as ApplicationStatus,
-    paymentStatus: (payment?.status as PaymentStatus) || "pending",
+    paymentStatus: (payment?.status as PaymentStatus) || "unpaid",
     paymentMethod: payment?.payment_method === "check" ? "check" : "credit_card",
     isApproved,
     isSuspended,

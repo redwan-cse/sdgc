@@ -14,11 +14,24 @@ import type {
 export async function getAdminOverviewStats(): Promise<AdminMetrics> {
   const supabase = await createClient();
 
+  const { data: activeTerm } = await supabase
+    .from("membership_terms")
+    .select("id, year")
+    .order("year", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let membersQuery = supabase
+    .from("memberships")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "approved");
+
+  if (activeTerm?.id) {
+    membersQuery = membersQuery.eq("term_id", activeTerm.id);
+  }
+
   const [membersRes, pendingRes, paymentsRes, eventsRes, messagesRes] = await Promise.all([
-    supabase
-      .from("memberships")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "approved"),
+    membersQuery,
     supabase
       .from("memberships")
       .select("id", { count: "exact", head: true })
@@ -27,12 +40,24 @@ export async function getAdminOverviewStats(): Promise<AdminMetrics> {
     supabase
       .from("events")
       .select("id", { count: "exact", head: true })
+      .eq("status", "published")
       .gte("starts_at", new Date().toISOString()),
     supabase
       .from("contact_messages")
       .select("id", { count: "exact", head: true })
       .eq("status", "unread"),
   ]);
+
+  const queryError =
+    membersRes.error ||
+    pendingRes.error ||
+    paymentsRes.error ||
+    eventsRes.error ||
+    messagesRes.error;
+
+  if (queryError) {
+    throw new Error(`Failed to load administrative metrics: ${queryError.message}`);
+  }
 
   return {
     totalMembers: membersRes.count ?? 0,
