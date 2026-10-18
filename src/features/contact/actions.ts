@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,7 +18,8 @@ export async function submitContactAction(
     };
   }
 
-  const { name, email, phone, message, honeypot } = result.data;
+  const { name, email, phone, senderType, category, subject, attachmentUrl, message, honeypot } =
+    result.data;
 
   // Bot detection: honeypot field must be empty
   if (honeypot && honeypot.length > 0) {
@@ -63,12 +64,17 @@ export async function submitContactAction(
   } catch {
     // Graceful fallback if headers or RPC are not available in isolated test runners
   }
+
   const { data, error } = await supabase
     .from("contact_messages")
     .insert({
       name,
       email,
       phone: phone || null,
+      sender_type: senderType || null,
+      category: category || null,
+      subject: subject || null,
+      attachment_url: attachmentUrl || null,
       message,
       status: "unread",
     })
@@ -92,6 +98,10 @@ export async function submitContactAction(
     senderName: name,
     senderEmail: email,
     senderPhone: phone || null,
+    senderType: senderType || null,
+    category: category || null,
+    subject: subject || null,
+    attachmentUrl: attachmentUrl || null,
     messageBody: message,
     submittedAt: new Date().toISOString(),
   });

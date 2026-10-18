@@ -1,10 +1,10 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import type { ActionResult } from "@/features/auth/types";
-import { loginSchema, registerSchema } from "@/features/auth/validation";
+import { changePasswordSchema, loginSchema, registerSchema } from "@/features/auth/validation";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -40,6 +40,20 @@ async function resolveIdentifierToEmail(identifier: string): Promise<string> {
 
   const { data: userData } = await admin.auth.admin.getUserById(profile.id);
   return userData?.user?.email ?? "nonexistent-user@invalid.local";
+}
+
+async function resolveDefaultDestination(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<string> {
+  const { data: userRoles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+
+  const roles = (userRoles || []).map((r) => r.role);
+  const isStaffOrAdmin = roles.some((r) => ["admin", "editor", "treasurer"].includes(r));
+  return isStaffOrAdmin ? "/admin" : "/profile";
 }
 
 export async function loginAction(formData: FormData): Promise<ActionResult<{ returnTo: string }>> {
@@ -79,29 +93,110 @@ export async function loginAction(formData: FormData): Promise<ActionResult<{ re
 
   revalidatePath("/", "layout");
 
-  // If a specific, legitimate returnTo is requested (and not just default '/profile'), respect it.
-  // Otherwise, route staff/admins to '/admin' and members to '/profile'.
+  // Determine intended landing destination
   let destination = sanitizeReturnTo(rawReturnTo as string | null, "");
   if (!destination || destination === "/profile") {
     const userId = authData.user?.id;
-    if (userId) {
-      const { data: userRoles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
+    destination = userId ? await resolveDefaultDestination(supabase, userId) : "/profile";
+  }
 
-      const roles = (userRoles || []).map((r) => r.role);
-      const isStaffOrAdmin = roles.some((r) => ["admin", "editor", "treasurer"].includes(r));
-
-      destination = isStaffOrAdmin ? "/admin" : "/profile";
-    } else {
-      destination = "/profile";
-    }
+  // Check if user has MFA TOTP enabled (step-up authentication requirement AAL2)
+  const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aalData && aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2") {
+    return {
+      success: true,
+      data: {
+        returnTo: `/mfa-verify?returnTo=${encodeURIComponent(destination)}`,
+      },
+    };
   }
 
   return {
     success: true,
     data: { returnTo: destination },
+  };
+}
+
+export async function changePasswordAction(formData: FormData): Promise<ActionResult<void>> {
+  const currentPassword = (formData.get("currentPassword") as string) || "";
+  const newPassword = (formData.get("newPassword") as string) || "";
+  const confirmPassword = (formData.get("confirmPassword") as string) || "";
+
+  const parseResult = changePasswordSchema.safeParse({
+    currentPassword,
+    newPassword,
+    confirmPassword,
+  });
+
+  if (!parseResult.success) {
+    return {
+      success: false,
+      error: "Please correct the password errors below.",
+      fieldErrors: parseResult.error.flatten().fieldErrors,
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user || !user.email) {
+    return {
+      success: false,
+      error: "You must be signed in to change your password.",
+    };
+  }
+
+  // 1. Verify current password by attempting re-authentication
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+
+  if (verifyError) {
+    return {
+      success: false,
+      error: "The current password you entered is incorrect.",
+      fieldErrors: {
+        currentPassword: ["The current password you entered is incorrect."],
+      },
+    };
+  }
+
+  // 2. Update to new password
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (updateError) {
+    return {
+      success: false,
+      error: updateError.message,
+    };
+  }
+
+  // 3. Log password change in audit events
+  try {
+    await supabase.from("audit_events").insert({
+      actor_id: user.id,
+      action: "auth.password_changed",
+      entity_type: "user",
+      entity_id: user.id,
+      details: {
+        email: user.email,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch {
+    // Non-blocking
+  }
+
+  revalidatePath("/", "layout");
+  return {
+    success: true,
+    data: undefined,
   };
 }
 

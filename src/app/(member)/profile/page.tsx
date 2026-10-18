@@ -1,13 +1,14 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { getCurrentUser } from "@/features/auth/authorization";
 import { getOwnProfile } from "@/features/membership/queries";
 import { ProfileEditor } from "@/features/membership/components/profile-editor";
+import { AccountSecurity } from "@/features/membership/components/account-security";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
-  title: "My Member Profile",
+  title: "My Member Profile & Account Security",
   description:
-    "View and edit your personal member profile details and project volunteer preferences.",
+    "View and edit your personal member profile details, password, and two-factor authentication credentials.",
 };
 
 export default async function ProfilePage() {
@@ -27,16 +28,17 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto max-w-4xl space-y-10">
       <div>
         <span className="text-xs font-semibold uppercase tracking-wider text-primary">
           Member Dashboard
         </span>
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-foreground">
-          My Member Profile
+          My Member Profile &amp; Settings
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Keep your contact information, address, and club project volunteer preferences up to date.
+          Keep your contact information, address, volunteer preferences, and account security up to
+          date.
         </p>
       </div>
 
@@ -63,7 +65,15 @@ export default async function ProfilePage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-border bg-card p-6 sm:p-10 shadow-sm">
+      {/* Profile Details Card */}
+      <div className="rounded-2xl border border-border bg-card p-6 sm:p-10 shadow-sm space-y-6">
+        <div>
+          <h2 className="font-serif text-2xl font-bold text-foreground">Member Information</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Personal contact details and project volunteer preferences
+          </p>
+        </div>
+
         {profile ? (
           <ProfileEditor initialProfile={profile} />
         ) : (
@@ -74,6 +84,11 @@ export default async function ProfilePage() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Account Security Card: Password Reset & MFA TOTP */}
+      <div className="space-y-4 pt-2">
+        <AccountSecurity userEmail={user?.email} />
       </div>
     </div>
   );

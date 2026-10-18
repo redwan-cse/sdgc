@@ -60,14 +60,14 @@ isOneToOne: false
                   ]
                 },"contact_messages": {
                   Row: {
-                    "created_at": string,"email": string,"id": string,"message": string,"name": string,"phone": string | null,"status": string,"triaged_at": string | null,"triaged_by": string | null
+                    "attachment_url": string | null,"category": string | null,"created_at": string,"email": string,"id": string,"message": string,"name": string,"phone": string | null,"sender_type": string | null,"status": string,"subject": string | null,"triaged_at": string | null,"triaged_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"email": string,"id"?: string,"message": string,"name": string,"phone"?: string | null,"status"?: string,"triaged_at"?: string | null,"triaged_by"?: string | null
+                    "attachment_url"?: string | null,"category"?: string | null,"created_at"?: string,"email": string,"id"?: string,"message": string,"name": string,"phone"?: string | null,"sender_type"?: string | null,"status"?: string,"subject"?: string | null,"triaged_at"?: string | null,"triaged_by"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"email"?: string,"id"?: string,"message"?: string,"name"?: string,"phone"?: string | null,"status"?: string,"triaged_at"?: string | null,"triaged_by"?: string | null
+                    "attachment_url"?: string | null,"category"?: string | null,"created_at"?: string,"email"?: string,"id"?: string,"message"?: string,"name"?: string,"phone"?: string | null,"sender_type"?: string | null,"status"?: string,"subject"?: string | null,"triaged_at"?: string | null,"triaged_by"?: string | null
                   }
                   Relationships: [
 

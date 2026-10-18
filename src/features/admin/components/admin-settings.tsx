@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { SiteContactSettings } from "@/features/content/types";
@@ -83,6 +84,24 @@ export function AdminSettings({ initialSettings }: AdminSettingsProps) {
           {notice}
         </div>
       )}
+
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="space-y-0.5">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-primary">
+            Operator Security &amp; Credentials
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Looking to update your administrator password or manage Two-Factor Authentication (MFA /
+            TOTP)?
+          </p>
+        </div>
+        <Link
+          href="/profile"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shrink-0 shadow-2xs"
+        >
+          <span>Account Security Settings &rarr;</span>
+        </Link>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Organization Identity & Motto */}
