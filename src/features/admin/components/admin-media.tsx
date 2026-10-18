@@ -6,7 +6,12 @@ import type { MediaItem, AlbumSummary } from "@/features/media/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { createMediaAssetAction, updateMediaAssetAction, deleteMediaAssetAction } from "../actions";
+import {
+  createMediaAssetAction,
+  updateMediaAssetAction,
+  deleteMediaAssetAction,
+  uploadMediaAssetAction,
+} from "../actions";
 
 interface AdminMediaProps {
   initialMedia?: MediaItem[];
@@ -22,6 +27,8 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
 
   // Upload/Create modal state
   const [isUploadOpen, setIsUploadOpen] = React.useState(false);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [filePreview, setFilePreview] = React.useState<string | null>(null);
   const [newStoragePath, setNewStoragePath] = React.useState("");
   const [newAltText, setNewAltText] = React.useState("");
   const [newCaption, setNewCaption] = React.useState("");
@@ -37,46 +44,97 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
     setMediaList(initialMedia);
   }, [initialMedia]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setFilePreview(url);
+      if (!newAltText) {
+        setNewAltText(file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "));
+      }
+    } else {
+      setFilePreview(null);
+    }
+  };
+
   const handleCreateMedia = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStoragePath.trim() || !newAltText.trim()) return;
+    if (!selectedFile && !newStoragePath.trim()) return;
+    if (!newAltText.trim()) return;
 
     setIsSubmitting(true);
     setIsError(false);
     try {
-      const res = await createMediaAssetAction({
-        storagePath: newStoragePath.trim(),
-        altText: newAltText.trim(),
-        caption: newCaption.trim() || undefined,
-        isPublic: newIsPublic,
-      });
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("altText", newAltText.trim());
+        formData.append("caption", newCaption.trim());
+        formData.append("isPublic", String(newIsPublic));
 
-      if (res.success && res.data) {
-        const createdId = (res.data as { id: string }).id;
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
-        const newSrc = `${supabaseUrl}/storage/v1/object/public/club-media/${newStoragePath.trim()}`;
-
-        setMediaList((prev) => [
-          {
-            id: createdId,
-            src: newSrc,
-            width: 1200,
-            height: 800,
-            alt: newAltText.trim(),
-            caption: newCaption.trim() || undefined,
-            isPublic: newIsPublic,
-            storagePath: newStoragePath.trim(),
-          },
-          ...prev,
-        ]);
-        setNotice(`Media asset "${newAltText}" created successfully.`);
-        setIsUploadOpen(false);
-        setNewStoragePath("");
-        setNewAltText("");
-        setNewCaption("");
+        const res = await uploadMediaAssetAction(formData);
+        if (res.success && res.data) {
+          const uploaded = res.data;
+          setMediaList((prev) => [
+            {
+              id: uploaded.id,
+              src: uploaded.url,
+              width: 1200,
+              height: 800,
+              alt: newAltText.trim(),
+              caption: newCaption.trim() || undefined,
+              isPublic: newIsPublic,
+              storagePath: uploaded.storagePath,
+            },
+            ...prev,
+          ]);
+          setNotice(`Media asset "${newAltText}" uploaded successfully.`);
+          setIsUploadOpen(false);
+          setSelectedFile(null);
+          setFilePreview(null);
+          setNewStoragePath("");
+          setNewAltText("");
+          setNewCaption("");
+        } else {
+          setIsError(true);
+          setNotice(`Failed to upload media asset: ${res.error}`);
+        }
       } else {
-        setIsError(true);
-        setNotice(`Failed to save media asset: ${res.error}`);
+        const res = await createMediaAssetAction({
+          storagePath: newStoragePath.trim(),
+          altText: newAltText.trim(),
+          caption: newCaption.trim() || undefined,
+          isPublic: newIsPublic,
+        });
+
+        if (res.success && res.data) {
+          const createdId = (res.data as { id: string }).id;
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
+          const newSrc = `${supabaseUrl}/storage/v1/object/public/club-media/${newStoragePath.trim()}`;
+
+          setMediaList((prev) => [
+            {
+              id: createdId,
+              src: newSrc,
+              width: 1200,
+              height: 800,
+              alt: newAltText.trim(),
+              caption: newCaption.trim() || undefined,
+              isPublic: newIsPublic,
+              storagePath: newStoragePath.trim(),
+            },
+            ...prev,
+          ]);
+          setNotice(`Media asset "${newAltText}" created successfully.`);
+          setIsUploadOpen(false);
+          setNewStoragePath("");
+          setNewAltText("");
+          setNewCaption("");
+        } else {
+          setIsError(true);
+          setNotice(`Failed to save media asset: ${res.error}`);
+        }
       }
     } catch (err: unknown) {
       setIsError(true);
@@ -296,16 +354,43 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
             <form onSubmit={handleCreateMedia} className="space-y-4 pt-2">
               <div>
                 <label
+                  htmlFor="new-file-upload"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                >
+                  Upload Image File
+                </label>
+                <input
+                  id="new-file-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="w-full text-xs text-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
+                />
+              </div>
+
+              {filePreview && (
+                <div className="relative h-36 w-full rounded-lg overflow-hidden border border-border bg-muted">
+                  <Image src={filePreview} alt="Selected preview" fill className="object-cover" />
+                </div>
+              )}
+
+              <div>
+                <label
                   htmlFor="new-storage-path"
                   className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
                 >
-                  Storage Path *
+                  Storage Path {!selectedFile && "*"}
                 </label>
                 <Input
                   id="new-storage-path"
-                  required
-                  placeholder="e.g. gallery/rose-garden-2026.jpg"
+                  required={!selectedFile}
+                  placeholder={
+                    selectedFile
+                      ? "Auto-assigned in club-media bucket"
+                      : "e.g. gallery/rose-garden-2026.jpg"
+                  }
                   value={newStoragePath}
+                  disabled={Boolean(selectedFile)}
                   onChange={(e) => setNewStoragePath(e.target.value)}
                 />
               </div>
@@ -380,6 +465,17 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
             <p className="text-xs text-muted-foreground">
               Update accessibility alt text, public caption, and visibility status.
             </p>
+
+            {editingItem.src && (
+              <div className="relative h-40 w-full rounded-lg overflow-hidden border border-border bg-muted">
+                <Image
+                  src={editingItem.src}
+                  alt={editingItem.alt || "Preview"}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
 
             <form onSubmit={handleUpdateMedia} className="space-y-4 pt-2">
               <div>

@@ -69,6 +69,14 @@ export interface AdminDuesRecord {
   createdAt: string;
 }
 
+export interface AdminVenueRecord {
+  id: string;
+  name: string;
+  address?: string;
+  city?: string;
+  state?: string;
+}
+
 export interface AdminEventRecord {
   id: string;
   title: string;
@@ -76,7 +84,7 @@ export interface AdminEventRecord {
   startsAt: string;
   endsAt?: string;
   category?: string;
-  status: "published" | "draft";
+  status: "published" | "draft" | "cancelled";
   venueName?: string;
   venueId?: string;
   description?: string;

@@ -112,7 +112,7 @@ export async function createEventAction(input: {
   startsAt: string;
   endsAt?: string;
   category?: string;
-  status: "published" | "draft";
+  status: "published" | "draft" | "cancelled";
   venueId?: string;
   description?: string;
 }): Promise<ActionResult> {
@@ -261,7 +261,7 @@ export async function updateEventAction(input: {
   startsAt: string;
   endsAt?: string;
   category?: string;
-  status: "published" | "draft";
+  status: "published" | "draft" | "cancelled";
   description?: string;
   venueId?: string;
   venueName?: string;
@@ -453,7 +453,23 @@ export async function deleteMediaAssetAction(id: string): Promise<ActionResult> 
     .single();
 
   if (asset?.storage_path) {
-    await supabase.storage.from("club-media").remove([asset.storage_path]);
+    const isStaticAsset =
+      asset.storage_path.startsWith("/images/") ||
+      asset.storage_path.startsWith("http://") ||
+      asset.storage_path.startsWith("https://");
+
+    if (!isStaticAsset) {
+      const { error: storageError } = await supabase.storage
+        .from("club-media")
+        .remove([asset.storage_path]);
+
+      if (storageError) {
+        return {
+          success: false,
+          error: `Failed to remove storage object: ${storageError.message}`,
+        };
+      }
+    }
   }
 
   const { error } = await supabase.from("media_assets").delete().eq("id", id);
@@ -518,4 +534,76 @@ export async function createMediaAssetAction(input: {
   revalidatePath("/admin/media");
   revalidatePath("/admin");
   return { success: true, message: "Photo uploaded and published", data: { id: data.id } };
+}
+
+export async function uploadMediaAssetAction(
+  formData: FormData,
+): Promise<ActionResult<{ id: string; storagePath: string; url: string }>> {
+  const user = await requireCapability("media.manage");
+  const file = formData.get("file") as File | null;
+  const altText = (formData.get("altText") as string) || "";
+  const caption = (formData.get("caption") as string) || "";
+  const isPublic = formData.get("isPublic") !== "false";
+
+  if (!file || file.size === 0) {
+    return { success: false, error: "Please select an image file to upload." };
+  }
+  if (!altText.trim()) {
+    return { success: false, error: "Alternative text is required for accessibility." };
+  }
+
+  const supabase = await createClient();
+  const fileExt = file.name.split(".").pop() || "jpg";
+  const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+  const storagePath = `gallery/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("club-media")
+    .upload(storagePath, file, {
+      contentType: file.type || "image/jpeg",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    return { success: false, error: `Upload to storage failed: ${uploadError.message}` };
+  }
+
+  const { data, error: dbError } = await supabase
+    .from("media_assets")
+    .insert({
+      storage_path: storagePath,
+      mime_type: file.type || "image/jpeg",
+      size_bytes: file.size,
+      alt_text: altText.trim(),
+      caption: caption.trim() || null,
+      is_public: isPublic,
+      width: 1200,
+      height: 800,
+    })
+    .select("id")
+    .single();
+
+  if (dbError) {
+    await supabase.storage.from("club-media").remove([storagePath]);
+    return { success: false, error: `Database record creation failed: ${dbError.message}` };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "media.uploaded",
+    entity_type: "media_asset",
+    entity_id: data.id,
+    details: { storagePath, altText },
+  });
+
+  const { data: publicUrlData } = supabase.storage.from("club-media").getPublicUrl(storagePath);
+
+  revalidatePath("/gallery");
+  revalidatePath("/admin/media");
+  revalidatePath("/admin");
+  return {
+    success: true,
+    message: "Photo uploaded successfully",
+    data: { id: data.id, storagePath, url: publicUrlData.publicUrl },
+  };
 }

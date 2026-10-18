@@ -227,7 +227,7 @@ export async function getAdminEvents(): Promise<AdminEventRecord[]> {
     startsAt: e.starts_at,
     endsAt: e.ends_at,
     category: e.category ?? e.excerpt ?? undefined,
-    status: e.status as "published" | "draft",
+    status: e.status as "published" | "draft" | "cancelled",
     venueName: e.venues?.name ?? undefined,
     venueId: e.venue_id ?? undefined,
     description: e.description,
@@ -307,5 +307,21 @@ export async function getAdminTerms(): Promise<
     currency: t.currency,
     opensAt: t.opens_at,
     closesAt: t.closes_at,
+  }));
+}
+
+export async function getAdminVenues(): Promise<import("./types").AdminVenueRecord[]> {
+  const supabase = await createClient();
+  const { data: venues } = await supabase
+    .from("venues")
+    .select("id, name, address, city, state")
+    .order("name", { ascending: true });
+
+  return (venues ?? []).map((v) => ({
+    id: v.id,
+    name: v.name,
+    address: v.address ?? undefined,
+    city: v.city ?? undefined,
+    state: v.state ?? undefined,
   }));
 }

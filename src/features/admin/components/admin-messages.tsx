@@ -8,29 +8,39 @@ import { updateMessageStatusAction } from "../actions";
 
 interface AdminMessagesProps {
   initialMessages: AdminMessageRecord[];
+  initialFilter?: string;
 }
 
-export function AdminMessages({ initialMessages }: AdminMessagesProps) {
+export function AdminMessages({ initialMessages, initialFilter }: AdminMessagesProps) {
   const [messages, setMessages] = React.useState<AdminMessageRecord[]>(initialMessages);
-  const [activeMessage, setActiveMessage] = React.useState<AdminMessageRecord | null>(
-    initialMessages[0] || null,
+  const [selectedMessageId, setSelectedMessageId] = React.useState<string | null>(
+    initialMessages[0]?.id || null,
   );
+  const [filter, setFilter] = React.useState<string>(initialFilter || "all");
   const [notice, setNotice] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setMessages(initialMessages);
-    if (!activeMessage && initialMessages.length > 0) {
-      setActiveMessage(initialMessages[0] ?? null);
+    if (!selectedMessageId && initialMessages.length > 0) {
+      setSelectedMessageId(initialMessages[0]?.id ?? null);
     }
-  }, [initialMessages, activeMessage]);
+  }, [initialMessages, selectedMessageId]);
+
+  const activeMessage = React.useMemo(() => {
+    return messages.find((m) => m.id === selectedMessageId) || null;
+  }, [messages, selectedMessageId]);
+
+  const filteredMessages = React.useMemo(() => {
+    if (filter === "unread") return messages.filter((m) => m.status === "unread");
+    if (filter === "read") return messages.filter((m) => m.status === "read");
+    if (filter === "archived") return messages.filter((m) => m.status === "archived");
+    return messages;
+  }, [messages, filter]);
 
   const handleStatusChange = async (id: string, newStatus: "unread" | "read" | "archived") => {
     const res = await updateMessageStatusAction(id, newStatus);
     if (res.success) {
       setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status: newStatus } : m)));
-      if (activeMessage?.id === id) {
-        setActiveMessage((prev) => (prev ? { ...prev, status: newStatus } : null));
-      }
       setNotice(`Message marked as ${newStatus}.`);
     }
   };
@@ -57,22 +67,45 @@ export function AdminMessages({ initialMessages }: AdminMessagesProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Messages List */}
         <div className="md:col-span-1 rounded-xl border border-border bg-card shadow-xs overflow-hidden divide-y divide-border">
-          <div className="p-3 bg-muted/40 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
-            Inquiries ({messages.length})
+          <div className="p-3 bg-muted/40 flex items-center justify-between gap-2">
+            <span className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+              Inquiries ({filteredMessages.length})
+            </span>
+            <div className="flex items-center gap-1 text-[11px]">
+              {[
+                { id: "all", label: "All" },
+                { id: "unread", label: "Unread" },
+                { id: "read", label: "Read" },
+                { id: "archived", label: "Archived" },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFilter(f.id)}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+                    filter === f.id
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
-          {messages.length === 0 ? (
+          {filteredMessages.length === 0 ? (
             <div className="p-6 text-center text-xs text-muted-foreground">
-              No inquiries received yet.
+              No inquiries match the current filter.
             </div>
           ) : (
-            messages.map((m) => {
+            filteredMessages.map((m) => {
               const isSelected = activeMessage?.id === m.id;
               return (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => {
-                    setActiveMessage(m);
+                    setSelectedMessageId(m.id);
                     if (m.status === "unread") {
                       handleStatusChange(m.id, "read");
                     }
@@ -137,12 +170,26 @@ export function AdminMessages({ initialMessages }: AdminMessagesProps) {
                 <p className="whitespace-pre-wrap">{activeMessage.message}</p>
               </div>
 
-              <div className="pt-4 border-t border-border flex items-center justify-between gap-3">
+              <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <a
                   href={`mailto:${activeMessage.email}?subject=RE: Saugatuck Douglas Garden Club Inquiry`}
-                  className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
-                  Reply via Email &rarr;
+                  <svg
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+                    />
+                  </svg>
+                  Open in Email App (mailto:)
                 </a>
 
                 <div className="space-x-2">

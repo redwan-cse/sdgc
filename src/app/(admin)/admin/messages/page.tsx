@@ -6,8 +6,13 @@ export const metadata = {
   title: "Contact Messages Inbox",
 };
 
-export default async function AdminMessagesPage() {
+interface AdminMessagesPageProps {
+  searchParams?: Promise<{ status?: string }>;
+}
+
+export default async function AdminMessagesPage({ searchParams }: AdminMessagesPageProps) {
   await requireCapability("messages.manage", "/admin/messages");
+  const params = await searchParams;
   const messages = await getAdminMessages();
-  return <AdminMessages initialMessages={messages} />;
+  return <AdminMessages initialMessages={messages} initialFilter={params?.status} />;
 }

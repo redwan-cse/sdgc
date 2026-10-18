@@ -10,27 +10,31 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { AdminEventRecord } from "../types";
+import type { AdminEventRecord, AdminVenueRecord } from "../types";
 import { createEventAction, deleteEventAction, updateEventAction } from "../actions";
 
 interface AdminEventsProps {
   initialEvents: AdminEventRecord[];
+  initialVenues?: AdminVenueRecord[];
 }
 
-export function AdminEvents({ initialEvents }: AdminEventsProps) {
+export function AdminEvents({ initialEvents, initialVenues = [] }: AdminEventsProps) {
   const [events, setEvents] = React.useState<AdminEventRecord[]>(initialEvents);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [isError, setIsError] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // New Event Form State
+  const [venues] = React.useState<AdminVenueRecord[]>(initialVenues);
   const [newTitle, setNewTitle] = React.useState("");
   const [newSlug, setNewSlug] = React.useState("");
   const [newStartsAt, setNewStartsAt] = React.useState("2026-08-15T10:00");
   const [newEndsAt, setNewEndsAt] = React.useState("2026-08-15T12:00");
   const [newCategory, setNewCategory] = React.useState("Workshops & Presentations");
-  const [newStatus, setNewStatus] = React.useState<"published" | "draft">("published");
+  const [newStatus, setNewStatus] = React.useState<"published" | "draft" | "cancelled">(
+    "published",
+  );
+  const [newVenueId, setNewVenueId] = React.useState<string>("");
   const [newDescription, setNewDescription] = React.useState("");
 
   // Edit Event Form State
@@ -40,7 +44,9 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
   const [editStartsAt, setEditStartsAt] = React.useState("");
   const [editEndsAt, setEditEndsAt] = React.useState("");
   const [editCategory, setEditCategory] = React.useState("");
-  const [editStatus, setEditStatus] = React.useState<"published" | "draft">("published");
+  const [editStatus, setEditStatus] = React.useState<"published" | "draft" | "cancelled">(
+    "published",
+  );
   const [editDescription, setEditDescription] = React.useState("");
   const [editVenueName, setEditVenueName] = React.useState("");
   const [editVenueId, setEditVenueId] = React.useState<string | undefined>(undefined);
@@ -52,7 +58,7 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
     setEditStartsAt(formatDetroitDateTimeLocal(e.startsAt));
     setEditEndsAt(e.endsAt ? formatDetroitDateTimeLocal(e.endsAt) : "");
     setEditCategory(e.category || "Workshops & Presentations");
-    setEditStatus((e.status as "published" | "draft") || "published");
+    setEditStatus((e.status as "published" | "draft" | "cancelled") || "published");
     setEditDescription(e.description || "");
     setEditVenueName(e.venueName || "");
     setEditVenueId(e.venueId);
@@ -138,6 +144,7 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
     try {
       const startsAtIso = parseDetroitDateTimeLocal(newStartsAt);
       const endsAtIso = newEndsAt ? parseDetroitDateTimeLocal(newEndsAt) : undefined;
+      const matchedVenue = venues.find((v) => v.id === newVenueId);
       const res = await createEventAction({
         title: newTitle.trim(),
         slug: sanitizedSlug,
@@ -145,6 +152,7 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
         endsAt: endsAtIso,
         category: newCategory,
         status: newStatus,
+        venueId: newVenueId || undefined,
         description: newDescription.trim() || undefined,
       });
 
@@ -160,13 +168,16 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
             endsAt: endsAtIso,
             category: newCategory,
             status: newStatus,
+            venueId: newVenueId || undefined,
+            venueName: matchedVenue ? matchedVenue.name : undefined,
             description: newDescription.trim() || undefined,
           },
         ]);
-        setNotice(`Event "${newTitle}" created and published successfully.`);
+        setNotice(`Event "${newTitle}" created and saved successfully.`);
         setIsModalOpen(false);
         setNewTitle("");
         setNewSlug("");
+        setNewVenueId("");
         setNewDescription("");
       } else {
         setIsError(true);
@@ -277,6 +288,8 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
                     <td className="p-4 whitespace-nowrap">
                       {e.status === "published" ? (
                         <Badge variant="success">Published</Badge>
+                      ) : e.status === "cancelled" ? (
+                        <Badge variant="destructive">Cancelled</Badge>
                       ) : (
                         <Badge variant="outline">Draft</Badge>
                       )}
@@ -414,13 +427,39 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
                   <select
                     id="new-event-status"
                     value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value as "published" | "draft")}
+                    onChange={(e) =>
+                      setNewStatus(e.target.value as "published" | "draft" | "cancelled")
+                    }
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                   >
                     <option value="published">Published</option>
                     <option value="draft">Draft (Hidden)</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="new-event-venue"
+                  className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                >
+                  Venue Location
+                </label>
+                <select
+                  id="new-event-venue"
+                  value={newVenueId}
+                  onChange={(e) => setNewVenueId(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="">No Venue / Virtual or TBA</option>
+                  {venues.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                      {v.city ? ` (${v.city})` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -561,11 +600,14 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
                   <select
                     id="edit-event-status"
                     value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as "published" | "draft")}
+                    onChange={(e) =>
+                      setEditStatus(e.target.value as "published" | "draft" | "cancelled")
+                    }
                     className="w-full rounded-md border border-input bg-background p-2 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
                   >
                     <option value="published">Published</option>
                     <option value="draft">Draft</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
               </div>
@@ -575,14 +617,27 @@ export function AdminEvents({ initialEvents }: AdminEventsProps) {
                   htmlFor="edit-event-venue"
                   className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
                 >
-                  Venue Name
+                  Venue Location
                 </label>
-                <Input
+                <select
                   id="edit-event-venue"
-                  placeholder="e.g. Saugatuck Center for the Arts"
-                  value={editVenueName}
-                  onChange={(e) => setEditVenueName(e.target.value)}
-                />
+                  value={editVenueId || ""}
+                  onChange={(e) => {
+                    const vid = e.target.value;
+                    setEditVenueId(vid || undefined);
+                    const matched = venues.find((v) => v.id === vid);
+                    setEditVenueName(matched ? matched.name : "");
+                  }}
+                  className="w-full rounded-md border border-input bg-background p-2 text-sm text-foreground shadow-xs focus:ring-primary focus:outline-none"
+                >
+                  <option value="">No Venue / Virtual or TBA</option>
+                  {venues.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                      {v.city ? ` (${v.city})` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
