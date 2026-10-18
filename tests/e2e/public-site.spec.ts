@@ -9,7 +9,7 @@ test.describe("Public Site Navigation & Experiences", () => {
 
     const isMobile = (page.viewportSize()?.width ?? 1024) < 1024;
 
-    const navigateTo = async (label: string) => {
+    const navigateTo = async (label: string | RegExp) => {
       if (isMobile) {
         await page.waitForSelector("header button[data-hydrated='true']");
         const toggle = page.getByLabel("Open main navigation menu");
@@ -23,7 +23,7 @@ test.describe("Public Site Navigation & Experiences", () => {
     };
 
     // About
-    await navigateTo("About");
+    await navigateTo(/^About/i);
     await expect(page).toHaveURL("/about");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       /About (Our Club|Saugatuck Douglas Garden Club)/,
@@ -44,8 +44,8 @@ test.describe("Public Site Navigation & Experiences", () => {
     await expect(page).toHaveURL("/events");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Events Calendar");
 
-    // Contact Us
-    await navigateTo("Contact Us");
+    // Contact
+    await navigateTo(/^Contact/i);
     await expect(page).toHaveURL("/contact");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Contact Us");
   });
