@@ -48,27 +48,27 @@ export function SiteFooter() {
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/" className="hover:text-foreground">
+                <Link href="/" className="hover:text-foreground transition-colors">
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-foreground">
+                <Link href="/about" className="hover:text-foreground transition-colors">
                   About Our Club
                 </Link>
               </li>
               <li>
-                <Link href="/garden-walk" className="hover:text-foreground">
+                <Link href="/garden-walk" className="hover:text-foreground transition-colors">
                   Annual Garden Walk
                 </Link>
               </li>
               <li>
-                <Link href="/events" className="hover:text-foreground">
+                <Link href="/events" className="hover:text-foreground transition-colors">
                   Club Events Calendar
                 </Link>
               </li>
               <li>
-                <Link href="/gallery" className="hover:text-foreground">
+                <Link href="/gallery" className="hover:text-foreground transition-colors">
                   Photo Gallery
                 </Link>
               </li>
@@ -81,22 +81,22 @@ export function SiteFooter() {
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/join" className="hover:text-foreground">
+                <Link href="/join" className="hover:text-foreground transition-colors">
                   Become A Member
                 </Link>
               </li>
               <li>
-                <Link href="/membership" className="hover:text-foreground">
+                <Link href="/membership" className="hover:text-foreground transition-colors">
                   Annual Dues ($50)
                 </Link>
               </li>
               <li>
-                <Link href="/login" className="hover:text-foreground">
+                <Link href="/login" className="hover:text-foreground transition-colors">
                   Member Login
                 </Link>
               </li>
               <li>
-                <Link href="/profile" className="hover:text-foreground">
+                <Link href="/profile" className="hover:text-foreground transition-colors">
                   Member Profile
                 </Link>
               </li>
@@ -105,27 +105,25 @@ export function SiteFooter() {
 
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-              Club Administration
+              Connect
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/contact" className="hover:text-foreground">
+                <Link href="/contact" className="hover:text-foreground transition-colors">
                   Contact Us
                 </Link>
               </li>
               <li>
-                <Link href="/admin" className="hover:text-foreground">
-                  Admin Dashboard
+                <Link href="/events" className="hover:text-foreground transition-colors">
+                  Meeting Schedule
                 </Link>
               </li>
               <li>
-                <Link href="/admin/members" className="hover:text-foreground">
-                  Member Approvals
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/dues" className="hover:text-foreground">
-                  Dues Reconciliation
+                <Link
+                  href="/admin"
+                  className="hover:text-foreground transition-colors text-xs text-muted-foreground/80"
+                >
+                  Staff Administration
                 </Link>
               </li>
             </ul>

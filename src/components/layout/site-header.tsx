@@ -114,7 +114,7 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
 
         {/* Desktop Navigation */}
         <nav
-          className="hidden md:flex items-center space-x-1 lg:space-x-2"
+          className="hidden md:flex items-center space-x-0.5 lg:space-x-2"
           aria-label="Main Site Navigation"
         >
           {NAV_LINKS.map((link) => {
@@ -123,7 +123,8 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
               <Link
                 key={link.href}
                 href={link.href as Route}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                aria-current={isActive ? "page" : undefined}
+                className={`rounded-md px-2.5 py-1.5 text-xs lg:px-3 lg:py-2 lg:text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-primary/10 text-primary font-semibold"
                     : "text-foreground hover:bg-muted"
@@ -136,46 +137,46 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
         </nav>
 
         {/* Desktop Member / Admin quick actions */}
-        <div className="hidden lg:flex items-center space-x-2 border-l border-border pl-4">
+        <div className="hidden md:flex items-center space-x-1.5 lg:space-x-2 border-l border-border pl-3 lg:pl-4">
           <ThemeToggle />
           {currentUser ? (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5 lg:space-x-2">
               {currentUser.isStaff && (
                 <Link
                   href="/admin"
-                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors"
+                  className="rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors"
                 >
-                  Admin Dashboard
+                  Admin
                 </Link>
               )}
               <Link
                 href="/profile"
-                className="rounded-md px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors"
+                className="rounded-md px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors"
               >
-                My Profile
+                Profile
               </Link>
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  className="rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                 >
                   Sign Out
                 </button>
               </form>
             </div>
           ) : (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5 lg:space-x-2">
               <Link
                 href="/login"
-                className="rounded-md px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors"
+                className="rounded-md px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors"
               >
                 Login
               </Link>
               <Link
                 href="/join"
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors"
+                className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors whitespace-nowrap"
               >
-                Become a Member
+                Join
               </Link>
             </div>
           )}
@@ -226,6 +227,7 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
         onClose={() => setMobileMenuOpen(false)}
         links={NAV_LINKS}
         authLinks={authLinks}
+        currentUser={currentUser}
         toggleRef={toggleRef}
       />
     </header>

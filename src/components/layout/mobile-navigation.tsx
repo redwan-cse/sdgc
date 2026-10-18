@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Route } from "next";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { logoutAction } from "@/features/auth/actions";
 
 interface NavLinkItem {
   href: Route | string;
@@ -17,6 +18,10 @@ interface MobileNavigationProps {
   onClose: () => void;
   links: NavLinkItem[];
   authLinks: NavLinkItem[];
+  currentUser?: {
+    email: string;
+    isStaff: boolean;
+  } | null;
   toggleRef: React.RefObject<HTMLButtonElement | null>;
 }
 
@@ -25,6 +30,7 @@ export function MobileNavigation({
   onClose,
   links,
   authLinks,
+  currentUser,
   toggleRef,
 }: MobileNavigationProps) {
   const pathname = usePathname();
@@ -45,6 +51,17 @@ export function MobileNavigation({
       }
     }
   }, [pathname, isOpen, onClose]);
+
+  // Cleanly close when viewport expands to tablet/desktop
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isOpen, onClose]);
 
   // Trap focus and handle Escape
   React.useEffect(() => {
@@ -144,6 +161,7 @@ export function MobileNavigation({
               key={link.href}
               href={link.href as Route}
               onClick={onClose}
+              aria-current={isActive ? "page" : undefined}
               className={`text-lg font-medium transition-colors py-3 px-4 rounded-lg ${
                 isActive
                   ? "bg-primary text-primary-foreground font-semibold"
@@ -157,19 +175,52 @@ export function MobileNavigation({
       </nav>
 
       <div className="mt-8 border-t border-border pt-6 flex flex-col space-y-2 pb-6">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold px-4 pb-1">
-          Member & Admin Area
-        </span>
-        {authLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href as Route}
-            onClick={onClose}
-            className="text-base font-medium text-foreground py-2.5 px-4 rounded-lg hover:bg-muted transition-colors"
-          >
-            {link.label}
-          </Link>
-        ))}
+        <div className="flex items-center justify-between px-4 pb-1">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+            Member & Admin Area
+          </span>
+          {currentUser?.isStaff && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+              Staff
+            </span>
+          )}
+        </div>
+
+        {currentUser?.email && (
+          <p className="px-4 text-xs text-muted-foreground pb-2 truncate">
+            Signed in as <span className="font-medium text-foreground">{currentUser.email}</span>
+          </p>
+        )}
+
+        {authLinks.map((link) => {
+          const isActive = pathname === link.href;
+          return (
+            <Link
+              key={link.href}
+              href={link.href as Route}
+              onClick={onClose}
+              aria-current={isActive ? "page" : undefined}
+              className={`text-base font-medium py-2.5 px-4 rounded-lg transition-colors ${
+                isActive
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-foreground hover:bg-muted"
+              }`}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
+
+        {currentUser && (
+          <form action={logoutAction} className="pt-2 px-4">
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 py-2.5 text-center text-sm font-medium transition-colors cursor-pointer"
+            >
+              Sign Out
+            </button>
+          </form>
+        )}
       </div>
     </div>,
     document.body,
