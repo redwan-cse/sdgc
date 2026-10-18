@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { siteConfig } from "@/config/site";
 import { getSiteContactSettings } from "@/features/content/queries";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 
 export async function SiteFooter() {
   const currentYear = new Date().getFullYear();
@@ -14,7 +15,7 @@ export async function SiteFooter() {
           <div className="sm:col-span-2 lg:col-span-2">
             <Link href="/" className="flex items-center space-x-3 mb-4">
               <Image
-                src="/images/brand/sdgc-logo.jpg"
+                src={resolveMediaUrl("/images/brand/sdgc-logo.jpg")}
                 alt="Saugatuck Douglas Garden Club logo"
                 width={48}
                 height={48}

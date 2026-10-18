@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import type { Route } from "next";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { logoutAction } from "@/features/auth/actions";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 
 interface MemberShellProps {
   children: React.ReactNode;
@@ -155,7 +156,7 @@ export function MemberShell({ children, userEmail, isStaff = false }: MemberShel
         <div className="flex h-16 items-center justify-between border-b border-border px-5">
           <Link href="/profile" className="flex items-center space-x-3">
             <Image
-              src="/images/brand/sdgc-logo.jpg"
+              src={resolveMediaUrl("/images/brand/sdgc-logo.jpg")}
               alt="SDGC Logo"
               width={36}
               height={36}

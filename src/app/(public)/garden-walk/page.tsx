@@ -4,6 +4,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { formatEventDateTime } from "@/features/events/calendar";
 import { getGardenWalkPageContent } from "@/features/content/queries";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 
 export const metadata = {
   title: "Annual Garden Walk",
@@ -14,49 +15,49 @@ export const metadata = {
 const FEATURED_GARDEN_WALK_PHOTOS = [
   {
     id: "gw-1",
-    src: "/images/gallery/garden-walk/2O8A8017-scaled.jpeg",
+    src: resolveMediaUrl("/images/gallery/garden-walk/2O8A8017-scaled.jpeg"),
     alt: "Lush shade garden with mature hostas and Japanese maples",
     caption: "Verdant shade sanctuary featuring woodland perennials and Japanese maples.",
   },
   {
     id: "gw-2",
-    src: "/images/gallery/garden-walk/2O8A8020-scaled.jpeg",
+    src: resolveMediaUrl("/images/gallery/garden-walk/2O8A8020-scaled.jpeg"),
     alt: "Sunlit perennial borders in peak July bloom",
     caption: "Coneflowers, black-eyed Susans, and ornamental grasses in full sun.",
   },
   {
     id: "gw-3",
-    src: "/images/gallery/garden-walk/2O8A8022-scaled.jpeg",
+    src: resolveMediaUrl("/images/gallery/garden-walk/2O8A8022-scaled.jpeg"),
     alt: "Stone garden pathway and blooming cottage borders",
     caption: "Handcrafted stone walkway winding through colorful pollinator beds.",
   },
   {
     id: "gw-4",
-    src: "/images/gallery/garden-walk/2O8A8025-scaled.jpeg",
+    src: resolveMediaUrl("/images/gallery/garden-walk/2O8A8025-scaled.jpeg"),
     alt: "Architectural garden design with outdoor living spaces",
     caption: "Bespoke garden sitting area integrating native Michigan plantings.",
   },
   {
     id: "gw-5",
-    src: "/images/gallery/garden-walk/2O8A8032-scaled.jpeg",
+    src: resolveMediaUrl("/images/gallery/garden-walk/2O8A8032-scaled.jpeg"),
     alt: "Woodland garden path beneath mature oaks",
     caption: "Tranquil woodland stroll garden in Saugatuck.",
   },
   {
     id: "gw-6",
-    src: "/images/gallery/garden-walk/2O8A8037-scaled.jpeg",
+    src: resolveMediaUrl("/images/gallery/garden-walk/2O8A8037-scaled.jpeg"),
     alt: "Cottage perennial border bursting with vibrant color",
     caption: "Delphiniums, daylilies, and phlox in an English-style cottage garden.",
   },
   {
     id: "gw-7",
-    src: "/images/gallery/garden-walk/2O8A8041-scaled.jpeg",
+    src: resolveMediaUrl("/images/gallery/garden-walk/2O8A8041-scaled.jpeg"),
     alt: "Natural garden water feature and reflection pool",
     caption: "Custom water garden providing a haven for wildlife and pollinators.",
   },
   {
     id: "gw-8",
-    src: "/images/gallery/garden-walk/2O8A8043-scaled.jpeg",
+    src: resolveMediaUrl("/images/gallery/garden-walk/2O8A8043-scaled.jpeg"),
     alt: "Lakeshore hydrangea borders and sculptured shrubs",
     caption: "Magnificent Annabelle and panicle hydrangeas framing private grounds.",
   },

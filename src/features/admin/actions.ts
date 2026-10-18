@@ -724,7 +724,7 @@ export async function uploadMediaAssetAction(
   const { data, error: dbError } = await supabase
     .from("media_assets")
     .insert({
-      storage_path: uploadResult.storagePath,
+      storage_path: uploadResult.url || uploadResult.storagePath,
       mime_type: mimeType,
       size_bytes: sizeBytes,
       alt_text: altText.trim(),

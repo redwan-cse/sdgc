@@ -3,9 +3,11 @@ import Script from "next/script";
 import "@fontsource-variable/inter";
 import "@fontsource-variable/lora";
 import { siteConfig } from "@/config/site";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://saugatuckdouglasgardenclub.com";
+const logoUrl = resolveMediaUrl("/images/brand/sdgc-logo.jpg");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/images/brand/sdgc-logo.jpg",
+        url: logoUrl,
         width: 800,
         height: 600,
         alt: siteConfig.name,
@@ -34,7 +36,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
-    images: ["/images/brand/sdgc-logo.jpg"],
+    images: [logoUrl],
   },
 };
 

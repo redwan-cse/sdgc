@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { CLUB_TIMEZONE, getDetroitDateString } from "./calendar";
 import type { EventCalendarView, EventPage, EventSummary } from "./types";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 
 export interface EventFilterOptions {
   query?: string;
@@ -133,7 +134,7 @@ export async function listEvents(filters: EventFilterOptions = {}): Promise<Even
       venueName: venue?.name || "TBD Saugatuck / Douglas",
       venueAddress: fullAddress,
       ticketUrl: item.ticket_url || undefined,
-      featuredImage: item.featured_image || undefined,
+      featuredImage: item.featured_image ? resolveMediaUrl(item.featured_image) : undefined,
       isPast: endsDate < now,
     };
   });
@@ -205,7 +206,7 @@ export async function getEventBySlug(slug: string): Promise<EventSummary | null>
     venueName: venue?.name || "TBD Saugatuck / Douglas",
     venueAddress: fullAddress,
     ticketUrl: item.ticket_url || undefined,
-    featuredImage: item.featured_image || undefined,
+    featuredImage: item.featured_image ? resolveMediaUrl(item.featured_image) : undefined,
     isPast: endsDate < now,
   };
 }
@@ -307,7 +308,7 @@ export async function listUpcomingEvents(limit: number = 3): Promise<EventSummar
       venueName: venue?.name || "TBD Saugatuck / Douglas",
       venueAddress: fullAddress,
       ticketUrl: item.ticket_url || undefined,
-      featuredImage: item.featured_image || undefined,
+      featuredImage: item.featured_image ? resolveMediaUrl(item.featured_image) : undefined,
       isPast: endsDate < nowDate,
     };
   });

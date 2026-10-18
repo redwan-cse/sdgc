@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getEventBySlug, listEvents } from "@/features/events/queries";
 import { EventDetailCard } from "@/features/events/components/event-detail-card";
 import { serializeJsonLd } from "@/lib/jsonld";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 
 interface EventDetailPageProps {
   params: Promise<{
@@ -61,8 +62,10 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     },
     image: [
       event.featuredImage
-        ? `${siteUrl}${event.featuredImage}`
-        : `${siteUrl}/images/brand/sdgc-logo.jpg`,
+        ? event.featuredImage.startsWith("http")
+          ? event.featuredImage
+          : `${siteUrl}${event.featuredImage}`
+        : resolveMediaUrl("/images/brand/sdgc-logo.jpg"),
     ],
     url: eventUrl,
     ...(event.ticketUrl

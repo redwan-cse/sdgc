@@ -144,13 +144,14 @@ export class CloudinaryStorageProvider implements StorageProvider {
   readonly type: StorageProviderType = "cloudinary";
 
   private configure(): { cloudName: string } {
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const cloudName =
+      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
     if (!cloudName || !apiKey || !apiSecret) {
       throw new Error(
-        "Cloudinary is configured as the storage provider, but CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, or CLOUDINARY_API_SECRET is missing.",
+        "Cloudinary is configured as the storage provider, but CLOUDINARY_CLOUD_NAME (or NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME), CLOUDINARY_API_KEY, or CLOUDINARY_API_SECRET is missing.",
       );
     }
 
@@ -174,11 +175,18 @@ export class CloudinaryStorageProvider implements StorageProvider {
 
     const cleanPublicId = params.path.replace(/\.[^/.]+$/, "");
 
+    const defaultFolder =
+      process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || process.env.CLOUDINARY_FOLDER || "sdgc-web";
+    const targetFolder =
+      params.bucket && params.bucket !== "club-media"
+        ? `${defaultFolder}/${params.bucket}`
+        : defaultFolder;
+
     const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           public_id: cleanPublicId,
-          folder: params.bucket || "sdgc",
+          folder: targetFolder,
           resource_type: "auto",
         },
         (error, res) => {
@@ -205,16 +213,28 @@ export class CloudinaryStorageProvider implements StorageProvider {
   }
 
   async getPublicUrl(_bucket: string, path: string): Promise<string> {
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "sdgc";
+    const cloudName =
+      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
+      process.env.CLOUDINARY_CLOUD_NAME ||
+      "p4wempwi";
+    const defaultFolder =
+      process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || process.env.CLOUDINARY_FOLDER || "sdgc-web";
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
     }
-    return `https://res.cloudinary.com/${cloudName}/image/upload/${path}`;
+    const cleanPath = path.startsWith(`${defaultFolder}/`)
+      ? path
+      : `${defaultFolder}/${path.replace(/^\/+/, "")}`;
+    return `https://res.cloudinary.com/${cloudName}/image/upload/${cleanPath}`;
   }
 }
 
 export function getStorageProvider(): StorageProvider {
-  const providerType = (process.env.STORAGE_PROVIDER || "supabase").toLowerCase();
+  const providerType = (
+    process.env.NEXT_PUBLIC_STORAGE_PROVIDER ||
+    process.env.STORAGE_PROVIDER ||
+    "supabase"
+  ).toLowerCase();
 
   switch (providerType) {
     case "cloudflare_r2":

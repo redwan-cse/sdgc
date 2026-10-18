@@ -19,6 +19,7 @@ import {
   deleteEventAction,
   updateEventAction,
 } from "../actions";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 
 interface AdminEventsProps {
   initialEvents: AdminEventRecord[];
@@ -26,11 +27,26 @@ interface AdminEventsProps {
 }
 
 const PRESET_EVENT_BANNERS = [
-  { label: "Garden Walk & Flowers", url: "/images/wordpress/2O8A6013-653x653-1.jpg" },
-  { label: "Holiday Swag Workshop", url: "/images/wordpress/DSC_7044-651x651-1.jpg" },
-  { label: "Member Tea & Luncheon", url: "/images/wordpress/DSC_0553-1349x1349-1.jpg" },
-  { label: "Gardening & Landscape", url: "/images/wordpress/2O8A6596-1000x1000-1.jpg" },
-  { label: "Waterfront & Civic", url: "/images/wordpress/2O8A5979-scaled-e1746814119349.jpeg" },
+  {
+    label: "Garden Walk & Flowers",
+    url: resolveMediaUrl("/images/wordpress/2O8A6013-653x653-1.jpg"),
+  },
+  {
+    label: "Holiday Swag Workshop",
+    url: resolveMediaUrl("/images/wordpress/DSC_7044-651x651-1.jpg"),
+  },
+  {
+    label: "Member Tea & Luncheon",
+    url: resolveMediaUrl("/images/wordpress/DSC_0553-1349x1349-1.jpg"),
+  },
+  {
+    label: "Gardening & Landscape",
+    url: resolveMediaUrl("/images/wordpress/2O8A6596-1000x1000-1.jpg"),
+  },
+  {
+    label: "Waterfront & Civic",
+    url: resolveMediaUrl("/images/wordpress/2O8A5979-scaled-e1746814119349.jpeg"),
+  },
 ];
 
 function insertFormatting(

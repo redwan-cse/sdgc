@@ -1,3 +1,5 @@
+import { resolveMediaUrl } from "./storage/media-url";
+
 /**
  * Safely serializes data for injection into an inline <script type="application/ld+json"> tag.
  * Replaces '<' with unicode escape '\u003c' to prevent HTML script tag breakout (CWE-79 / XSS sink).
@@ -30,7 +32,7 @@ export function generateOrganizationSchema(contact: OrganizationSchemaInput) {
     name: contact.name,
     legalName: contact.name,
     url: "https://saugatuckdouglasgardenclub.com",
-    logo: "https://saugatuckdouglasgardenclub.com/images/brand/sdgc-logo.jpg",
+    logo: resolveMediaUrl("/images/brand/sdgc-logo.jpg"),
     description:
       contact.motto ||
       "Dedicated to civic beautification, education, scholarships, and friendship since 1928 across Saugatuck and Douglas, Michigan.",

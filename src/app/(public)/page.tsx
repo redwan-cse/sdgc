@@ -8,6 +8,7 @@ import { listUpcomingEvents } from "@/features/events/queries";
 import { ContactForm } from "@/features/contact/components/contact-form";
 import { formatEventDateTime } from "@/features/events/calendar";
 import { generateOrganizationSchema, serializeJsonLd } from "@/lib/jsonld";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 
 export const metadata = {
   title: {
@@ -101,7 +102,9 @@ export default async function HomePage() {
                 {/* Main photograph */}
                 <div className="relative aspect-4/3 sm:aspect-16/10 lg:aspect-4/3 w-full overflow-hidden rounded-2xl border border-border shadow-md bg-muted">
                   <Image
-                    src={homeData.heroImage || "/images/wordpress/DSC_2808-scaled-1.jpg"}
+                    src={resolveMediaUrl(
+                      homeData.heroImage || "/images/wordpress/DSC_2808-scaled-1.jpg",
+                    )}
                     alt="Saugatuck Douglas Garden Club blooming perennial garden"
                     fill
                     priority
@@ -125,7 +128,7 @@ export default async function HomePage() {
                 {/* Overlaid circular club emblem badge */}
                 <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 rounded-full border-2 border-background bg-card/95 p-2 shadow-lg backdrop-blur-xs">
                   <Image
-                    src="/images/wordpress/SDGC-Logov3-transparent-modified.png"
+                    src={resolveMediaUrl("/images/wordpress/SDGC-Logov3-transparent-modified.png")}
                     alt="SDGC emblem"
                     width={56}
                     height={56}

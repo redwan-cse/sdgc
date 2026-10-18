@@ -10,14 +10,15 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 import { createClient } from "@/lib/supabase/client";
 import { logoutAction } from "@/features/auth/actions";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/about", label: "About Our Club" },
+  { href: "/about", label: "About" },
   { href: "/garden-walk", label: "Garden Walk" },
   { href: "/events", label: "Events" },
   { href: "/gallery", label: "Gallery" },
-  { href: "/contact", label: "Contact Us" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export interface SiteHeaderProps {
@@ -92,21 +93,23 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex items-center space-x-2 sm:space-x-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+          className="group flex items-center gap-3.5 rounded-lg py-1 px-1 -ml-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
         >
-          <Image
-            src="/images/brand/sdgc-logo.jpg"
-            alt="Saugatuck Douglas Garden Club logo"
-            width={56}
-            height={56}
-            priority
-            className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover shadow-xs border border-border"
-          />
-          <div className="flex flex-col">
-            <span className="font-serif text-base font-bold leading-tight text-primary sm:text-xl">
+          <div className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-primary/20 bg-white p-0.5 shadow-xs transition-all duration-300 group-hover:ring-primary/40 group-hover:scale-105">
+            <Image
+              src={resolveMediaUrl("/images/brand/sdgc-logo.jpg")}
+              alt="Saugatuck Douglas Garden Club logo"
+              width={52}
+              height={52}
+              priority
+              className="h-11 w-11 sm:h-12 sm:w-12 rounded-full object-contain"
+            />
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="font-serif text-lg sm:text-xl font-bold leading-tight tracking-tight text-foreground transition-colors group-hover:text-primary">
               Saugatuck Douglas
             </span>
-            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="mt-0.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-primary/90 dark:text-primary leading-none">
               Garden Club
             </span>
           </div>
@@ -114,7 +117,7 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
 
         {/* Desktop Navigation */}
         <nav
-          className="hidden lg:flex items-center space-x-1 lg:space-x-1.5 xl:space-x-2 shrink-0"
+          className="hidden lg:flex items-center gap-1 xl:gap-1.5 shrink-0"
           aria-label="Main Site Navigation"
         >
           {NAV_LINKS.map((link) => {
@@ -124,10 +127,10 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
                 key={link.href}
                 href={link.href as Route}
                 aria-current={isActive ? "page" : undefined}
-                className={`rounded-md px-2.5 py-1.5 text-xs lg:px-3 lg:py-2 lg:text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors whitespace-nowrap ${
                   isActive
                     ? "bg-primary/10 text-primary font-semibold"
-                    : "text-foreground hover:bg-muted"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted"
                 }`}
               >
                 {link.label}
@@ -137,44 +140,44 @@ export function SiteHeader({ initialUser }: SiteHeaderProps = {}) {
         </nav>
 
         {/* Desktop Member / Admin quick actions */}
-        <div className="hidden lg:flex items-center space-x-1.5 lg:space-x-2 border-l border-border pl-2 sm:pl-3 lg:pl-4 shrink-0">
+        <div className="hidden lg:flex items-center gap-2 border-l border-border pl-3 xl:pl-4 shrink-0">
           <ThemeToggle />
           {currentUser ? (
-            <div className="flex items-center space-x-1.5 lg:space-x-2">
+            <div className="flex items-center gap-2">
               {currentUser.isStaff && (
                 <Link
                   href="/admin"
-                  className="rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors whitespace-nowrap"
+                  className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 whitespace-nowrap"
                 >
                   Admin
                 </Link>
               )}
               <Link
                 href="/profile"
-                className="rounded-md px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors whitespace-nowrap"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-border/80 bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted whitespace-nowrap"
               >
                 Profile
               </Link>
-              <form action={logoutAction}>
+              <form action={logoutAction} className="inline-flex">
                 <button
                   type="submit"
-                  className="rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer whitespace-nowrap"
+                  className="inline-flex h-9 items-center justify-center rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted cursor-pointer whitespace-nowrap"
                 >
                   Sign Out
                 </button>
               </form>
             </div>
           ) : (
-            <div className="flex items-center space-x-1.5 lg:space-x-2">
+            <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="rounded-md px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted border border-border transition-colors whitespace-nowrap"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-border/80 bg-card px-3.5 text-sm font-medium text-foreground shadow-2xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring whitespace-nowrap"
               >
                 Login
               </Link>
               <Link
                 href="/join"
-                className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors whitespace-nowrap"
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring whitespace-nowrap"
               >
                 Join
               </Link>

@@ -22,8 +22,8 @@ test.describe("Public Site Navigation & Experiences", () => {
       }
     };
 
-    // About Our Club
-    await navigateTo("About Our Club");
+    // About
+    await navigateTo("About");
     await expect(page).toHaveURL("/about");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       /About (Our Club|Saugatuck Douglas Garden Club)/,

@@ -28,7 +28,7 @@ test.describe("Phase 2: Responsive Navigation & Breakpoint Parity", () => {
 
         // Check dialog has links and auth options
         await expect(dialog.getByRole("link", { name: "Home" })).toBeVisible();
-        await expect(dialog.getByRole("link", { name: "About Our Club" })).toBeVisible();
+        await expect(dialog.getByRole("link", { name: /^About/i })).toBeVisible();
         await expect(dialog.getByRole("link", { name: "Member Login" })).toBeVisible();
         await expect(dialog.getByRole("link", { name: "Become A Member" })).toBeVisible();
 

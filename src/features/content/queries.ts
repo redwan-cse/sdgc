@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveMediaUrl } from "@/lib/storage/media-url";
 import { CLUB_TIMEZONE } from "@/features/events/calendar";
 import type { EventSummary } from "@/features/events/types";
 import {
@@ -27,9 +28,7 @@ export async function getHomePageContent(): Promise<PageContent | null> {
     .eq("status", "published")
     .maybeSingle();
 
-  if (error || !data) {
-    return null;
-  }
+  const pageRecord = error ? null : data;
 
   // Load motto and contact info from site_settings if available
   const { data: contactSetting } = await supabase
@@ -54,24 +53,29 @@ export async function getHomePageContent(): Promise<PageContent | null> {
   const motto =
     customHome?.motto ||
     (contactSetting?.value as { motto?: string } | null)?.motto ||
-    data.meta_description ||
+    pageRecord?.meta_description ||
     "We promote, encourage and support the use of flora to enrich and beautify Saugatuck and Douglas, Michigan, and surrounding areas.";
 
   const story: HomePageStory = {
     ...DEFAULT_HOMEPAGE_STORY,
     ...(customHome?.story || {}),
+    image: resolveMediaUrl(customHome?.story?.image || DEFAULT_HOMEPAGE_STORY.image),
   };
 
-  const sections: PageSection[] =
+  const sections: PageSection[] = (
     customHome?.sections && Array.isArray(customHome.sections) && customHome.sections.length > 0
       ? customHome.sections
-      : DEFAULT_HOMEPAGE_SECTIONS;
+      : DEFAULT_HOMEPAGE_SECTIONS
+  ).map((s) => ({
+    ...s,
+    image: resolveMediaUrl(s.image),
+  }));
 
   return {
     slug: "home",
-    title: data.title || "Saugatuck Douglas Garden Club",
+    title: pageRecord?.title || "Saugatuck Douglas Garden Club",
     subtitle: motto,
-    heroImage: "/images/wordpress/DSC_2808-scaled-1.jpg",
+    heroImage: resolveMediaUrl("/images/wordpress/DSC_2808-scaled-1.jpg"),
     story,
     sections,
   };
@@ -93,11 +97,8 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
     .eq("status", "published")
     .maybeSingle();
 
-  if (error || !data) {
-    return null;
-  }
-
-  const parsedStoryBody = data.content ? cleanHtmlParagraphs(data.content) : [];
+  const pageRecord = error ? null : data;
+  const parsedStoryBody = pageRecord?.content ? cleanHtmlParagraphs(pageRecord.content) : [];
 
   const storyBody =
     parsedStoryBody.length > 0
@@ -109,16 +110,16 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
 
   return {
     slug: "about",
-    title: data.title || "About Our Club",
+    title: pageRecord?.title || "About Our Club",
     subtitle:
-      data.meta_description ||
+      pageRecord?.meta_description ||
       "Civic beautification, education, scholarships, and friendship since 1928 across Saugatuck and Douglas, Michigan.",
     sections: [
       {
         id: "our-story",
         heading: "Our Story & Purpose",
         body: storyBody,
-        image: "/images/content/executive-committee.jpeg",
+        image: resolveMediaUrl("/images/content/executive-committee.jpeg"),
         imageAlt: "Saugatuck Douglas Garden Club Executive Committee",
       },
       {
@@ -129,7 +130,7 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
           "Membership Perennial Plant & Treasure Sale: Club members divide their own hardy perennials, potting and offering them at the Old School House during the Garden Walk for only $5 each or 6 for $25. Members also donate garden treasures, driftwood, and trellises.",
           "Awesome Annuals Sale: Members order premium annuals from Van Til's local greenhouse each February for mid-May pickup, raising over $1,500 each year directly for local youth scholarships.",
         ],
-        image: "/images/content/plant-sale-old-schoolhouse.jpeg",
+        image: resolveMediaUrl("/images/content/plant-sale-old-schoolhouse.jpeg"),
         imageAlt: "Membership Plant Sale at the Old School House in Douglas",
       },
       {
@@ -140,7 +141,7 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
           "Douglas Downtown Bump-Outs: The club adopted three prominent corner garden plots in Douglas — in front of City Hall, across Center Street, and at the police station — planting and weeding them all season long.",
           "Saugatuck-Douglas Library Flowers: Beginning every June, club volunteers deliver fresh floral arrangements and potted plants bi-weekly to brighten the library circulation desk.",
         ],
-        image: "/images/wordpress/DSC_7044-651x651-1.jpg",
+        image: resolveMediaUrl("/images/wordpress/DSC_7044-651x651-1.jpg"),
         imageAlt: "Community beautification planters in downtown Saugatuck",
       },
       {
@@ -151,7 +152,7 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
           "Winners receive a commemorative lawn sign for the month and a $25 gift certificate to Huntree Nursery to encourage ongoing horticultural excellence.",
           "Annual Member Garden Award: Each year our Club President recognizes one outstanding club member's garden sanctuary with a special achievement award.",
         ],
-        image: "/images/wordpress/DSC_0553-1349x1349-1.jpg",
+        image: resolveMediaUrl("/images/wordpress/DSC_0553-1349x1349-1.jpg"),
         imageAlt: "Garden Recognition Award winners plaque and residential garden",
       },
       {
@@ -163,7 +164,7 @@ export async function getAboutPageContent(): Promise<PageContent | null> {
           "Charitable Outreach: Our annual Christmas drive provides holiday gifts for families through Christian Neighbors, returning 98% of funding back into Allegan County.",
           "Welcome Back Tea & Spring Programs: Monthly educational lectures, guest speakers, demonstrations, and Arbor Day swags keep our community engaged throughout the gardening year.",
         ],
-        image: "/images/wordpress/2O8A6596-1000x1000-1.jpg",
+        image: resolveMediaUrl("/images/wordpress/2O8A6596-1000x1000-1.jpg"),
         imageAlt: "Garden Club new member gathering and social program",
         callToAction: {
           label: "Become A Member Today",
@@ -183,9 +184,7 @@ export async function getGardenWalkPageContent(): Promise<PageContent | null> {
     .eq("status", "published")
     .maybeSingle();
 
-  if (error || !data) {
-    return null;
-  }
+  const pageRecord = error ? null : data;
 
   // Look for the active / upcoming Garden Walk event
   const nowIso = new Date().toISOString();
@@ -290,9 +289,9 @@ export async function getGardenWalkPageContent(): Promise<PageContent | null> {
 
   return {
     slug: "garden-walk",
-    title: data.title || "Annual Garden Walk",
+    title: pageRecord?.title || "Annual Garden Walk",
     subtitle:
-      data.meta_description ||
+      pageRecord?.meta_description ||
       "Explore the annual Saugatuck Douglas Garden Walk: tour exquisite private gardens and support local community beautification and scholarships.",
     event: eventSummary,
     sections: [
@@ -300,7 +299,7 @@ export async function getGardenWalkPageContent(): Promise<PageContent | null> {
         id: "tour-details",
         heading: "Tour Details & Garden Highlights",
         body: [
-          data.content ||
+          pageRecord?.content ||
             "The Garden Walk is the club's premier annual fundraising event. For over four decades, local gardeners open their private landscapes to the public, sharing ideas and inspiration.",
           "Self-guided walking and driving routes begin at the Old School House in Douglas, featuring diverse shade sanctuaries, native pollinator habitats, and historic cottage borders.",
         ],
