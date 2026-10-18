@@ -106,6 +106,8 @@ export async function getAdminMembers(): Promise<AdminMemberRecord[]> {
       spouseFirstName: (m.spouse_first_name as string) || undefined,
       gardeningInterests: (m.gardening_interests as string) || undefined,
       workExperience: (m.work_experience as string) || undefined,
+      adminNotes: (m.admin_notes as string) || undefined,
+      directoryOptOut: Boolean(m.directory_opt_out),
     };
   });
 }

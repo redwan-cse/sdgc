@@ -9,6 +9,8 @@ import type { ActionResult } from "./types";
 export async function approveMembershipAction(input: {
   membershipId: string;
   expectedVersion?: number;
+  waiveDues?: boolean;
+  waiverReason?: string;
 }): Promise<ActionResult> {
   await requireCapability(["members.manage", "memberships.approve"]);
   const supabase = await createClient();
@@ -17,6 +19,8 @@ export async function approveMembershipAction(input: {
   const { data, error } = await supabase.rpc("approve_membership", {
     p_membership_id: input.membershipId,
     p_expected_version: input.expectedVersion,
+    p_waive_dues: input.waiveDues ?? false,
+    p_waiver_reason: input.waiverReason,
   });
 
   if (error) {
@@ -361,20 +365,21 @@ export async function adminUpdateMemberProfileAction(input: {
 
   const { error } = await supabase.rpc("admin_update_member_profile", {
     target_user_id: input.userId,
-    p_first_name: fName,
-    p_last_name: lName,
-    p_phone: input.phone || "",
-    p_alt_phone: input.altPhone || "",
-    p_address_line1: input.addressLine1 || "",
-    p_address_line2: input.addressLine2 || "",
-    p_city: input.city || "",
-    p_state: input.state || "",
-    p_postal_code: input.postalCode || "",
-    p_spouse_first_name: input.spouseFirstName || "",
-    p_is_master_gardener: input.isMasterGardener ?? false,
-    p_directory_opt_out: input.directoryOptOut ?? false,
-    p_gardening_interests: input.gardeningInterests || "",
-    p_work_experience: input.workExperience || input.volunteerExperience || "",
+    p_first_name: fName || undefined,
+    p_last_name: lName || undefined,
+    p_phone: input.phone || undefined,
+    p_alt_phone: input.altPhone || undefined,
+    p_address_line1: input.addressLine1 || undefined,
+    p_address_line2: input.addressLine2 || undefined,
+    p_city: input.city || undefined,
+    p_state: input.state || undefined,
+    p_postal_code: input.postalCode || undefined,
+    p_spouse_first_name: input.spouseFirstName || undefined,
+    p_is_master_gardener: input.isMasterGardener,
+    p_directory_opt_out: input.directoryOptOut,
+    p_gardening_interests: input.gardeningInterests || undefined,
+    p_work_experience: input.workExperience || input.volunteerExperience || undefined,
+    p_notes: input.notes || undefined,
   });
 
   if (error) {

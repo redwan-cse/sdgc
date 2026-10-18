@@ -224,6 +224,16 @@ describe("Phase P6: Administrator Operations, Directory RLS & RBAC Matrix", () =
         .single();
 
       if (tempMem) {
+        await serviceClient.from("payments").insert({
+          user_id: fixtures.memberUserId,
+          membership_id: tempMem.id,
+          term_id: fixtures.termId,
+          amount_cents: 5000,
+          currency: "USD",
+          payment_method: "check",
+          status: "confirmed",
+        });
+
         const { data: approvalRes, error: approvalErr } = await adminClient.rpc(
           "approve_membership",
           {

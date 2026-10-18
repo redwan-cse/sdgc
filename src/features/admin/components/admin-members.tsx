@@ -32,6 +32,8 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
   const [editingMember, setEditingMember] = React.useState<AdminMemberRecord | null>(null);
   const [editFullName, setEditFullName] = React.useState("");
   const [editPhone, setEditPhone] = React.useState("");
+  const [editAltPhone, setEditAltPhone] = React.useState("");
+  const [editSpouseFirstName, setEditSpouseFirstName] = React.useState("");
   const [editAddressLine1, setEditAddressLine1] = React.useState("");
   const [editAddressLine2, setEditAddressLine2] = React.useState("");
   const [editCity, setEditCity] = React.useState("");
@@ -40,12 +42,15 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
   const [editGardeningInterests, setEditGardeningInterests] = React.useState("");
   const [editVolunteerExperience, setEditVolunteerExperience] = React.useState("");
   const [editIsMasterGardener, setEditIsMasterGardener] = React.useState(false);
+  const [editDirectoryOptOut, setEditDirectoryOptOut] = React.useState(false);
   const [editNotes, setEditNotes] = React.useState("");
 
   const handleOpenEditProfile = (member: AdminMemberRecord) => {
     setEditingMember(member);
     setEditFullName(member.name);
     setEditPhone(member.phone || "");
+    setEditAltPhone(member.altPhone || "");
+    setEditSpouseFirstName(member.spouseFirstName || "");
     setEditAddressLine1(member.addressLine1 || "");
     setEditAddressLine2(member.addressLine2 || "");
     setEditCity(member.city || "");
@@ -54,6 +59,7 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
     setEditGardeningInterests(member.gardeningInterests || "");
     setEditVolunteerExperience(member.volunteerExperience || "");
     setEditIsMasterGardener(member.isMasterGardener);
+    setEditDirectoryOptOut(Boolean(member.directoryOptOut));
     setEditNotes(member.adminNotes || "");
   };
 
@@ -67,6 +73,8 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
         userId: editingMember.userId,
         fullName: editFullName.trim(),
         phone: editPhone.trim() || undefined,
+        altPhone: editAltPhone.trim() || undefined,
+        spouseFirstName: editSpouseFirstName.trim() || undefined,
         addressLine1: editAddressLine1.trim() || undefined,
         addressLine2: editAddressLine2.trim() || undefined,
         city: editCity.trim() || undefined,
@@ -75,6 +83,7 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
         gardeningInterests: editGardeningInterests.trim() || undefined,
         volunteerExperience: editVolunteerExperience.trim() || undefined,
         isMasterGardener: editIsMasterGardener,
+        directoryOptOut: editDirectoryOptOut,
         notes: editNotes.trim() || undefined,
       });
 
@@ -86,6 +95,8 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
                   ...m,
                   name: editFullName.trim(),
                   phone: editPhone.trim() || undefined,
+                  altPhone: editAltPhone.trim() || undefined,
+                  spouseFirstName: editSpouseFirstName.trim() || undefined,
                   addressLine1: editAddressLine1.trim() || undefined,
                   addressLine2: editAddressLine2.trim() || undefined,
                   city: editCity.trim() || undefined,
@@ -94,6 +105,7 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
                   gardeningInterests: editGardeningInterests.trim() || undefined,
                   volunteerExperience: editVolunteerExperience.trim() || undefined,
                   isMasterGardener: editIsMasterGardener,
+                  directoryOptOut: editDirectoryOptOut,
                   adminNotes: editNotes.trim() || undefined,
                 }
               : m,
@@ -415,19 +427,51 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="edit-phone"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Primary Phone
+                  </label>
+                  <Input
+                    id="edit-phone"
+                    type="tel"
+                    placeholder="(269) 555-0123"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="edit-alt-phone"
+                    className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
+                  >
+                    Alternate Phone
+                  </label>
+                  <Input
+                    id="edit-alt-phone"
+                    type="tel"
+                    placeholder="(269) 555-0124"
+                    value={editAltPhone}
+                    onChange={(e) => setEditAltPhone(e.target.value)}
+                  />
+                </div>
+              </div>
+
               <div>
                 <label
-                  htmlFor="edit-phone"
+                  htmlFor="edit-spouse"
                   className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1"
                 >
-                  Phone Number
+                  Spouse First Name
                 </label>
                 <Input
-                  id="edit-phone"
-                  type="tel"
-                  placeholder="(269) 555-0123"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
+                  id="edit-spouse"
+                  placeholder="Spouse first name (optional)"
+                  value={editSpouseFirstName}
+                  onChange={(e) => setEditSpouseFirstName(e.target.value)}
                 />
               </div>
 
@@ -536,20 +580,38 @@ export function AdminMembers({ initialMembers }: AdminMembersProps) {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  id="edit-master-gardener"
-                  type="checkbox"
-                  checked={editIsMasterGardener}
-                  onChange={(e) => setEditIsMasterGardener(e.target.checked)}
-                  className="rounded border border-input"
-                />
-                <label
-                  htmlFor="edit-master-gardener"
-                  className="text-xs text-foreground font-medium"
-                >
-                  Master Gardener Certified
-                </label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="edit-master-gardener"
+                    type="checkbox"
+                    checked={editIsMasterGardener}
+                    onChange={(e) => setEditIsMasterGardener(e.target.checked)}
+                    className="rounded border border-input"
+                  />
+                  <label
+                    htmlFor="edit-master-gardener"
+                    className="text-xs text-foreground font-medium"
+                  >
+                    Master Gardener Certified
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    id="edit-directory-opt-out"
+                    type="checkbox"
+                    checked={editDirectoryOptOut}
+                    onChange={(e) => setEditDirectoryOptOut(e.target.checked)}
+                    className="rounded border border-input"
+                  />
+                  <label
+                    htmlFor="edit-directory-opt-out"
+                    className="text-xs text-foreground font-medium"
+                  >
+                    Directory Privacy: Hide contact details from Member Directory (Opt-Out)
+                  </label>
+                </div>
               </div>
 
               <div>

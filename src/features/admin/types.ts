@@ -42,6 +42,7 @@ export interface AdminMemberRecord {
   workExperience?: string;
   volunteerExperience?: string;
   adminNotes?: string;
+  directoryOptOut?: boolean;
 }
 
 export interface AdminTermRecord {

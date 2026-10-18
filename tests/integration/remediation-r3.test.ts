@@ -152,7 +152,7 @@ describe("R3: Annual Membership & Calendar Remediation Regression Suite", () => 
       try {
         const { data: tempMem, error: memErr } = await serviceClient
           .from("memberships")
-          .select("id, status, version")
+          .select("id, status, version, term_id")
           .eq("user_id", candidateUserId)
           .single();
 
@@ -162,6 +162,29 @@ describe("R3: Annual Membership & Calendar Remediation Regression Suite", () => 
         expect(tempMem.status).toBe("pending");
         expect(tempMem.version).toBe(1);
 
+        // 1. Unpaid approval attempt must be rejected
+        const { data: unpaidRes } = await treasurerClient.rpc("approve_membership", {
+          p_membership_id: tempMem.id,
+          p_expected_version: 1,
+        });
+        expect(unpaidRes).toMatchObject({
+          success: false,
+          error: expect.stringContaining("dues payment must be confirmed"),
+        });
+
+        // 2. Insert confirmed dues payment for candidate
+        const { error: payErr } = await serviceClient.from("payments").insert({
+          user_id: candidateUserId,
+          membership_id: tempMem.id,
+          term_id: tempMem.term_id,
+          amount_cents: 5000,
+          currency: "USD",
+          payment_method: "check",
+          status: "confirmed",
+        });
+        expect(payErr).toBeNull();
+
+        // 3. Approval now succeeds
         const { data: approvalRes, error: approvalErr } = await treasurerClient.rpc(
           "approve_membership",
           {

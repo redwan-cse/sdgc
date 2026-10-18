@@ -1,0 +1,246 @@
+# Antigravity: patch SDGC's remaining UI/UX and legacy-parity issues
+
+Work in https://github.com/redwan-cse/sdgc.
+Legacy reference: https://saugatuckdouglasgardenclub.com/.
+Audit baseline: 6967d1ccd76f41808acbae3da9d23114bd24b32e, reviewed October 18, 2026.
+
+## Mission and scope
+
+Finish the existing rebuild, not a new site. Preserve the supplied logo, green light/dark palette, local Inter/Lora fonts, Next.js App Router architecture, Supabase/RLS, existing routes, and useful implemented features.
+
+The goal is a trustworthy, usable, accessible club website and operator workspace with verified legacy parity where evidence is available. Prioritize real broken journeys, incorrect facts, privacy, and persistence before cosmetic changes.
+
+This is a LOCAL DEVELOPMENT patch using isolated synthetic data and clearly labeled simulations. The existing v1.1 scope does not require live Stripe, hosted Supabase, external email, DNS, or production cutover.
+
+This prompt does NOT authorize deployment, release/tag creation, production-changing merges, remote migrations, live payments, external mail, real member import, live uploads/deletions, or changes to the old website. Do not force-push, discard user edits, or reset an existing database. Before any destructive host operation, retain and verify evidence and obtain separate authorization; evidence confirmation alone is not authorization. Use a disposable isolated SDGC test stack for clean-replay verification, not another project's containers.
+
+## Start with the actual current state
+
+1. Read AGENTS.md, docs/ANTIGRAVITY-PROMPT.md, docs/ARCHITECTURE.md, docs/CURRENT-SITE-AUDIT.md, docs/DEVELOPMENT-PLAN.md, docs/VERIFICATION-PLAN.md, docs/audit/ANTIGRAVITY-V1.1-REVIEW.md, and the latest verification notes.
+2. Inspect git status, branch, and exact HEAD. Preserve uncommitted work. If HEAD differs from the audit baseline, reconcile each finding against the new source instead of rolling back or blindly applying an old checklist.
+3. Treat README/delivery/parity claims as claims to check, not proof. Later migrations supersede earlier definitions. The published home seed already exists in migration 20261017024112; do not introduce a duplicate "missing home seed" repair.
+4. Create one concise dependency-ordered patch plan in the existing docs hierarchy. Reuse approved design and architecture. Ask only about material new design/business-policy decisions or missing client facts; continue independent safe work.
+5. Reproduce confirmed defects with failing regression tests before the smallest repair. Mark source-only suspicions separately until reproduced. Do not delete existing working code just to manufacture a red phase.
+
+Do not rebuild functionality already present: username/email login, full profile fields and eight project choices, birthday month/day-only validation, private directory projection, role/capability checks, annual dues/check workflows, list/month/day/detail events, adjacent-event navigation, ICS endpoints, gallery filtering/lightbox, contact inbox, and local simulation boundaries.
+
+## Evidence and content rules
+
+Use a dated source-of-truth ledger for club facts, prices, venues, captions, and event records. Label entries verified, client decision needed, historical, or synthetic.
+
+Concrete discrepancies to resolve:
+
+- The old homepage says founded in 1928; the new home/About headings and seeded home copy say 1980.
+  https://saugatuckdouglasgardenclub.com/
+- The old 2026 Garden Walk event says July 18, 10 a.m. to 4 p.m., $15 plus a $2 convenience fee online. The new page/checkout say July 11 and $20/$25.
+  https://saugatuckdouglasgardenclub.com/event/2026-garden-walk-fundraiser/
+- Old content identifies the Old School House/History Center on Center Street; the simulated order uses Saugatuck City Hall. Verify the actual check-in location.
+- The legacy upcoming list contains Nov. 9 Board Meeting, Nov. 10 Potluck at Fenn Valley Winery, and Dec. 7 Holiday Party. The supplied rebuild screenshot has no upcoming events. This is partly missing real data, not a missing calendar engine.
+  https://saugatuckdouglasgardenclub.com/events/list/
+- Legacy scholarship copy supports local high-school students' higher education, without the new site's restriction to horticultural degrees. Do not invent eligibility.
+  https://saugatuckdouglasgardenclub.com/aboutourclub/
+- The old password-reset page accepts username or email; the new action requires email.
+  https://saugatuckdouglasgardenclub.com/password-reset/
+
+Preserve legacy content about the Garden Walk, perennial/treasure sale, Awesome Annuals Sale, beautification, garden awards, scholarships, school workshops, charity, tea, new-member gathering, and monthly programs. Most topics already exist in the source; repair omissions and unsupported changes rather than duplicating them.
+
+Treat old prices/amounts as historical evidence, not an instruction to sell at them now or announce next year's event. Both July dates are past at this audit date. When no next event is confirmed, show an honest archive/not-yet-announced state. Do not fabricate a new date, provider, route map, response-time promise, tax claim, photo caption, or event to fill empty space.
+
+Do not infer a plant shop, scholarship application service, recurring subscription, donation checkout, or newsletter from marketing text or leftover WordPress plugin pages. Private-site parity remains unknown without an authorized walkthrough/sanitized inventory.
+
+## Work package 1: protect member data and financial state
+
+Inspect:
+- src/features/admin/components/admin-members.tsx
+- src/features/admin/actions.ts and queries.ts
+- src/features/membership/*
+- src/features/payments/*
+- All migrations, especially 20261016052755_directory_and_admin_operations.sql and 20261017024112_persistent_workflows_and_admin_parity.sql
+
+Repair the actual admin save path. The current editor omits directoryOptOut, altPhone, and spouseFirstName; the action supplies false/empty defaults; the RPC overwrites existing values. Use an explicit validated patch contract or a fully populated edit contract. Never change privacy or clear omitted fields as a side effect of editing a name/address. Birthday is not overwritten by the current RPC; preserve it too.
+
+Administrative Notes currently updates only client state: input.notes is not persisted. Implement staff-only persistence with an appropriate field/table and RLS, or remove the unsupported editable affordance. Require reload proof.
+
+Define the documented membership/payment transition table and enforce it in database transactions, not just disabled buttons:
+- Normal active membership requires the applicable term, confirmed eligible payment, and separate authorized manual approval.
+- Payment confirmation never automatically approves membership.
+- Approval must not silently convert rejected/suspended/expired states through the generic pending-approval action.
+- Ordinary paper-check reconciliation accepts only eligible pending checks, never failed/refunded/card records.
+- Any intentional waiver/reinstatement/financial override needs an explicit client-approved policy, capability, reason, and audit trail. Do not invent one.
+- Preserve concurrency/version guards and truthful transactional audit records.
+
+Validate term windows and amounts server-side. Show configured term/currency/dues everywhere; remove hardcoded "$50" labels in the footer, registration policy copy, and member table. Historical receipts retain historical amounts. Make retries idempotent and avoid creating orphan/duplicate pending payments before provider readiness is known.
+
+Regression cases: unrelated admin edit preserves opt-out/spouse/alternate phone; notes survive reload and remain private; unpaid approval cannot grant directory access; check confirmation leaves approval pending; terminal/card records reject manual reconciliation; concurrent retries do not duplicate state; changed dues rate renders consistently.
+
+## Work package 2: correct and connect public content
+
+Inspect:
+- src/app/(public)/page.tsx, about/page.tsx, garden-walk/page.tsx
+- src/features/content/queries.ts
+- src/features/admin/components/admin-content.tsx
+- updatePageAction in src/features/admin/actions.ts
+
+Replace factual placeholders and hardcoded annual promotion fields with approved, persisted content/event settings. The page editor currently saves only title, subtitle/meta-description, and status. Add validated body/section editing and the minimum event/image/CTA configuration needed by the existing design. Avoid introducing a new CMS platform.
+
+Ensure the renderer consumes what the editor saves. Home/About consume only some persisted body text; Garden Walk ignores the returned body sections entirely. Verify title, body, images, links, publication status, and public reload behavior. Normalize About's canonical slug so duplicate aliases cannot break maybeSingle.
+
+Keep evergreen club information separate from annual event promotion. Use one event source for home, Garden Walk, event detail, checkout, and structured data. Do not substitute past records under an "Upcoming" heading. Use honest empty/error states, and do not hide database failures behind invented content.
+
+Maintain the existing public contact anchor and verified legacy content anchors. Reconcile public event/media inventory in the project's existing ledger. Any migration of real private data remains out of scope.
+
+Regression cases: edit body text through the app and see it after public reload; draft content is not public; no future events produces a truthful empty state; event facts agree across all surfaces; unknown next year's date is not invented.
+
+## Work package 3: repair shared navigation and responsive UX
+
+Inspect src/components/layout/{site-header,mobile-navigation,site-footer}.tsx and the admin/member shells.
+
+Fix the md-to-lg header gap: desktop nav currently appears at md, the mobile menu disappears at md, and account controls only appear at lg. Login/Join/Profile/Admin/theme controls must remain reachable at every width. Include mobile sign-out.
+
+Use coherent breakpoints, nested-route active states, and aria-current. When an open menu crosses its breakpoint, remove its scroll lock/focus trap and close it safely. Include Escape, visible focus, background inertness where appropriate, and sensible focus return.
+
+Keep the public footer simple. Show admin-only navigation to staff, while retaining server-side authorization on every protected route/action. Remove literal "&nearr;" rendering with an accessible decorative icon. Replace developer-facing labels such as "Real RBAC audit enabled" with useful staff language.
+
+Filter admin navigation and row actions by actual capabilities. An authenticated editor/treasurer should not be sent to login because a visible control requires a different role. Show a proper forbidden/support state for direct unauthorized navigation.
+
+At narrow widths use an accessible admin drawer/collapsible navigation rather than a full navigation block pushing the entire workspace below the fold.
+
+Regression widths: 320, 375, 767, 768, 820, 1023, 1024, 1440 CSS pixels. Test anonymous/member/staff states and resizing with the menu open. No page-level horizontal overflow.
+
+## Work package 4: complete signup, recovery, profile, and form states
+
+Inspect src/features/auth/*, src/app/auth/*, src/app/(auth)/*, and the existing member forms.
+
+Keep every supported legacy profile field and all eight project choices. Do not remove required business data to shorten the form. Prefer clear grouped sections and labeled optional fields before introducing a multi-step wizard.
+
+Improve the membership flow:
+1. Create account and submit application.
+2. Show durable confirmation-pending guidance when confirmation is required.
+3. Confirm email through the actual supported callback.
+4. Show the applicable dues/payment options and next action.
+5. Distinguish payment pending, payment confirmed/approval pending, active, expired, rejected, and suspended states.
+
+Do not rush users to login after a 1.5-second success message. Add bounded resend and allowlisted confirmation/logout/auth-error notices. Do not echo arbitrary URL messages.
+
+Add directory privacy choice and explain exactly what becomes visible to eligible members. Verify boolean serialization through the form, validation, auth metadata, provisioning trigger, profile update, and directory projection. Never trust user-controlled privileged role/approval/payment metadata.
+
+Preserve username/email login and add username/email recovery using server-only resolution, generic responses, and abuse controls. Do not expose resolved email addresses or account existence.
+
+Follow a REAL locally captured recovery link. Current resetPasswordForEmail redirects directly to /reset-password; verify code/token-hash/session exchange and route it through the appropriate existing callback if required. Handle expired, already-used, malformed, and cross-session links honestly. Do not claim this defect reproduced until the actual flow is tested.
+
+Add semantic name/autocomplete attributes: username, email, current-password/new-password, personal-name/address/phone hints. Add password visibility controls, proper required semantics, linked field errors, a focused error summary, and value preservation after failure. Do not store passwords or profile PII in localStorage for convenience.
+
+The screenshots' yellow autofill, password-manager icons, and development indicator are not proof of hardcoded secrets. Test with a clean browser profile; don't patch browser extensions.
+
+If auth/env helpers need changes, use supported publishable/server-secret keys and supported verified identity/JWKS paths, not new legacy key/JWT-secret dependencies. Keep secrets server-only and out of logs. Do not rewrite working auth/RLS architecture for visual polish.
+
+## Work package 5: finish calendar correctness and legacy navigation
+
+Inspect src/features/events/*, src/app/(public)/events/*, src/app/(public)/event/*, next.config.ts, and the ICS handlers.
+
+- Populate the category field from authoritative stored data. Currently EventListView derives categories from a property public queries never populate.
+- Make search, category, date, and view URL-backed. Preserve state on refresh, back/forward, and list/month/day switching.
+- Make keyword/venue search match the actual UI promise; server and client semantics must agree.
+- Convert Detroit-local day/month boundaries to UTC instants using a DST-aware shared helper. Use half-open intervals and multi-day overlap, not UTC midnight for a Detroit date.
+- Distinguish upcoming, ongoing, ended, cancelled, and draft. Do not mark an event past merely because it started.
+- Retain an appropriate public cancellation notice for a previously published event; draft/private data stays hidden.
+- Paginate rather than just raising an earliest-record cap to 500. Sort past archives newest first.
+- Distinguish empty schedule, no filter matches, load failure, and loading. Provide reset filters/next available/archive actions.
+
+Preserve existing list/month/day/detail, adjacent-event navigation, and both ICS endpoints. Test actual ICS parsing/download/timezone behavior; do not rebuild them as if absent.
+
+Resolve actual legacy linked URLs including /events/today/, dated month URLs, and category/venue/organizer destinations using verified old hrefs and the migration ledger. Preserve meaning with redirects or minimal compatible pages. Do not create arbitrary routes merely because a guessed old URL rendered the homepage shell.
+
+Regression cases: 22:00 Detroit; local midnight; spring/fall DST; multi-day/month overlap; ongoing events; invalid date/month; cancellation; >500 historical records with a current event; venue search; category persistence across all views.
+
+## Work package 6: honest ticket and dues simulation
+
+Inspect src/features/tickets/*, src/features/payments/*, and return/callback pages.
+
+Keep the explicit loopback-only simulator. The Stripe-named path is a stub, not verified Checkout. Fail closed as unconfigured outside the simulator; no production credentials or real merchant connection are needed for this patch. Reject mixed key modes if provider configuration is inspected.
+
+Make ticket eligibility, sale windows, event year, currency, price, fees, and check-in information server-authoritative. Reject stale/cancelled/closed-sale events even through direct server-action calls. Do not price every event at $20/$25 or hardcode 2026 into every order reference.
+
+The preview must state: "Simulation. No payment collected. Not valid for admission." Remove instructions telling users to bring a simulated pass to an unverified location.
+
+Choose the smallest honest local contract:
+- If this is only a preview, say it is not persisted or emailed.
+- If reloadable order/receipt parity is claimed, persist synthetic orders and test reload, ownership/privacy, retry/idempotency, and local email capture. Do not add a new production commerce system implicitly.
+
+Render meaningful success/cancel/failure states for legacy payment-return links, not a redirect to a page that ignores their query parameters. Ticket purchase never creates/approves club membership. Keep dues non-recurring and manual approval separate.
+
+## Work package 7: gallery, staff workflows, and message reliability
+
+Correct the actual image/caption pairing. In supplied screenshots, a registration-table photograph is described as a shade garden, a plant-sale sign as a woodland garden, and repeated photos have unrelated captions. Do not invent people, botanical species, event years, or locations. Use accurate neutral descriptions until curated metadata is approved.
+
+Unify Garden Walk's hardcoded photo list with the editable gallery model where appropriate. Keep every real album membership and deterministic ordering; do not silently use only album_items[0]. Match album counts to displayed unique media.
+
+Retain the existing lightbox. Verify image decoding, authorized URLs, hidden-asset behavior, portrait/landscape crops, useful alt text, full captions, labelled dialog, focus trap, Escape/arrows, zoom, and return focus. Use responsive image sizes and reserve aspect ratios; no hidden broken images passing tests just because an img element exists.
+
+For the admin workspace:
+- Make actionable summary cards lead to filtered queues.
+- Show accurate term, amount, method, payment status, approval status, and permitted next action.
+- Add server-side search/pagination where lists are unbounded.
+- Make long names, long emails, empty states, errors, and narrow layouts usable.
+- Use accessible shared dialog behavior for content/member/role editors, with named dialogs, initial focus, Escape, background isolation, focus return, and safe save/cancel.
+- Require explicit target/amount/term/transition confirmation for consequential role, approval, and reconciliation changes.
+- Prove content/media/member edits persist across reload; don't count optimistic client updates as persistence.
+
+Contact already has durable inbox storage, validation, honeypot/rate limiting, and local mail capture. Preserve them. Add explicit input bounds and persistent queued/delivered/failed notification state with bounded retry where missing. A delivery failure should not erase an accepted message or invite duplicate user submissions. Show the failure/retry state to authorized staff. Keep production SMTP/recipient setup deferred.
+
+## Visual refinement contract
+
+Keep the brand. Do not replace the theme, introduce gradients everywhere, add carousels, or use generated imagery as documentary photographs of this real club.
+
+- Public body/input text around 16px, supporting labels around 14px, comfortable line-height, restrained type hierarchy.
+- Roughly 44px touch targets as a design goal; measure WCAG 2.2 AA contrast and interaction requirements rather than claiming compliance from appearance.
+- Stronger input boundaries, visible focus, informative text/icon status rather than color alone.
+- Consistent content widths, spacing, card radii, and button hierarchy; fewer nested cards and repeated policy paragraphs.
+- Garden Walk: one accurate visual plus essential event facts and state-appropriate action.
+- Gallery: photography first, accurate captions, no unrelated brand logo mixed into event photos unless deliberately categorized.
+- Join: clear sections, optional-field labels, privacy explanation, confirmation/payment/approval next steps.
+- Events: useful empty states, real filters, clear dates and archives.
+- Contact/login: keep the simple forms, improve feedback and readability.
+- Dashboard: prioritize real work queues, not decorative charts or fabricated activity.
+- Light, dark, and system themes; reduced motion; 200% zoom and reflow to 320 CSS pixels.
+
+New legal/privacy wording and factual promises require approved copy. No new analytics/tracking or external data transmission is implied.
+
+## SEO and verification
+
+Inspect rendered per-page canonical tags. Root metadata currently sets canonical "/"; route overrides are needed where absent. Keep sitemap entries canonical and routable; don't emit /home or redirected aliases from arbitrary CMS slugs.
+
+Fix event structured data: actual dates/location, valid status values, and truthful ticket prices/availability or omitted offers when unknown/closed. Do not label paid events free. There is no Schema.org EventCompleted EventStatusType; use only valid vocabulary.
+
+Use Node 24, npm 11, and the lockfile. Inspect the installed Next.js documentation before version-sensitive changes. Forward migrations must be reproducible and generated types must come from the actual isolated schema, never be handwritten.
+
+After targeted red/green regressions, run the relevant existing gates against the final candidate:
+
+    npm run check
+    npm run db:lint
+    npm run db:test
+    npm run test:integration
+    npm run build
+    npm run test:e2e
+
+Run npm ci only in the intended checkout when needed. Use the repository's db:types workflow after schema changes and check the diff. Rehearse fresh migration/seed/provision only in an explicitly disposable isolated SDGC stack. Do not blindly execute db:reset against an existing stack.
+
+Verify actual pages and persisted workflows, not only raw SQL reads or element counts. Browser evidence must include public/member/editor/treasurer/admin personas, representative viewport sizes including the tablet gap, both themes, keyboard and dialog behavior, actual decoded images, and real local email callback journeys.
+
+Test all major states: loading, empty, no results, validation error, network/server failure, success, disabled/unconfigured action, permission denied, pending approval/payment, expired membership, cancelled/past event, and retry.
+
+If dependencies or services prevent a gate, record exactly what was not run. Use an authorized isolated CI path if available; never use production credentials/data or claim an old green build proves the changed head. Do not invent Lighthouse/Core Web Vitals results.
+
+## Final handoff
+
+Update the existing parity ledger, docs/discovery/parity.csv, and relevant verification/delivery documents without claiming complete private/provider parity. Remove stale "verified" claims rather than copying old counts. Keep implementation, test execution, independent review, client acceptance, and release authorization distinct.
+
+Return:
+1. Exact final commit and branch, with a changed-file summary.
+2. A finding matrix: finding, observed cause, repair, regression test, actual result, remaining limitation.
+3. Before/after screenshots for affected pages, labelled by viewport/theme/build.
+4. Verification commands and observed outcomes at that exact candidate.
+5. Unresolved client facts, inaccessible private legacy features, and deferred operational prerequisites.
+6. Confirmation that no production operation or live payment/mail/private-data import occurred.
+
+Do not stop at a plan if safe, authorized local repairs remain. Do not ask for routine phase approval again. Stop only the work that requires a real client decision, unavailable evidence, destructive operation, or separate release authority, and continue independent in-scope fixes.
