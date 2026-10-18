@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Image from "next/image";
@@ -203,6 +203,45 @@ function SettingsIcon({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
+function UserIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+      />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function ShieldIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+      />
+    </svg>
+  );
+}
+
 function MenuIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
     <svg
@@ -299,6 +338,23 @@ const ADMIN_GROUPS: NavGroup[] = [
     ],
   },
   {
+    title: "MY ACCOUNT",
+    items: [
+      {
+        href: "/admin/settings/profile",
+        label: "Admin Profile",
+        icon: UserIcon,
+        allowedRoles: ["admin", "editor", "treasurer"],
+      },
+      {
+        href: "/admin/settings/security",
+        label: "Security & MFA",
+        icon: ShieldIcon,
+        allowedRoles: ["admin", "editor", "treasurer"],
+      },
+    ],
+  },
+  {
     title: "SETTINGS",
     items: [
       {
@@ -383,20 +439,12 @@ function SidebarNavigation({
       {/* Sidebar Footer */}
       <div className="shrink-0 border-t border-border p-4 space-y-2 text-xs">
         <Link
-          href="/profile"
-          onClick={onNavigate}
-          className="flex items-center justify-between rounded-md px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <span>Member Portal</span>
-          <span className="text-xs">→</span>
-        </Link>
-        <Link
           href="/"
           onClick={onNavigate}
           className="flex items-center justify-between rounded-md px-3 py-2 text-primary font-medium hover:bg-primary/5 transition-colors"
         >
           <span>View public site</span>
-          <span className="text-xs">↗</span>
+          <span className="text-xs">&rarr;</span>
         </Link>
       </div>
     </div>
@@ -515,10 +563,22 @@ export function AdminShell({
 
           <div className="flex items-center gap-2 sm:gap-3">
             {userEmail && (
-              <span className="hidden md:inline-flex items-center text-xs text-muted-foreground bg-muted/50 border border-border px-2.5 py-1 rounded-md font-mono">
-                {userEmail}
-              </span>
+              <Link
+                href="/admin/settings/profile"
+                className="hidden sm:inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted border border-border px-2.5 py-1.5 rounded-lg font-mono transition-colors"
+                title="Manage Admin Profile"
+              >
+                <UserIcon className="h-3.5 w-3.5 text-primary" />
+                <span>{userEmail}</span>
+              </Link>
             )}
+            <Link
+              href="/admin/settings/profile"
+              className="sm:hidden flex items-center justify-center p-2 rounded-lg border border-border text-foreground hover:bg-muted transition-colors"
+              title="Admin Profile"
+            >
+              <UserIcon className="h-4 w-4 text-primary" />
+            </Link>
             <form action={logoutAction}>
               <button
                 type="submit"

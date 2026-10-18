@@ -96,10 +96,10 @@ export function AdminSettings({ initialSettings }: AdminSettingsProps) {
           </p>
         </div>
         <Link
-          href="/profile"
+          href="/admin/settings/security"
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shrink-0 shadow-2xs"
         >
-          <span>Account Security Settings &rarr;</span>
+          <span>Admin Security &amp; MFA &rarr;</span>
         </Link>
       </div>
 
