@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -673,6 +673,7 @@ export async function uploadMediaAssetAction(
   const altText = (formData.get("altText") as string) || "";
   const caption = (formData.get("caption") as string) || "";
   const isPublic = formData.get("isPublic") !== "false";
+  const albumId = (formData.get("albumId") as string) || null;
 
   if (!file || file.size === 0) {
     return { success: false, error: "Please select an image file to upload." };
@@ -748,6 +749,36 @@ export async function uploadMediaAssetAction(
     entity_id: data.id,
     details: { storagePath: uploadResult.storagePath, altText, provider: uploadResult.provider },
   });
+
+  if (albumId) {
+    const { data: existingItems } = await supabase
+      .from("album_items")
+      .select("sort_order")
+      .eq("album_id", albumId)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+
+    const nextOrder = (existingItems?.[0]?.sort_order ?? 0) + 1;
+
+    await supabase.from("album_items").insert({
+      album_id: albumId,
+      media_asset_id: data.id,
+      sort_order: nextOrder,
+    });
+
+    const { data: album } = await supabase
+      .from("albums")
+      .select("cover_asset_id, slug")
+      .eq("id", albumId)
+      .single();
+
+    if (album && !album.cover_asset_id) {
+      await supabase.from("albums").update({ cover_asset_id: data.id }).eq("id", albumId);
+    }
+    if (album?.slug) {
+      revalidatePath(`/gallery/${album.slug}`);
+    }
+  }
 
   revalidatePath("/gallery");
   revalidatePath("/admin/media");
@@ -881,4 +912,286 @@ export async function updateHomePageContentAction(input: {
   revalidatePath("/admin/settings");
   revalidatePath("/admin");
   return { success: true, message: "Homepage copy & pillars updated successfully" };
+}
+
+// ==========================================
+// ALBUM ACTIONS
+// ==========================================
+
+export async function createAlbumAction(input: {
+  title: string;
+  slug?: string;
+  description?: string;
+  year?: number;
+  category?: string;
+  isPublic?: boolean;
+}): Promise<ActionResult<{ id: string; slug: string }>> {
+  const user = await requireCapability("media.manage");
+  const supabase = await createClient();
+
+  if (!input.title?.trim()) {
+    return { success: false, error: "Album title is required" };
+  }
+
+  const generatedSlug =
+    input.slug?.trim() ||
+    input.title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  if (!generatedSlug) {
+    return { success: false, error: "A valid album slug is required" };
+  }
+
+  const { data, error } = await supabase
+    .from("albums")
+    .insert({
+      title: input.title.trim(),
+      slug: generatedSlug,
+      description: input.description?.trim() || null,
+      year: input.year || new Date().getFullYear(),
+      category: input.category?.trim() || "Garden Walk",
+      is_public: input.isPublic ?? true,
+    })
+    .select("id, slug")
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "album.created",
+    entity_type: "album",
+    entity_id: data.id,
+    details: input as unknown as NonNullable<Json>,
+  });
+
+  revalidatePath("/gallery");
+  revalidatePath("/admin/media");
+  return { success: true, message: "Album created successfully", data };
+}
+
+export async function updateAlbumAction(input: {
+  id: string;
+  title: string;
+  slug: string;
+  description?: string;
+  year?: number;
+  category?: string;
+  isPublic?: boolean;
+  coverAssetId?: string | null;
+}): Promise<ActionResult> {
+  const user = await requireCapability("media.manage");
+  const supabase = await createClient();
+
+  if (!input.title?.trim()) {
+    return { success: false, error: "Album title is required" };
+  }
+
+  const { error } = await supabase
+    .from("albums")
+    .update({
+      title: input.title.trim(),
+      slug: input.slug.trim(),
+      description: input.description?.trim() || null,
+      year: input.year || null,
+      category: input.category?.trim() || "Garden Walk",
+      is_public: input.isPublic ?? true,
+      cover_asset_id: input.coverAssetId || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "album.updated",
+    entity_type: "album",
+    entity_id: input.id,
+    details: input as unknown as NonNullable<Json>,
+  });
+
+  revalidatePath("/gallery");
+  revalidatePath(`/gallery/${input.slug}`);
+  revalidatePath("/admin/media");
+  return { success: true, message: "Album updated successfully" };
+}
+
+export async function deleteAlbumAction(id: string): Promise<ActionResult> {
+  const user = await requireCapability("media.manage");
+  const supabase = await createClient();
+
+  await supabase.from("album_items").delete().eq("album_id", id);
+  const { error } = await supabase.from("albums").delete().eq("id", id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "album.deleted",
+    entity_type: "album",
+    entity_id: id,
+    details: { id },
+  });
+
+  revalidatePath("/gallery");
+  revalidatePath("/admin/media");
+  return { success: true, message: "Album deleted successfully" };
+}
+
+export async function addMediaToAlbumAction(
+  albumId: string,
+  mediaAssetIds: string[],
+): Promise<ActionResult> {
+  const user = await requireCapability("media.manage");
+  const supabase = await createClient();
+
+  if (!mediaAssetIds || mediaAssetIds.length === 0) {
+    return { success: false, error: "No media assets selected" };
+  }
+
+  const { data: existingItems } = await supabase
+    .from("album_items")
+    .select("sort_order")
+    .eq("album_id", albumId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  let currentOrder = (existingItems?.[0]?.sort_order ?? 0) + 1;
+
+  const inserts = mediaAssetIds.map((media_asset_id) => ({
+    album_id: albumId,
+    media_asset_id,
+    sort_order: currentOrder++,
+  }));
+
+  const { error } = await supabase
+    .from("album_items")
+    .upsert(inserts, { onConflict: "album_id,media_asset_id" });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const { data: album } = await supabase
+    .from("albums")
+    .select("cover_asset_id, slug")
+    .eq("id", albumId)
+    .single();
+
+  if (album && !album.cover_asset_id && mediaAssetIds[0]) {
+    await supabase.from("albums").update({ cover_asset_id: mediaAssetIds[0] }).eq("id", albumId);
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "album.media_added",
+    entity_type: "album",
+    entity_id: albumId,
+    details: { albumId, count: mediaAssetIds.length },
+  });
+
+  revalidatePath("/gallery");
+  if (album?.slug) {
+    revalidatePath(`/gallery/${album.slug}`);
+  }
+  revalidatePath("/admin/media");
+  return { success: true, message: `${mediaAssetIds.length} photos added to album` };
+}
+
+export async function removeMediaFromAlbumAction(
+  albumId: string,
+  mediaAssetId: string,
+): Promise<ActionResult> {
+  const user = await requireCapability("media.manage");
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("album_items")
+    .delete()
+    .eq("album_id", albumId)
+    .eq("media_asset_id", mediaAssetId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const { data: album } = await supabase
+    .from("albums")
+    .select("cover_asset_id, slug")
+    .eq("id", albumId)
+    .single();
+
+  if (album?.cover_asset_id === mediaAssetId) {
+    const { data: nextItem } = await supabase
+      .from("album_items")
+      .select("media_asset_id")
+      .eq("album_id", albumId)
+      .order("sort_order", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    await supabase
+      .from("albums")
+      .update({ cover_asset_id: nextItem?.media_asset_id || null })
+      .eq("id", albumId);
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "album.media_removed",
+    entity_type: "album",
+    entity_id: albumId,
+    details: { albumId, mediaAssetId },
+  });
+
+  revalidatePath("/gallery");
+  if (album?.slug) {
+    revalidatePath(`/gallery/${album.slug}`);
+  }
+  revalidatePath("/admin/media");
+  return { success: true, message: "Photo removed from album" };
+}
+
+export async function setAlbumCoverAction(
+  albumId: string,
+  mediaAssetId: string,
+): Promise<ActionResult> {
+  const user = await requireCapability("media.manage");
+  const supabase = await createClient();
+
+  const { data: album, error } = await supabase
+    .from("albums")
+    .update({ cover_asset_id: mediaAssetId, updated_at: new Date().toISOString() })
+    .eq("id", albumId)
+    .select("slug")
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  await supabase.from("audit_events").insert({
+    actor_id: user.id,
+    action: "album.cover_set",
+    entity_type: "album",
+    entity_id: albumId,
+    details: { albumId, mediaAssetId },
+  });
+
+  revalidatePath("/gallery");
+  if (album?.slug) {
+    revalidatePath(`/gallery/${album.slug}`);
+  }
+  revalidatePath("/admin/media");
+  return { success: true, message: "Album cover image updated" };
 }

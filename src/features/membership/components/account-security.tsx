@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Image from "next/image";
@@ -532,7 +532,11 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
                 {/* QR Code Container */}
                 <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-border shadow-2xs">
                   <Image
-                    src={`data:image/svg+xml;utf-8,${encodeURIComponent(enrollData.qrCode)}`}
+                    src={
+                      enrollData.qrCode.startsWith("data:")
+                        ? enrollData.qrCode
+                        : `data:image/svg+xml;utf-8,${encodeURIComponent(enrollData.qrCode)}`
+                    }
                     alt="Authenticator App QR Code"
                     width={176}
                     height={176}

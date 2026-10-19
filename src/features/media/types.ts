@@ -18,6 +18,16 @@ export interface AlbumSummary {
   title: string;
   description?: string;
   year?: number;
+  category?: string;
+  coverAssetId?: string;
   coverImage?: MediaItem;
   itemCount: number;
+  items?: MediaItem[];
+  isPublic?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AlbumDetail extends AlbumSummary {
+  items: MediaItem[];
 }

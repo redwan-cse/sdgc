@@ -8,6 +8,9 @@ export const metadata = {
 
 export default async function AdminMediaPage() {
   await requireCapability("media.manage", "/admin/media");
-  const [media, albums] = await Promise.all([listStaffMedia(), listMediaAlbums()]);
+  const [media, albums] = await Promise.all([
+    listStaffMedia(),
+    listMediaAlbums({ includePrivate: true }),
+  ]);
   return <AdminMedia initialMedia={media} initialAlbums={albums} />;
 }
