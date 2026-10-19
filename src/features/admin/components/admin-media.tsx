@@ -596,7 +596,7 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
         <div>
           <h1 className="font-serif text-2xl font-bold tracking-tight text-foreground">
-            Media & Albums Studio
+            Media Library & Gallery Curation
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             Create public albums, upload high-resolution photography, manage photo assignments, and
