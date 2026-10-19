@@ -31,7 +31,7 @@ ON CONFLICT (storage_path) DO UPDATE SET
 INSERT INTO albums (id, slug, title, description, year, category, is_public)
 VALUES
   ('c0000001-0000-0000-0000-000000000001', 'garden-walk-2025', 'Garden Walk 2025: Coastal Blooms', 'Strolling through six private historic cottage gardens across Douglas and Saugatuck on a sunlit July weekend.', 2025, 'Garden Walk', true),
-  ('c0000001-0000-0000-0000-000000000002', 'civic-planters-2025', 'Civic Beautification & Downtown Planters', 'Volunteer seasonal plantings, floral hanging baskets, and decorative municipal urns along Center and Culver streets.', 2025, 'Civic Beautification', true),
+  ('c0000001-0000-0000-0000-000000000002', 'civic-planters-2025', 'Downtown Planters & Seasonal Urns', 'Volunteer seasonal plantings, floral hanging baskets, and decorative municipal urns along Center and Culver streets.', 2025, 'Civic Beautification', true),
   ('c0000001-0000-0000-0000-000000000003', 'youth-workshops-2025', 'Youth & 6th-Grade Gardening Workshops', 'Hands-on horticultural education, seed starting, and native pollinator study with local school students.', 2025, 'Workshops & Education', true),
   ('c0000001-0000-0000-0000-000000000004', 'plant-sale-2024', 'Annual Plant Sale at Old School House', 'Hundreds of member-grown perennials, heirloom pollinators, and native shrubs shared with our coastal community.', 2024, 'Plant Sales', true),
   ('c0000001-0000-0000-0000-000000000005', 'garden-awards-2024', 'Annual Landscape & Garden Awards', 'Celebrating outstanding residential gardens and commercial beautification efforts throughout our twin cities.', 2024, 'Member Gatherings', true),
