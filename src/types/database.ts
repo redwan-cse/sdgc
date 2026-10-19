@@ -32,17 +32,23 @@ isOneToOne: false
                   ]
                 },"albums": {
                   Row: {
-                    "created_at": string,"description": string | null,"id": string,"is_public": boolean,"slug": string,"title": string,"updated_at": string,"year": number | null
+                    "category": string,"cover_asset_id": string | null,"created_at": string,"description": string | null,"id": string,"is_public": boolean,"slug": string,"title": string,"updated_at": string,"year": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"description"?: string | null,"id"?: string,"is_public"?: boolean,"slug": string,"title": string,"updated_at"?: string,"year"?: number | null
+                    "category"?: string,"cover_asset_id"?: string | null,"created_at"?: string,"description"?: string | null,"id"?: string,"is_public"?: boolean,"slug": string,"title": string,"updated_at"?: string,"year"?: number | null
                   }
                   Update: {
-                    "created_at"?: string,"description"?: string | null,"id"?: string,"is_public"?: boolean,"slug"?: string,"title"?: string,"updated_at"?: string,"year"?: number | null
+                    "category"?: string,"cover_asset_id"?: string | null,"created_at"?: string,"description"?: string | null,"id"?: string,"is_public"?: boolean,"slug"?: string,"title"?: string,"updated_at"?: string,"year"?: number | null
                   }
                   Relationships: [
-
+                    {
+      foreignKeyName: "albums_cover_asset_id_fkey"
+      columns: ["cover_asset_id"]
+isOneToOne: false
+      referencedRelation: "media_assets"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"audit_events": {
                   Row: {
