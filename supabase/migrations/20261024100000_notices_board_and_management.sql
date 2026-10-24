@@ -191,3 +191,5 @@ on conflict (slug) do update set
 GRANT SELECT ON TABLE public.notices TO anon;
 GRANT ALL ON TABLE public.notices TO authenticated;
 GRANT ALL ON TABLE public.notices TO service_role;
+
+GRANT SELECT ON TABLE public.profiles TO anon;

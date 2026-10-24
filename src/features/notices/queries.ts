@@ -76,11 +76,7 @@ export async function getPublishedNotices(category?: NoticeCategory): Promise<No
       expires_at,
       author_id,
       created_at,
-      updated_at,
-      profiles:author_id (
-        first_name,
-        last_name
-      )
+      updated_at
     `,
     )
     .eq("is_published", true)
@@ -124,11 +120,7 @@ export async function getNoticeBySlug(slug: string): Promise<Notice | null> {
       expires_at,
       author_id,
       created_at,
-      updated_at,
-      profiles:author_id (
-        first_name,
-        last_name
-      )
+      updated_at
     `,
     )
     .eq("slug", slug)
