@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 import { memberProfileSchema } from "@/features/membership/validation";
 
 export const loginSchema = z.object({
@@ -47,8 +47,22 @@ export const changePasswordSchema = z
     path: ["newPassword"],
   });
 
+export const mfaVerifySchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Security code must be exactly 6 digits"),
+});
+
+export const unenrollMfaSchema = z.object({
+  password: z.string().min(1, "Current password is required to remove two-factor authentication"),
+  factorId: z.string().min(1, "Factor ID is required"),
+});
+
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+export type MfaVerifyFormData = z.infer<typeof mfaVerifySchema>;
+export type UnenrollMfaFormData = z.infer<typeof unenrollMfaSchema>;

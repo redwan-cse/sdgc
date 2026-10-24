@@ -1,7 +1,6 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +14,7 @@ export function MfaVerifyForm({ returnTo }: MfaVerifyFormProps) {
   const [code, setCode] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [isVerifying, setIsVerifying] = React.useState(false);
+  const [isCanceling, setIsCanceling] = React.useState(false);
   const [factorId, setFactorId] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
@@ -50,41 +50,72 @@ export function MfaVerifyForm({ returnTo }: MfaVerifyFormProps) {
     loadFactors();
   }, [returnTo]);
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const performVerification = React.useCallback(
+    async (codeToVerify: string) => {
+      setError(null);
 
-    const cleanCode = code.replace(/\D/g, "").trim();
-    if (cleanCode.length !== 6) {
-      setError("Please enter a valid 6-digit verification code.");
-      return;
-    }
-
-    if (!factorId) {
-      setError("No active two-factor authentication factor found.");
-      return;
-    }
-
-    setIsVerifying(true);
-    try {
-      const supabase = createClient();
-      const { data, error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
-        factorId,
-        code: cleanCode,
-      });
-
-      if (verifyError || !data) {
-        setError("Invalid verification code. Please check your authenticator app and try again.");
+      const cleanCode = codeToVerify.replace(/\D/g, "").trim();
+      if (cleanCode.length !== 6) {
+        setError("Please enter a valid 6-digit verification code.");
         return;
       }
 
-      // Elevated to AAL2 successfully!
-      const destination = returnTo?.startsWith("/") ? returnTo : "/profile";
-      window.location.href = destination;
+      if (!factorId) {
+        setError("No active two-factor authentication factor found.");
+        return;
+      }
+
+      setIsVerifying(true);
+      try {
+        const supabase = createClient();
+        const { data, error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
+          factorId,
+          code: cleanCode,
+        });
+
+        if (verifyError || !data) {
+          setError("Invalid verification code. Please check your authenticator app and try again.");
+          return;
+        }
+
+        // Elevate session cookies to AAL2 immediately
+        await supabase.auth.refreshSession();
+
+        // Redirect to intended destination
+        const destination = returnTo?.startsWith("/") ? returnTo : "/profile";
+        window.location.href = destination;
+      } catch {
+        setError("An unexpected network error occurred. Please try again.");
+      } finally {
+        setIsVerifying(false);
+      }
+    },
+    [factorId, returnTo],
+  );
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performVerification(code);
+  };
+
+  // Auto-submit when user enters 6 digits
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setCode(val);
+    if (val.length === 6 && !isVerifying && factorId) {
+      performVerification(val);
+    }
+  };
+
+  const handleCancelAndSignOut = async () => {
+    setIsCanceling(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
     } catch {
-      setError("An unexpected network error occurred. Please try again.");
+      // Non-blocking
     } finally {
-      setIsVerifying(false);
+      window.location.href = "/login?notice=signed_out";
     }
   };
 
@@ -144,24 +175,31 @@ export function MfaVerifyForm({ returnTo }: MfaVerifyFormProps) {
           autoComplete="one-time-code"
           maxLength={6}
           value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+          onChange={handleCodeChange}
           placeholder="000000"
           className="text-center font-mono text-2xl tracking-[0.3em] h-12"
           autoFocus
+          disabled={isVerifying || isCanceling}
         />
       </div>
 
-      <Button type="submit" disabled={isVerifying || code.length !== 6} className="w-full">
+      <Button
+        type="submit"
+        disabled={isVerifying || isCanceling || code.length !== 6}
+        className="w-full"
+      >
         {isVerifying ? "Verifying Code..." : "Verify & Sign In"}
       </Button>
 
       <div className="text-center pt-2">
-        <Link
-          href="/login?notice=signed_out"
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        <button
+          type="button"
+          onClick={handleCancelAndSignOut}
+          disabled={isCanceling}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
-          &larr; Cancel &amp; Return to Sign In
-        </Link>
+          {isCanceling ? "Signing out..." : "← Cancel & Return to Sign In"}
+        </button>
       </div>
     </form>
   );

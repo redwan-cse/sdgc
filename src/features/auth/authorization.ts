@@ -36,7 +36,33 @@ export async function requireUser(returnTo?: string): Promise<AuthenticatedUser>
     redirect(loginUrl);
   }
 
+  // Server-side Defense-in-depth: Ensure users with MFA configured have elevated to AAL2
+  const supabase = await createClient();
+  const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aalData && aalData.nextLevel === "aal2" && aalData.currentLevel !== "aal2") {
+    const mfaUrl = (
+      returnTo ? `/mfa-verify?returnTo=${encodeURIComponent(returnTo)}` : "/mfa-verify"
+    ) as Parameters<typeof redirect>[0];
+    redirect(mfaUrl);
+  }
+
   return user;
+}
+
+export async function requireAal2(returnTo?: string): Promise<AuthenticatedUser> {
+  return requireUser(returnTo);
+}
+
+export async function getAssuranceLevel(): Promise<{
+  currentLevel: "aal1" | "aal2" | null;
+  nextLevel: "aal1" | "aal2" | null;
+}> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  return {
+    currentLevel: (data?.currentLevel as "aal1" | "aal2") ?? null,
+    nextLevel: (data?.nextLevel as "aal1" | "aal2") ?? null,
+  };
 }
 
 export async function hasCapability(

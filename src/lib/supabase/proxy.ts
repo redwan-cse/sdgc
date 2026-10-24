@@ -33,5 +33,60 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const url = request.nextUrl.clone();
+  const pathname = url.pathname;
+
+  const isMfaRoute = pathname === "/mfa-verify";
+
+  // Protected application routes requiring complete authentication
+  const isProtectedRoute =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/directory") ||
+    pathname.startsWith("/dues") ||
+    pathname.startsWith("/membership");
+
+  const createRedirect = (targetUrl: URL) => {
+    const redirectResponse = NextResponse.redirect(targetUrl);
+    for (const cookie of supabaseResponse.cookies.getAll()) {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    }
+    return redirectResponse;
+  };
+
+  // If unauthenticated user tries to directly hit /mfa-verify, forward to login
+  if (!user && isMfaRoute) {
+    url.pathname = "/login";
+    return { response: createRedirect(url), user: null };
+  }
+
+  // If user is authenticated, enforce AAL2 for accounts with MFA configured
+  if (user && (isProtectedRoute || isMfaRoute)) {
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    if (aalData) {
+      const { currentLevel, nextLevel } = aalData;
+
+      // Scenario A: User has enrolled MFA (nextLevel === "aal2"), but current session is only AAL1
+      if (nextLevel === "aal2" && currentLevel !== "aal2") {
+        if (!isMfaRoute) {
+          url.pathname = "/mfa-verify";
+          url.searchParams.set("returnTo", pathname + (url.search || ""));
+          return { response: createRedirect(url), user };
+        }
+      }
+      // Scenario B: User is already elevated to AAL2 (or has no MFA enrolled) and visits /mfa-verify
+      else if (isMfaRoute) {
+        if (currentLevel === "aal2" || nextLevel !== "aal2") {
+          const rawReturnTo = url.searchParams.get("returnTo") || "/profile";
+          const safeReturnTo = rawReturnTo.startsWith("/") ? rawReturnTo : "/profile";
+          url.pathname = safeReturnTo;
+          url.search = "";
+          return { response: createRedirect(url), user };
+        }
+      }
+    }
+  }
+
   return { response: supabaseResponse, user };
 }

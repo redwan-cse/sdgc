@@ -4,6 +4,8 @@ import {
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
+  mfaVerifySchema,
+  unenrollMfaSchema,
 } from "./validation";
 
 describe("loginSchema", () => {
@@ -204,6 +206,58 @@ describe("forgotPasswordSchema", () => {
   it("rejects empty or single character identifier", () => {
     const result = forgotPasswordSchema.safeParse({
       identifier: "a",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("mfaVerifySchema", () => {
+  it("accepts valid 6-digit numeric security code", () => {
+    const result = mfaVerifySchema.safeParse({ code: "123456" });
+    expect(result.success).toBe(true);
+  });
+
+  it("trims whitespace around code", () => {
+    const result = mfaVerifySchema.safeParse({ code: " 654321 " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.code).toBe("654321");
+    }
+  });
+
+  it("rejects codes with letters or symbols", () => {
+    const result = mfaVerifySchema.safeParse({ code: "12A456" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects codes with length other than 6", () => {
+    expect(mfaVerifySchema.safeParse({ code: "12345" }).success).toBe(false);
+    expect(mfaVerifySchema.safeParse({ code: "1234567" }).success).toBe(false);
+    expect(mfaVerifySchema.safeParse({ code: "" }).success).toBe(false);
+  });
+});
+
+describe("unenrollMfaSchema", () => {
+  it("accepts valid password and factorId", () => {
+    const result = unenrollMfaSchema.safeParse({
+      password: "CurrentPassword123!",
+      factorId: "factor-uuid-1234",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects empty password", () => {
+    const result = unenrollMfaSchema.safeParse({
+      password: "",
+      factorId: "factor-uuid-1234",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty factorId", () => {
+    const result = unenrollMfaSchema.safeParse({
+      password: "CurrentPassword123!",
+      factorId: "",
     });
     expect(result.success).toBe(false);
   });
