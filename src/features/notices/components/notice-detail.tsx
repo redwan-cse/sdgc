@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import type { Notice } from "../types";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 
 interface NoticeDetailProps {
   notice: Notice;
@@ -80,9 +81,9 @@ export function NoticeDetail({ notice }: NoticeDetailProps) {
           </div>
         )}
 
-        {/* Content Body with whitespace preservation & typography */}
-        <div className="prose prose-neutral dark:prose-invert max-w-none text-foreground leading-relaxed text-sm sm:text-base whitespace-pre-line pt-2">
-          {notice.content}
+        {/* Content Body with rich Markdown formatting & typography */}
+        <div className="pt-2">
+          <MarkdownContent content={notice.content} />
         </div>
 
         {/* Footer info & inquiries */}

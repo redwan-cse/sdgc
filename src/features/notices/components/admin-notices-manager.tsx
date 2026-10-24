@@ -6,6 +6,7 @@ import type { Route } from "next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import type { Notice, NoticeCategory, NoticePriority } from "../types";
 import {
   createNoticeAction,
@@ -522,8 +523,10 @@ export function AdminNoticesManager({ initialNotices }: AdminNoticesManagerProps
                     className="w-full rounded-xl border border-border bg-card p-3 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
                   />
                 ) : (
-                  <div className="rounded-xl border border-border bg-muted/20 p-4 min-h-[160px] text-xs leading-relaxed whitespace-pre-line text-foreground">
-                    {content || (
+                  <div className="rounded-xl border border-border bg-muted/20 p-4 min-h-[160px] text-xs leading-relaxed text-foreground">
+                    {content ? (
+                      <MarkdownContent content={content} />
+                    ) : (
                       <span className="text-muted-foreground italic">No content typed yet.</span>
                     )}
                   </div>
