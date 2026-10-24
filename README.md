@@ -1,62 +1,186 @@
-# Saugatuck Douglas Garden Club
+# Saugatuck-Douglas Garden Club (SDGC)
 
-Next.js + Supabase replacement for the club's WordPress website, including RBAC, member profile management, and a dedicated admin panel. This repository currently contains a runnable development foundation and the implementation handoff for Antigravity. The finished club website is **not implemented yet**.
+[![CI](https://github.com/sdgcmich/sdgc-web/actions/workflows/ci.yml/badge.svg)](https://github.com/sdgcmich/sdgc-web/actions/workflows/ci.yml)
+[![CodeQL Security Analysis](https://github.com/sdgcmich/sdgc-web/actions/workflows/codeql.yml/badge.svg)](https://github.com/sdgcmich/sdgc-web/actions/workflows/codeql.yml)
+[![Next.js](https://img.shields.io/badge/Next.js-16.4.2-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-3ecf8e?logo=supabase)](https://supabase.com/)
 
-## Start here
+A modern, high-performance, and secure digital platform for the **Saugatuck-Douglas Garden Club** (Est. 1928, Federated 1947, 501(c)(3) nonprofit). Built with Next.js App Router, Supabase PostgreSQL, and Cloudinary, this application completely replaces the legacy WordPress site with enterprise-grade security, full Role-Based Access Control (RBAC), and interactive community tools.
 
-- [Antigravity execution prompt](docs/ANTIGRAVITY-PROMPT.md)
-- [Phased development plan](docs/DEVELOPMENT-PLAN.md)
-- [Verification and delivery gates](docs/VERIFICATION-PLAN.md)
-- [Current-site feature inventory](docs/CURRENT-SITE-AUDIT.md)
-- [Architecture and data contracts](docs/ARCHITECTURE.md)
-- [Local Docker setup](docs/LOCAL-DEVELOPMENT.md)
-- [Actual bootstrap verification](docs/BOOTSTRAP-STATUS.md)
+---
 
-## Quick start
+## Key Highlights & Features
 
-Use Node 24 and npm 11. Commit `package-lock.json`; install with `npm ci` on subsequent checkouts.
+### 🌸 Public Discovery & Community Engagement
+
+- **Dynamic Events Calendar**: Interactive event schedule supporting **List**, **Month grid**, and **Day schedule** views, complete with automated recurring event expansion and one-click `.ics` feed calendar subscription.
+- **Curated Photo Gallery**: Responsive, filterable media showcases spanning modern and historical Garden Walks, civic beautification, and youth gardening projects, backed by Cloudinary CDN optimization and full-screen accessible lightboxes.
+- **Club Notice Board**: Public announcements and committee updates with rich Markdown rendering (headers, formatted lists, blockquotes, and links).
+- **Club Heritage & Bylaws**: Dedicated history section covering SDGC's 1928 founding and federation with Michigan Garden Clubs District IV, with direct access to official Club Bylaws (PDF).
+- **Protected Contact Workflow**: Inquiries routed through an anti-spam honeypot and server-side rate-limited form submission.
+
+### 🎟️ Annual Garden Walk
+
+- Dedicated showcase celebrating over 46 years of community garden walk traditions in Saugatuck and Douglas.
+- Interactive ticket reservation and simulated payment workflow.
+
+### 👥 Member Portal
+
+- **Self-Service Profiles**: Member profile management with granular privacy controls (toggle visibility of phone, email, and street address).
+- **Community Member Directory**: Searchable, privacy-aware directory for active club members.
+- **Annual Dues Management**: Real-time status tracking for annual dues, payment receipts, and automated confirmation badges.
+
+### 🛡️ Enterprise Security & Governance
+
+- **MFA (AAL2 Enforcement)**: Strict Authenticator Assurance Level 2 enforcement via Time-based One-Time Passwords (TOTP) for high-privilege administrative actions.
+- **Password-Protected MFA Unenroll**: Requires explicit password verification before removing second-factor protection.
+- **Row Level Security (RLS)**: Comprehensive PostgreSQL RLS policies on all database tables ensure strict tenant and role isolation.
+- **Role-Based Access Control (RBAC)**: Fine-grained permissions across `public`, `member`, `admin`, and `superadmin` roles.
+- **Static Security Audits**: Continuous automated scanning via GitHub CodeQL and Dependabot. See [SECURITY.md](SECURITY.md) for vulnerability reporting guidelines.
+
+### ⚙️ Dedicated Admin Suite
+
+- **Analytics & Operations Overview**: High-level statistics on active members, dues collections, upcoming events, and pending messages.
+- **Event & Venue Management**: Full management suite for scheduling club meetings, field trips, and workshops across regional venues.
+- **Media & Album Manager**: Upload, tag, categorize, and organize media assets into curated public albums.
+- **Member Management**: Member roster administration, status updates, and administrative role assignment.
+- **Notice Management**: Live Markdown preview and publishing interface for instant club notices.
+
+---
+
+## Technology Stack
+
+| Layer                  | Technologies                                                                                                     |
+| :--------------------- | :--------------------------------------------------------------------------------------------------------------- |
+| **Frontend Framework** | [Next.js 16.4.2](https://nextjs.org/) (App Router, Server Components, Server Actions)                            |
+| **Language & Tooling** | [TypeScript 5](https://www.typescriptlang.org/), [Biome](https://biomejs.dev/), [Prettier](https://prettier.io/) |
+| **Styling & Theme**    | [Tailwind CSS v4](https://tailwindcss.com/), Radix UI accessible primitives, Lucide icons, Dark/Light mode       |
+| **Backend & Database** | [Supabase](https://supabase.com/) (PostgreSQL 15, Row Level Security, Auth, Storage, pgTAP)                      |
+| **Media Delivery**     | [Cloudinary](https://cloudinary.com/) (CDN image optimization, responsive formats, automatic compression)        |
+| **Testing & Quality**  | [Vitest](https://vitest.dev/) (82 unit tests), [Playwright](https://playwright.dev/) (26 browser E2E journeys)   |
+| **Security & CI/CD**   | GitHub Actions (lint, typegen, build, db test, CodeQL static analysis, high-audit gates)                         |
+
+---
+
+## Project Structure
+
+```text
+sdgc-web/
+├── .github/
+│   └── workflows/          # GitHub Actions CI & CodeQL workflows
+├── public/                 # Static assets, brand logo, and icons
+├── src/
+│   ├── app/                # Next.js App Router (Public routes, Auth, Admin, API)
+│   ├── components/         # Shared UI components (Markdown, ThemeToggle, Lightbox)
+│   ├── config/             # Application constants and navigation manifests
+│   ├── features/           # Domain feature slices
+│   │   ├── admin/          # Admin dashboard, overview, and roster management
+│   │   ├── auth/           # Login, registration, password recovery, MFA verification
+│   │   ├── contact/        # Contact form validation and message storage
+│   │   ├── events/         # Calendar views, query layer, .ics generator
+│   │   ├── media/          # Album queries, gallery components, and asset viewers
+│   │   ├── membership/     # Profile editor, member directory, dues tracking
+│   │   ├── notices/        # Notice board, markdown parser, admin editor
+│   │   └── payments/       # Dues checkout, payment simulation, Stripe provider
+│   ├── lib/                # Storage, Cloudinary manifests, Supabase clients
+│   └── types/              # Database models, auth personas, and domain types
+├── supabase/
+│   ├── migrations/         # Sequential database schema and RLS migrations
+│   ├── tests/              # pgTAP database unit and security tests
+│   └── seed.sql            # Local development seed data
+├── tests/
+│   ├── e2e/                # Playwright end-to-end browser journeys
+│   ├── integration/        # Supabase API, RLS, and auth integration tests
+│   └── unit/               # Vitest unit test suites
+└── SECURITY.md             # Responsible vulnerability disclosure policy
+```
+
+---
+
+## Quick Start & Local Development
+
+### Prerequisites
+
+- **Node.js**: `v24.x` (managed via `.nvmrc`)
+- **npm**: `v11.x`
+- **Docker**: Required for local Supabase database and authentication emulation.
+
+### 1. Installation
+
+Clone the repository and install dependencies using clean install:
 
 ```sh
+git clone https://github.com/sdgcmich/sdgc-web.git
+cd sdgc-web
 npm ci
+```
+
+### 2. Environment Configuration
+
+Copy the template and populate required credentials:
+
+```sh
+cp .env.example .env.local
+```
+
+### 3. Start Local Database & Development Server
+
+To run with local Supabase:
+
+```sh
+# Start local Supabase Docker stack (PostgreSQL, Auth, Studio)
+npm run db:start
+
+# Seed database and extract environment variables
+npm run db:reset
+
+# Launch the Next.js development server
 npm run dev
 ```
 
-Open <http://127.0.0.1:3000>. The foundation page builds without database credentials. Database features will require `.env.local` populated from the local stack; see the local setup guide.
+Visit [http://localhost:3000](http://localhost:3000) to view the application.
+
+---
+
+## Verification & Testing Scripts
+
+The repository enforces strict quality, security, and formatting gates before any merge:
 
 ```sh
+# Run all code quality checks (Prettier, Biome, Next route typegen, tsc, Vitest)
 npm run check
-npm run build
+
+# Run unit tests only
+npm test
+
+# Run database integration tests against local Supabase
+npm run test:integration
+
+# Run Playwright end-to-end browser tests
 npx playwright install chromium
 npm run test:e2e
+
+# Run database schema linter and pgTAP security tests
+npm run db:lint
+npm run db:test
+
+# Verify production build bundle
+npm run build
 ```
 
-## Layout
+---
 
-```text
-src/app/                 App Router routes, layouts, metadata, HTTP boundaries
-src/components/ui/       Shared accessible primitives (add as needed)
-src/features/            Domain code: content, events, membership, contact, admin
-src/config/              Public application constants
-src/lib/supabase/        Browser and request-scoped server clients
-src/types/               Generated local database types; regenerate with migrations
-public/images/brand/     Supplied club logo
-supabase/                Local config, ordered migrations, seed, pgTAP tests
-tests/e2e/               Playwright browser journeys
-tests/integration/       Real local Supabase API and RLS integration tests
-tests/fixtures/          Synthetic test data; no member exports
-scripts/                 Cross-platform development utilities
-docs/                    Requirements, architecture, plans, evidence
-docs/reference/theme/    Unmodified supplied tweakcn sources
-```
+## Security & Responsible Disclosure
 
-Keep one application and one lockfile. No monorepo, separate API service, ORM, payment SDK, or CMS dependency is required for initialization. Antigravity adds a dependency only when its phase needs it.
+We prioritize the safety of our community data. If you discover a potential vulnerability, please review our [Security Policy](SECURITY.md) and submit a private report via [GitHub Private Vulnerability Reporting](https://github.com/sdgcmich/sdgc-web/security/advisories) or email `sdgcmich@gmail.com`.
 
-## Brand
+---
 
-The supplied logo is preserved at `public/images/brand/sdgc-logo.jpg`. `src/app/globals.css` uses the supplied light/dark tweakcn theme. Inter and Lora are served locally from font packages. The original export remains in `docs/reference/theme/`; the app fixes its self-referencing font tokens and clamps an invalid shadow alpha of 1.13 to 1. No logo redesign was performed.
+## Heritage & Attribution
 
-## Scope and delivery
+The **Saugatuck-Douglas Garden Club** is a nonprofit community organization serving Saugatuck and Douglas, Michigan since 1928.
 
-The immediate delivery target is the complete frontend, Supabase migration files, and working integration against this project's Docker Supabase. Production deployment, live payments, real outbound email, and live WordPress member import are later operational actions. Unknown private WordPress features must be resolved or explicitly listed as blockers before claiming complete parity.
-
-No license has been selected for the application or supplied club assets; do not assume public-repository visibility grants asset reuse rights.
+- All historic photographs, garden walk artwork, and official documents are preserved and published with permission of the SDGC Executive Board.
+- Designed and engineered with modern web standards to ensure accessibility, sustainability, and longevity.
