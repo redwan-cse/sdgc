@@ -215,10 +215,7 @@ export function MarkdownContent({ content, className = "" }: MarkdownContentProp
             );
           case "ul":
             return (
-              <ul
-                key={key}
-                className="list-disc list-inside space-y-1.5 pl-2 text-muted-foreground"
-              >
+              <ul key={key} className="list-disc list-inside space-y-2 pl-2 text-foreground/90">
                 {(block.items || []).map((item) => (
                   <li key={`${key}-${item}`} className="leading-normal">
                     {renderInline(item)}
@@ -228,10 +225,7 @@ export function MarkdownContent({ content, className = "" }: MarkdownContentProp
             );
           case "ol":
             return (
-              <ol
-                key={key}
-                className="list-decimal list-inside space-y-1.5 pl-2 text-muted-foreground"
-              >
+              <ol key={key} className="list-decimal list-inside space-y-2 pl-2 text-foreground/90">
                 {(block.items || []).map((item) => (
                   <li key={`${key}-${item}`} className="leading-normal">
                     {renderInline(item)}
@@ -241,7 +235,7 @@ export function MarkdownContent({ content, className = "" }: MarkdownContentProp
             );
           default:
             return (
-              <p key={key} className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+              <p key={key} className="text-foreground/90 text-sm sm:text-base leading-relaxed">
                 {renderInline(block.text || "")}
               </p>
             );
