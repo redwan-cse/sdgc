@@ -147,7 +147,7 @@ All club members, aspiring gardeners, and community guests are warmly invited to
     'downtown-planters-seasonal-urns-fall-transition-complete',
     'The Civic Beautification Committee is delighted to announce that all 32 public decorative urns and community street planters throughout downtown Saugatuck and Douglas have been transitioned into vibrant autumnal displays!
 
-This year\'s arrangements feature deep purple and copper heirloom kales, trailing English ivy, goldenrod accents, ornamental peppers, and dwarf winterberries donated by local nurseries and funded through our Annual Garden Walk proceeds.
+This year''s arrangements feature deep purple and copper heirloom kales, trailing English ivy, goldenrod accents, ornamental peppers, and dwarf winterberries donated by local nurseries and funded through our Annual Garden Walk proceeds.
 
 A heartfelt thank you to the twelve volunteer members who dedicated Saturday morning to weeding, soil conditioning, and planting!',
     'Civic Beautification team has completed fall planting for all 32 community planters and urns throughout downtown Saugatuck and Douglas.',
