@@ -82,6 +82,11 @@ test.describe("Public Site Navigation & Experiences", () => {
     await page.goto("/gallery");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Club Photo Gallery");
 
+    // Explore first album to view its photograph collection
+    const firstAlbum = page.locator("a[href^='/gallery/']").first();
+    await firstAlbum.click();
+    await expect(page).toHaveURL(/\/gallery\/[\w-]+/);
+
     // Click first photo to open lightbox
     const firstPhoto = page.locator("button[aria-haspopup='dialog']").first();
     await firstPhoto.click();
