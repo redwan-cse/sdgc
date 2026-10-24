@@ -220,6 +220,7 @@ export function AlbumDetailView({ album }: AlbumDetailViewProps) {
             <button
               key={item.id}
               type="button"
+              aria-haspopup="dialog"
               onClick={() => setActiveImageIndex(index)}
               className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card text-left transition-all duration-300 hover:shadow-lg hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
               aria-label={`View photo: ${item.caption || item.alt}`}

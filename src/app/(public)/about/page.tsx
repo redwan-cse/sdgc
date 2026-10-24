@@ -2,6 +2,7 @@ import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { getAboutPageContent } from "@/features/content/queries";
 
 export const metadata = {
@@ -43,11 +44,8 @@ export default async function AboutPage() {
                   <h2 className="font-serif text-2xl sm:text-3xl font-bold text-foreground">
                     {section.heading}
                   </h2>
-                  <div className="space-y-3 text-muted-foreground leading-relaxed text-sm sm:text-base">
-                    {section.body.map((para, pIdx) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: fixed content paragraph
-                      <p key={pIdx}>{para}</p>
-                    ))}
+                  <div className="leading-relaxed text-sm sm:text-base">
+                    <MarkdownContent content={section.body.join("\n\n")} />
                   </div>
 
                   {section.callToAction && (

@@ -55,4 +55,32 @@ describe("MarkdownContent Component", () => {
     const html = renderToStaticMarkup(React.createElement(MarkdownContent, { content: "" }));
     expect(html).toBe("");
   });
+  it("renders about page bylaws markdown with headings, bullet lists, and download links", () => {
+    const aboutContent = `Organized in 1928, the Saugatuck Douglas Garden Club works continuously to beautify and enhance the communities of Saugatuck and Douglas.
+
+### Club Bylaws & Governance
+
+The Saugatuck Douglas Garden Club operates under standing bylaws adopted by the membership. Members and the community can review our official governing framework:
+
+- [Download Official Club Bylaws (PDF)](https://res.cloudinary.com/p4wempwi/raw/upload/v1792818426/sdgc-web/archive/documents/BYLAWS-SDGC-FINAL.pdf)
+- Member of the Michigan Garden Clubs, Inc. (District IV)
+- Member of National Garden Clubs, Inc. (Central Region)
+- General meetings: Third Monday of each month, April through November.`;
+
+    const html = renderToStaticMarkup(
+      React.createElement(MarkdownContent, { content: aboutContent }),
+    );
+
+    expect(html).toContain("<h3");
+    expect(html).toContain("Club Bylaws &amp; Governance");
+    expect(html).toContain("<ul");
+    expect(html).toContain("<li");
+    expect(html).toContain("Download Official Club Bylaws (PDF)");
+    expect(html).toContain(
+      "https://res.cloudinary.com/p4wempwi/raw/upload/v1792818426/sdgc-web/archive/documents/BYLAWS-SDGC-FINAL.pdf",
+    );
+    expect(html).toContain("District IV");
+    expect(html).not.toContain("### Club Bylaws");
+    expect(html).not.toContain("- [Download");
+  });
 });
