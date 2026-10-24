@@ -18,6 +18,7 @@ const NAV_LINKS = [
   { href: "/garden-walk", label: "Garden Walk" },
   { href: "/events", label: "Events" },
   { href: "/gallery", label: "Gallery" },
+  { href: "/notices", label: "Notices" },
   { href: "/contact", label: "Contact" },
 ];
 
