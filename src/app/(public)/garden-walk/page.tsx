@@ -1,15 +1,15 @@
 import Link from "next/link";
 import type { Route } from "next";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { formatEventDateTime } from "@/features/events/calendar";
 import { getGardenWalkPageContent } from "@/features/content/queries";
 import { resolveMediaUrl } from "@/lib/storage/media-url";
+import { GardenWalkGallery } from "@/features/media/components/garden-walk-gallery";
 
 export const metadata = {
-  title: "Annual Garden Walk",
+  title: "Annual Garden Walk | Saugatuck Douglas Garden Club",
   description:
-    "Explore the Saugatuck Douglas Garden Walk: tour exquisite private coastal gardens and support local community beautification and scholarships.",
+    "Explore the Saugatuck Douglas Garden Walk: tour exquisite private coastal gardens, vibrant cottage sanctuaries, and support civic beautification and horticulture scholarships.",
 };
 
 const FEATURED_GARDEN_WALK_PHOTOS = [
@@ -78,24 +78,38 @@ export default async function GardenWalkPage() {
   const ticketUrl = (event?.ticketUrl || "/tickets-checkout") as Route;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-12">
+    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 space-y-16">
+      {/* Hero Header */}
       <div className="space-y-4 text-center max-w-3xl mx-auto">
-        <span className="text-xs font-semibold uppercase tracking-wider text-primary font-bold">
+        <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-xs font-bold text-primary tracking-wide uppercase">
           Premier Lakeshore Horticultural Event
-        </span>
-        <h1 className="font-serif text-4xl sm:text-5xl font-bold text-foreground">{walk.title}</h1>
-        <p className="text-lg text-muted-foreground leading-relaxed">{walk.subtitle}</p>
+        </div>
+        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground tracking-tight">
+          {walk.title}
+        </h1>
+        <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+          {walk.subtitle}
+        </p>
       </div>
 
-      {/* Feature Walk Card */}
-      <section className="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-8 sm:p-12 shadow-sm space-y-8">
+      {/* Feature Walk Card with Botanical Aesthetic */}
+      <section className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-card via-card to-primary/10 p-8 sm:p-12 shadow-md space-y-8">
         <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-8">
-          <div className="space-y-4 max-w-2xl">
-            <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-              {eventDateStr}
-            </span>
-            <h2 className="font-serif text-3xl font-bold text-foreground">{eventTitle}</h2>
-            <div className="space-y-3 text-muted-foreground text-sm sm:text-base leading-relaxed">
+          <div className="space-y-5 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-block rounded-full bg-primary/15 border border-primary/20 px-3.5 py-1 text-xs font-bold text-primary">
+                {eventDateStr}
+              </span>
+              <span className="inline-block rounded-full bg-muted/60 px-3 py-1 text-xs font-semibold text-muted-foreground">
+                Self-Guided Tour
+              </span>
+            </div>
+
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-foreground">
+              {eventTitle}
+            </h2>
+
+            <div className="space-y-3.5 text-muted-foreground text-sm sm:text-base leading-relaxed">
               {event?.description ? (
                 <p>{event.description}</p>
               ) : (
@@ -109,66 +123,115 @@ export default async function GardenWalkPage() {
                 peaceful woodland trails and creative waterscapes, our tour features inspiring
                 horticultural variety and coastal charm.
               </p>
-              <p className="font-medium text-foreground">
-                Advance tickets: $20 &bull; Day of tour: $25. All proceeds fund club civic
-                beautification projects and local student scholarships.
-              </p>
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-foreground text-xs sm:text-sm font-medium">
+                Advance tickets: $20 &bull; Day of tour: $25. All ticket proceeds directly fund club
+                civic beautification planters, parks, and youth horticulture scholarships.
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row lg:flex-col shrink-0">
+          <div className="flex flex-col gap-3.5 sm:flex-row lg:flex-col shrink-0 min-w-[240px]">
             <Link
               href={ticketUrl}
-              className="rounded-xl bg-primary px-8 py-4 text-center font-serif text-lg font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+              className="rounded-2xl bg-primary px-8 py-4 text-center font-serif text-lg font-bold text-primary-foreground shadow-md hover:bg-primary/90 hover:scale-[1.02] transition-all duration-200"
             >
               Get Garden Walk Tickets &rarr;
             </Link>
             <Link
               href={`/event/${eventSlug}`}
-              className="rounded-xl border border-border bg-card px-8 py-3 text-center text-sm font-semibold text-foreground hover:bg-muted transition-colors"
+              className="rounded-2xl border border-border bg-card px-8 py-3 text-center text-sm font-semibold text-foreground hover:bg-muted transition-colors"
             >
-              Tour Route & Details
+              Tour Route &amp; Details
             </Link>
           </div>
         </div>
-      </section>
 
-      {/* Highlights Gallery Preview */}
-      <section className="space-y-6">
-        <div className="flex justify-between items-baseline">
-          <div>
-            <h2 className="font-serif text-2xl font-bold text-foreground">
-              Photographs from Past Garden Walks
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Scenes captured from private garden retreats featured on past annual club tours.
-            </p>
-          </div>
-          <Link href="/gallery" className="text-sm font-semibold text-primary hover:underline">
-            View Complete Gallery &rarr;
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {FEATURED_GARDEN_WALK_PHOTOS.map((photo) => (
-            <div
-              key={photo.id}
-              className="overflow-hidden rounded-xl border border-border bg-card shadow-xs group flex flex-col"
-            >
-              <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
-                <Image
-                  src={photo.src}
-                  alt={photo.alt}
-                  width={600}
-                  height={450}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        {/* Value Highlights */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/60 pt-6">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <svg
+                aria-hidden="true"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
                 />
-              </div>
-              <p className="p-3 text-xs text-muted-foreground flex-1">{photo.caption}</p>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+                />
+              </svg>
             </div>
-          ))}
+            <div>
+              <p className="text-xs font-bold text-foreground">6 Premier Private Gardens</p>
+              <p className="text-[11px] text-muted-foreground">
+                Curated coastal and cottage retreats
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <svg
+                aria-hidden="true"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground">Self-Paced Tour Schedule</p>
+              <p className="text-[11px] text-muted-foreground">
+                Explore at leisure between 10am - 4pm
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <svg
+                aria-hidden="true"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H4.5a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h17.25"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground">100% Civic Proceeds</p>
+              <p className="text-[11px] text-muted-foreground">
+                Town planters &amp; youth scholarships
+              </p>
+            </div>
+          </div>
         </div>
       </section>
+
+      {/* Highlights Gallery Preview with Lightbox Modal */}
+      <GardenWalkGallery photos={FEATURED_GARDEN_WALK_PHOTOS} />
     </div>
   );
 }

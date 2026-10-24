@@ -96,6 +96,11 @@ export async function SiteFooter() {
                     Photo Gallery
                   </Link>
                 </li>
+                <li>
+                  <Link href="/notices" className="hover:text-foreground transition-colors">
+                    Club Notice Board
+                  </Link>
+                </li>
               </ul>
             </div>
 

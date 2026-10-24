@@ -111,4 +111,82 @@ test.describe("Public Site Navigation & Experiences", () => {
     await expect(page.getByRole("status")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("Thank you for reaching out!")).toBeVisible();
   });
+
+  test("garden walk page previews featured photos in high-res lightbox with keyboard navigation", async ({
+    page,
+  }) => {
+    await page.goto("/garden-walk");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Annual Garden Walk");
+
+    // Click first photo thumbnail to open lightbox
+    const firstThumbnail = page.locator("button[aria-haspopup='dialog']").first();
+    await expect(firstThumbnail).toBeVisible();
+    await firstThumbnail.click();
+
+    // Verify lightbox modal dialog is visible
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    // Verify counter is visible (e.g. "1 of 8")
+    await expect(dialog.getByText(/1 of/)).toBeVisible();
+
+    // Navigate to next photo with ArrowRight
+    await page.keyboard.press("ArrowRight");
+    await expect(dialog.getByText(/2 of/)).toBeVisible();
+
+    // Navigate back with ArrowLeft
+    await page.keyboard.press("ArrowLeft");
+    await expect(dialog.getByText(/1 of/)).toBeVisible();
+
+    // Close lightbox with Escape key
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
+  test("club notice board displays active notices, filters by search, and navigates to detail", async ({
+    page,
+  }) => {
+    await page.goto("/notices");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Club Notice Board");
+
+    // Category pills and search input should be present
+    const searchInput = page.getByPlaceholder("Search announcements, meetings, frost guides...");
+    await expect(searchInput).toBeVisible();
+
+    // Search for frost notice
+    await searchInput.fill("Frost");
+    await expect(page.getByText(/Frost Warning/i).first()).toBeVisible();
+
+    // Clear search
+    await searchInput.fill("");
+
+    // Click on the first notice card to view detail
+    const firstNoticeLink = page.locator("a[href^='/notices/']").first();
+    await expect(firstNoticeLink).toBeVisible();
+    await firstNoticeLink.click();
+    await expect(page).toHaveURL(/\/notices\/.+/);
+    await expect(page.getByRole("link", { name: /Back to Notice Board/i })).toBeVisible();
+
+    // Return to notice board
+    await page.getByRole("link", { name: /Back to Notice Board/i }).click();
+    await expect(page).toHaveURL("/notices");
+  });
+
+  test("tickets checkout renders botanical layout, quantity stepper, and updates order summary", async ({
+    page,
+  }) => {
+    await page.goto("/tickets-checkout");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Event Ticket Checkout");
+
+    // Check preview simulation indicator
+    await expect(page.getByText(/Local Simulation Preview/i)).toBeVisible();
+
+    // Check ticket quantity increment button
+    const incrementBtn = page.getByRole("button", { name: "Increase tickets" });
+    await expect(incrementBtn).toBeVisible();
+    await incrementBtn.click(); // from 2 to 3
+
+    // Verify summary updates (3 tickets @ $20 = $60.00)
+    await expect(page.getByText("$60.00 USD")).toBeVisible();
+  });
 });
