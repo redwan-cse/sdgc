@@ -1,3 +1,4 @@
+import sanitizeHtml from "sanitize-html";
 import { createClient } from "@/lib/supabase/server";
 import { resolveMediaUrl } from "@/lib/storage/media-url";
 import { CLUB_TIMEZONE } from "@/features/events/calendar";
@@ -84,7 +85,7 @@ export async function getHomePageContent(): Promise<PageContent | null> {
 function cleanHtmlParagraphs(raw: string): string[] {
   return raw
     .split(/<\/p>\s*<p\b[^>]*>|<br\s*\/?>|\n\n+/)
-    .map((p) => p.replace(/<[^>]+>/g, "").trim())
+    .map((p) => sanitizeHtml(p, { allowedTags: [], allowedAttributes: {} }).trim())
     .filter(Boolean);
 }
 

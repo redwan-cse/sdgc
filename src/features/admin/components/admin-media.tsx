@@ -25,6 +25,13 @@ interface AdminMediaProps {
   initialAlbums?: AlbumSummary[];
 }
 
+function sanitizeAlbumSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-_]/g, "");
+}
+
 export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMediaProps) {
   const [activeTab, setActiveTab] = React.useState<"albums" | "media">("albums");
   const [mediaList, setMediaList] = React.useState<MediaItem[]>(initialMedia);
@@ -133,7 +140,7 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
     try {
       const res = await createAlbumAction({
         title: newAlbumTitle.trim(),
-        slug: newAlbumSlug.trim(),
+        slug: sanitizeAlbumSlug(newAlbumSlug),
         category: newAlbumCategory.trim(),
         year: Number(newAlbumYear),
         description: newAlbumDesc.trim() || undefined,
@@ -189,7 +196,7 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
       const res = await updateAlbumAction({
         id: editingAlbum.id,
         title: editAlbumTitle.trim(),
-        slug: editAlbumSlug.trim(),
+        slug: sanitizeAlbumSlug(editAlbumSlug),
         category: editAlbumCategory.trim(),
         year: Number(editAlbumYear),
         description: editAlbumDesc.trim() || undefined,
@@ -204,7 +211,7 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
               ? {
                   ...a,
                   title: editAlbumTitle.trim(),
-                  slug: editAlbumSlug.trim(),
+                  slug: sanitizeAlbumSlug(editAlbumSlug),
                   category: editAlbumCategory.trim(),
                   year: Number(editAlbumYear),
                   description: editAlbumDesc.trim() || undefined,
@@ -746,7 +753,7 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
                           Edit
                         </Button>
                         <Link
-                          href={`/gallery/${album.slug}`}
+                          href={`/gallery/${encodeURIComponent(album.slug)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center justify-center rounded-md border border-border p-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -948,7 +955,7 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
                     required
                     placeholder="garden-walk-2026"
                     value={newAlbumSlug}
-                    onChange={(e) => setNewAlbumSlug(e.target.value)}
+                    onChange={(e) => setNewAlbumSlug(sanitizeAlbumSlug(e.target.value))}
                   />
                 </div>
 
@@ -1098,7 +1105,7 @@ export function AdminMedia({ initialMedia = [], initialAlbums = [] }: AdminMedia
                     id="edit-album-slug-input"
                     required
                     value={editAlbumSlug}
-                    onChange={(e) => setEditAlbumSlug(e.target.value)}
+                    onChange={(e) => setEditAlbumSlug(sanitizeAlbumSlug(e.target.value))}
                   />
                 </div>
 

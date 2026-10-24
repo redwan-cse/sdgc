@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 
 describe("MarkdownContent Component", () => {
@@ -39,6 +39,24 @@ describe("MarkdownContent Component", () => {
     expect(html).toContain("Malicious");
   });
 
+  it("filters out data: and protocol-relative // links", () => {
+    const markdown = `Test [Data Link](data:text/html,<script>alert(1)</script>) and [Protocol Relative](//evil.com/hack).`;
+    const html = renderToStaticMarkup(React.createElement(MarkdownContent, { content: markdown }));
+
+    expect(html).not.toContain("data:text/html");
+    expect(html).not.toContain("//evil.com");
+    expect(html).toContain("Data Link");
+    expect(html).toContain("Protocol Relative");
+  });
+
+  it("properly encodes relative link attributes and neutralizes attribute breakouts", () => {
+    const markdown = `Visit [Contact Page](/contact" data-break="true).`;
+    const html = renderToStaticMarkup(React.createElement(MarkdownContent, { content: markdown }));
+
+    expect(html).toContain('href="/contact%22%20data-break=%22true"');
+    expect(html).not.toContain('data-break="true"');
+  });
+
   it("renders bulleted and numbered lists and blockquotes", () => {
     const markdown = `- Item 1\n- Item 2\n\n1. First\n2. Second\n\n> A thoughtful quotation.`;
     const html = renderToStaticMarkup(React.createElement(MarkdownContent, { content: markdown }));
@@ -55,6 +73,7 @@ describe("MarkdownContent Component", () => {
     const html = renderToStaticMarkup(React.createElement(MarkdownContent, { content: "" }));
     expect(html).toBe("");
   });
+
   it("renders about page bylaws markdown with headings, bullet lists, and download links", () => {
     const aboutContent = `Organized in 1928, the Saugatuck Douglas Garden Club works continuously to beautify and enhance the communities of Saugatuck and Douglas.
 
