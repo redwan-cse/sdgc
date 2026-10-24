@@ -5,6 +5,42 @@ interface MarkdownContentProps {
   className?: string;
 }
 
+function hasControlCharacters(val: string): boolean {
+  for (let i = 0; i < val.length; i++) {
+    const code = val.charCodeAt(i);
+    if ((code >= 0 && code <= 31) || (code >= 127 && code <= 159)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function sanitizeHref(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed || hasControlCharacters(trimmed)) {
+    return null;
+  }
+  // Safe relative paths starting with a single '/'
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/\\")) {
+    return encodeURI(trimmed);
+  }
+  // Safe absolute URLs with permitted schemes
+  try {
+    const parsed = new URL(trimmed);
+    if (
+      parsed.protocol === "http:" ||
+      parsed.protocol === "https:" ||
+      parsed.protocol === "mailto:" ||
+      parsed.protocol === "tel:"
+    ) {
+      return encodeURI(trimmed);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 function renderInline(text: string): ReactNode[] {
   // Regex to match [text](url), **bold**, *italic*
   // Order matters: links first or bold/italic
@@ -21,13 +57,13 @@ function renderInline(text: string): ReactNode[] {
     const [fullMatch, , linkText, linkUrl, boldText, italicText] = match;
 
     if (linkText && linkUrl) {
-      const isSafe = /^(https?:\/\/|\/|mailto:|tel:)/i.test(linkUrl.trim());
-      if (isSafe) {
-        const isExternal = /^https?:\/\//i.test(linkUrl.trim());
+      const safeHref = sanitizeHref(linkUrl);
+      if (safeHref) {
+        const isExternal = /^https?:\/\//i.test(safeHref);
         nodes.push(
           <a
             key={match.index}
-            href={linkUrl.trim()}
+            href={safeHref}
             target={isExternal ? "_blank" : undefined}
             rel={isExternal ? "noopener noreferrer" : undefined}
             className="text-primary font-medium underline underline-offset-2 hover:text-primary/80 transition-colors"

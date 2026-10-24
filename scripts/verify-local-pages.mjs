@@ -1,3 +1,10 @@
+import sanitizeHtml from "sanitize-html";
+
+function stripHtml(raw) {
+  if (!raw) return "";
+  return sanitizeHtml(raw, { allowedTags: [], allowedAttributes: {} }).trim();
+}
+
 async function fullAudit() {
   const routes = [
     { path: "/", expected: "public" },
@@ -46,7 +53,7 @@ async function fullAudit() {
 
       const html = await res.text();
       const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/s);
-      const h1Text = h1Match ? h1Match[1].replace(/<[^>]+>/g, "").trim() : "NO H1";
+      const h1Text = h1Match ? stripHtml(h1Match[1]) : "NO H1";
 
       if (h1Text === "Page not found" || res.status === 404) {
         console.log(`❌ [${res.status}] ${r.path.padEnd(20)} -> PAGE NOT FOUND (H1: "${h1Text}")`);
@@ -65,7 +72,7 @@ async function fullAudit() {
     const res = await fetch("http://127.0.0.1:3000/event/2027-47th-annual-garden-walk");
     const html = await res.text();
     const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/s);
-    const h1Text = h1Match ? h1Match[1].replace(/<[^>]+>/g, "").trim() : "NO H1";
+    const h1Text = h1Match ? stripHtml(h1Match[1]) : "NO H1";
     if (h1Text === "Page not found" || res.status === 404) {
       console.log(`❌ [${res.status}] /event/...          -> PAGE NOT FOUND`);
       failureCount++;
