@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { changePasswordAction } from "@/features/auth/actions";
+import { changePasswordAction, unenrollMfaAction } from "@/features/auth/actions";
 import { createClient } from "@/lib/supabase/client";
 
 interface FactorRecord {
@@ -15,6 +15,11 @@ interface FactorRecord {
   factor_type: string;
   status: "verified" | "unverified";
   created_at: string;
+}
+
+interface AssuranceLevelState {
+  currentLevel: "aal1" | "aal2" | null;
+  nextLevel: "aal1" | "aal2" | null;
 }
 
 interface AccountSecurityProps {
@@ -34,6 +39,10 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
 
   // MFA State
   const [mfaFactors, setMfaFactors] = React.useState<FactorRecord[]>([]);
+  const [assuranceLevel, setAssuranceLevel] = React.useState<AssuranceLevelState>({
+    currentLevel: null,
+    nextLevel: null,
+  });
   const [mfaLoading, setMfaLoading] = React.useState(true);
   const [mfaError, setMfaError] = React.useState<string | null>(null);
   const [mfaNotice, setMfaNotice] = React.useState<string | null>(null);
@@ -50,16 +59,22 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
   const [isVerifyingEnroll, setIsVerifyingEnroll] = React.useState(false);
   const [copiedKey, setCopiedKey] = React.useState(false);
 
-  // Unenroll Modal State
+  // Unenroll Modal State (Password Protected)
   const [factorToUnenroll, setFactorToUnenroll] = React.useState<string | null>(null);
+  const [unenrollPassword, setUnenrollPassword] = React.useState("");
+  const [unenrollError, setUnenrollError] = React.useState<string | null>(null);
   const [isUnenrolling, setIsUnenrolling] = React.useState(false);
 
   const fetchFactors = React.useCallback(async () => {
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.auth.mfa.listFactors();
-      if (!error && data) {
-        const verifiedTotp = (data.totp || []).map((f) => ({
+      const [factorsRes, aalRes] = await Promise.all([
+        supabase.auth.mfa.listFactors(),
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+      ]);
+
+      if (!factorsRes.error && factorsRes.data) {
+        const verifiedTotp = (factorsRes.data.totp || []).map((f) => ({
           id: f.id,
           friendly_name: f.friendly_name,
           factor_type: f.factor_type,
@@ -67,6 +82,13 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
           created_at: f.created_at,
         }));
         setMfaFactors(verifiedTotp);
+      }
+
+      if (!aalRes.error && aalRes.data) {
+        setAssuranceLevel({
+          currentLevel: (aalRes.data.currentLevel as "aal1" | "aal2") ?? null,
+          nextLevel: (aalRes.data.nextLevel as "aal1" | "aal2") ?? null,
+        });
       }
     } catch {
       setMfaError("Unable to load two-factor authentication status.");
@@ -188,12 +210,17 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
         return;
       }
 
+      // Refresh session cookies so the session elevates to AAL2 immediately
+      await supabase.auth.refreshSession();
+
       // Success!
       setIsEnrolling(false);
       setEnrollData(null);
       setVerificationCode("");
-      setMfaNotice("Two-factor authentication (TOTP) has been activated successfully!");
-      fetchFactors();
+      setMfaNotice(
+        "Two-factor authentication (TOTP) has been activated and your session is elevated to AAL2!",
+      );
+      await fetchFactors();
     } catch {
       setEnrollError("Network error confirming verification code.");
     } finally {
@@ -217,24 +244,40 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
     setEnrollError(null);
   };
 
-  // Unenroll MFA Factor
-  const handleUnenroll = async () => {
+  // Password-confirmed Unenroll MFA Factor
+  const handleUnenrollSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!factorToUnenroll) return;
+
+    if (!unenrollPassword) {
+      setUnenrollError("Current password is required to remove two-factor authentication.");
+      return;
+    }
+
     setIsUnenrolling(true);
-    setMfaError(null);
+    setUnenrollError(null);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.mfa.unenroll({ factorId: factorToUnenroll });
-      if (error) {
-        setMfaError(error.message);
-      } else {
-        setMfaNotice("Two-factor authentication has been removed.");
-        setFactorToUnenroll(null);
-        fetchFactors();
+      const formData = new FormData();
+      formData.append("factorId", factorToUnenroll);
+      formData.append("password", unenrollPassword);
+
+      const res = await unenrollMfaAction(formData);
+      if (!res.success) {
+        setUnenrollError(res.error || "Failed to remove two-factor authentication.");
+        return;
       }
+
+      // Refresh session to downgrade assurance level on client
+      const supabase = createClient();
+      await supabase.auth.refreshSession();
+
+      setMfaNotice("Two-factor authentication has been removed.");
+      setFactorToUnenroll(null);
+      setUnenrollPassword("");
+      await fetchFactors();
     } catch {
-      setMfaError("Network error removing two-factor factor.");
+      setUnenrollError("Network error removing two-factor authentication.");
     } finally {
       setIsUnenrolling(false);
     }
@@ -386,18 +429,32 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
               </h2>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Elevate your account to Assurance Level 2 (AAL2). When enabled, signing in requires an
-              authenticator app security code in addition to your password.
+              Elevate your account to Authenticator Assurance Level 2 (AAL2). When enabled, signing
+              in requires an authenticator app security code in addition to your password.
             </p>
           </div>
 
-          <div>
+          <div className="flex flex-wrap items-center gap-2">
             {mfaLoading ? (
               <span className="text-xs text-muted-foreground">Checking security level...</span>
             ) : hasVerifiedFactor ? (
-              <Badge variant="success" className="py-1 px-3">
-                Active (AAL2 Protected)
-              </Badge>
+              <>
+                <Badge variant="success" className="py-1 px-3">
+                  Enrolled (AAL2 Configured)
+                </Badge>
+                {assuranceLevel.currentLevel === "aal2" ? (
+                  <Badge
+                    variant="outline"
+                    className="py-1 px-3 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-medium"
+                  >
+                    Session: AAL2 Elevated
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="py-1 px-3">
+                    Session: AAL1
+                  </Badge>
+                )}
+              </>
             ) : (
               <Badge variant="outline" className="py-1 px-3">
                 Not Configured (AAL1)
@@ -451,7 +508,11 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setFactorToUnenroll(factor.id)}
+                      onClick={() => {
+                        setFactorToUnenroll(factor.id);
+                        setUnenrollPassword("");
+                        setUnenrollError(null);
+                      }}
                       className="text-destructive hover:bg-destructive/10"
                     >
                       Remove Authenticator
@@ -460,10 +521,32 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
                 ))}
             </div>
 
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Your account is protected by an Authenticator App. Any sign-in attempt from a new
-              browser session will prompt for your 6-digit code.
-            </p>
+            <div className="rounded-xl border border-border/70 bg-muted/10 p-4 space-y-2 text-xs text-muted-foreground leading-relaxed">
+              <div className="font-semibold text-foreground flex items-center gap-1.5">
+                <svg
+                  className="h-4 w-4 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+                  />
+                </svg>
+                <span>Understanding Assurance Levels (AAL1 vs. AAL2)</span>
+              </div>
+              <p>
+                In accordance with NIST SP 800-63B standards, single-factor logins (passwords)
+                operate at <strong>Assurance Level 1 (AAL1)</strong>. Once you verify your 6-digit
+                TOTP code, your active session is elevated to{" "}
+                <strong>Assurance Level 2 (AAL2)</strong>, providing cryptographic possession-based
+                protection against credential stuffing, phishing, and unauthorized account access.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="rounded-xl border border-border/80 bg-muted/10 p-5 space-y-4">
@@ -511,7 +594,7 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
               <button
                 type="button"
                 onClick={handleCancelEnroll}
-                className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
+                className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1 cursor-pointer"
                 aria-label="Close"
               >
                 &times;
@@ -557,7 +640,7 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
                     <button
                       type="button"
                       onClick={copySecretKey}
-                      className="text-primary hover:underline font-semibold text-[11px]"
+                      className="text-primary hover:underline font-semibold text-[11px] cursor-pointer"
                     >
                       {copiedKey ? "Copied!" : "Copy Key"}
                     </button>
@@ -606,7 +689,7 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
         </div>
       )}
 
-      {/* Unenroll Confirmation Modal Dialog */}
+      {/* Password-Confirmed Unenroll Modal Dialog */}
       {factorToUnenroll && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
@@ -616,31 +699,63 @@ export function AccountSecurity({ userEmail }: AccountSecurityProps) {
         >
           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4">
             <h3 id="unenroll-title" className="font-serif text-lg font-bold text-foreground">
-              Remove Two-Factor Authentication?
+              Remove Two-Factor Authentication
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Are you sure you want to disable two-factor authentication? Your account will only be
-              protected by your password (Assurance Level 1).
+              To protect your account from unauthorized modification, please enter your current
+              password to remove your authenticator app.
             </p>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setFactorToUnenroll(null)}
-                disabled={isUnenrolling}
+            {unenrollError && (
+              <div
+                className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive font-medium"
+                role="alert"
               >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleUnenroll}
-                disabled={isUnenrolling}
-              >
-                {isUnenrolling ? "Removing..." : "Yes, Remove MFA"}
-              </Button>
-            </div>
+                {unenrollError}
+              </div>
+            )}
+
+            <form onSubmit={handleUnenrollSubmit} className="space-y-4" noValidate>
+              <div>
+                <Label htmlFor="unenroll-password" required>
+                  Current Password
+                </Label>
+                <Input
+                  id="unenroll-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={unenrollPassword}
+                  onChange={(e) => setUnenrollPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  autoFocus
+                  disabled={isUnenrolling}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFactorToUnenroll(null);
+                    setUnenrollPassword("");
+                    setUnenrollError(null);
+                  }}
+                  disabled={isUnenrolling}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  size="sm"
+                  disabled={isUnenrolling || !unenrollPassword}
+                >
+                  {isUnenrolling ? "Verifying & Removing..." : "Remove MFA"}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

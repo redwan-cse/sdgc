@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import type { ActionResult } from "@/features/auth/types";
-import { changePasswordSchema, loginSchema, registerSchema } from "@/features/auth/validation";
+import {
+  changePasswordSchema,
+  loginSchema,
+  registerSchema,
+  unenrollMfaSchema,
+} from "@/features/auth/validation";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -146,6 +151,15 @@ export async function changePasswordAction(formData: FormData): Promise<ActionRe
     return {
       success: false,
       error: "You must be signed in to change your password.",
+    };
+  }
+
+  // Check assurance level: if user has MFA enrolled, elevate to AAL2 before modifying password
+  const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aalData && aalData.nextLevel === "aal2" && aalData.currentLevel !== "aal2") {
+    return {
+      success: false,
+      error: "Two-factor authentication (AAL2) verification required before changing password.",
     };
   }
 
@@ -327,6 +341,83 @@ export async function resetPasswordAction(newPassword: string): Promise<ActionRe
       success: false,
       error: error.message,
     };
+  }
+
+  revalidatePath("/", "layout");
+  return {
+    success: true,
+    data: undefined,
+  };
+}
+
+export async function unenrollMfaAction(formData: FormData): Promise<ActionResult<void>> {
+  const password = (formData.get("password") as string) || "";
+  const factorId = (formData.get("factorId") as string) || "";
+
+  const parseResult = unenrollMfaSchema.safeParse({ password, factorId });
+  if (!parseResult.success) {
+    return {
+      success: false,
+      error: "Current password is required to remove two-factor authentication.",
+      fieldErrors: parseResult.error.flatten().fieldErrors,
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user || !user.email) {
+    return {
+      success: false,
+      error: "You must be signed in to manage two-factor authentication.",
+    };
+  }
+
+  // Re-verify current password before allowing factor removal
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password,
+  });
+
+  if (verifyError) {
+    return {
+      success: false,
+      error: "The password you entered is incorrect.",
+      fieldErrors: {
+        password: ["The password you entered is incorrect."],
+      },
+    };
+  }
+
+  // Unenroll MFA factor
+  const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+    factorId,
+  });
+
+  if (unenrollError) {
+    return {
+      success: false,
+      error: unenrollError.message,
+    };
+  }
+
+  // Audit event
+  try {
+    await supabase.from("audit_events").insert({
+      actor_id: user.id,
+      action: "auth.mfa_unenrolled",
+      entity_type: "user",
+      entity_id: user.id,
+      details: {
+        factor_id: factorId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch {
+    // Non-blocking
   }
 
   revalidatePath("/", "layout");
